@@ -1,5 +1,21 @@
 import { Component, OnInit } from '@angular/core';
-import { DisplayDensity, IDataCloneStrategy } from 'igniteui-angular';
+import { NgIf, NgFor } from '@angular/common';
+import { SizeSelectorComponent } from '../size-selector/size-selector.component';
+import {
+    IDataCloneStrategy,
+    IRowDataEventArgs,
+    IgxActionStripComponent,
+    IgxActionStripMenuItemDirective,
+    IgxButtonDirective,
+    IgxCellTemplateDirective,
+    IgxColumnComponent,
+    IgxGridComponent,
+    IgxGridEditingActionsComponent,
+    IgxGridPinningActionsComponent,
+    IgxIconComponent,
+    IRowDataCancelableEventArgs
+}
+from 'igniteui-angular';
 
 
 class MyClone implements IDataCloneStrategy {
@@ -44,16 +60,26 @@ class User {
 @Component({
     selector: 'app-action-strip-sample',
     styleUrls: ['action-strip.sample.scss'],
-    templateUrl: `action-strip.sample.html`
+    templateUrl: `action-strip.sample.html`,
+    imports: [
+        NgIf,
+        NgFor,
+        IgxButtonDirective,
+        IgxActionStripComponent,
+        IgxIconComponent,
+        IgxGridComponent,
+        IgxColumnComponent,
+        IgxGridPinningActionsComponent,
+        IgxCellTemplateDirective,
+        IgxGridEditingActionsComponent,
+        IgxActionStripMenuItemDirective,
+        SizeSelectorComponent
+    ]
 })
 export class ActionStripSampleComponent implements OnInit {
     public result: string;
     public isVisible = false;
-    public customItem = true;
-    public comfortable: DisplayDensity = DisplayDensity.comfortable;
-    public cosy: DisplayDensity = DisplayDensity.cosy;
-    public compact: DisplayDensity = DisplayDensity.compact;
-    public displayDensity: DisplayDensity = this.comfortable;
+    public customItem = false;
     public data: any[];
     public columns: any[];
     public userData: User[] = [];
@@ -87,8 +113,20 @@ export class ActionStripSampleComponent implements OnInit {
         }
     }
 
-    public setDensity(density: DisplayDensity) {
-        this.displayDensity = density;
+    public rowAdd(event: IRowDataCancelableEventArgs) {
+        console.log("RowAdd is: " + event.primaryKey);
+    }
+
+    public rowAdded(event: IRowDataEventArgs) {
+        console.log("RowAdded is: " + event.primaryKey);
+    }
+
+    public rowDelete(event: IRowDataCancelableEventArgs) {
+        console.log("Row Delete is: " + event.primaryKey);
+    }
+
+    public rowDeleted(event: IRowDataEventArgs) {
+        console.log("Row deleted is: " + event.primaryKey);
     }
 
     public ngOnInit(): void {
@@ -114,7 +152,6 @@ export class ActionStripSampleComponent implements OnInit {
         }
 
         this.data = [
-            /* eslint-disable max-len */
             { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative', Address: 'Obere Str. 57', City: 'Berlin', Region: null, PostalCode: '12209', Country: 'Germany', Phone: '030-0074321', Fax: '030-0076545' },
             { ID: 'ANATR', CompanyName: 'Ana Trujillo Emparedados y helados', ContactName: 'Ana Trujillo', ContactTitle: 'Owner', Address: 'Avda. de la Constitución 2222', City: 'México D.F.', Region: null, PostalCode: '05021', Country: 'Mexico', Phone: '(5) 555-4729', Fax: '(5) 555-3745' },
             { ID: 'ANTON', CompanyName: 'Antonio Moreno Taquería', ContactName: 'Antonio Moreno', ContactTitle: 'Owner', Address: 'Mataderos 2312', City: 'México D.F.', Region: null, PostalCode: '05023', Country: 'Mexico', Phone: '(5) 555-3932', Fax: null },
@@ -143,6 +180,5 @@ export class ActionStripSampleComponent implements OnInit {
             { ID: 'FRANR', CompanyName: 'France restauration', ContactName: 'Carine Schmitt', ContactTitle: 'Marketing Manager', Address: '54, rue Royale', City: 'Nantes', Region: null, PostalCode: '44000', Country: 'France', Phone: '40.32.21.21', Fax: '40.32.21.20' },
             { ID: 'FRANS', CompanyName: 'Franchi S.p.A.', ContactName: 'Paolo Accorti', ContactTitle: 'Sales Representative', Address: 'Via Monte Bianco 34', City: 'Torino', Region: null, PostalCode: '10100', Country: 'Italy', Phone: '011-4988260', Fax: '011-4988261' }
         ];
-        /* eslint-enable max-len */
     }
 }

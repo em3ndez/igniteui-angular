@@ -1,17 +1,34 @@
-import { AnimationBuilder } from '@angular/animations';
 import {
     AfterViewInit,
-    ChangeDetectorRef, Component, ContentChild, ElementRef,
-    EventEmitter, forwardRef, HostBinding, HostListener, Inject, Input, OnDestroy, Output, Renderer2, TemplateRef, ViewChild
+    booleanAttribute,
+    ChangeDetectorRef,
+    Component,
+    ContentChild,
+    ElementRef,
+    EventEmitter,
+    forwardRef,
+    HostBinding,
+    HostListener,
+    Inject,
+    Input,
+    OnDestroy,
+    Output,
+    Renderer2,
+    TemplateRef,
+    ViewChild
 } from '@angular/core';
 import { takeUntil } from 'rxjs/operators';
-import { HorizontalAnimationType, Direction, IgxSlideComponentBase } from '../../carousel/carousel-base';
+import { Direction, IgxSlideComponentBase } from '../../carousel/carousel-base';
 import { PlatformUtil } from '../../core/utils';
 import { ToggleAnimationPlayer, ToggleAnimationSettings } from '../../expansion-panel/toggle-animation-component';
+import { IgxAngularAnimationService } from '../../services/animation/angular-animation-service';
+import { AnimationService } from '../../services/animation/animation';
 import { IgxDirectionality } from '../../services/direction/directionality';
-import { IgxStep, IgxStepper, IgxStepperOrientation, IgxStepType, IGX_STEPPER_COMPONENT, IGX_STEP_COMPONENT } from '../stepper.common';
+import { IgxStep, IgxStepper, IgxStepperOrientation, IgxStepType, IGX_STEPPER_COMPONENT, IGX_STEP_COMPONENT, HorizontalAnimationType } from '../stepper.common';
 import { IgxStepContentDirective, IgxStepIndicatorDirective } from '../stepper.directive';
 import { IgxStepperService } from '../stepper.service';
+import { IgxRippleDirective } from '../../directives/ripple/ripple.directive';
+import { NgIf, NgClass, NgTemplateOutlet } from '@angular/common';
 
 let NEXT_ID = 0;
 
@@ -39,7 +56,8 @@ let NEXT_ID = 0;
     templateUrl: 'step.component.html',
     providers: [
         { provide: IGX_STEP_COMPONENT, useExisting: IgxStepComponent }
-    ]
+    ],
+    imports: [NgIf, NgClass, IgxRippleDirective, NgTemplateOutlet]
 })
 export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, AfterViewInit, OnDestroy, IgxSlideComponentBase {
 
@@ -72,7 +90,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
      * this.stepper.steps[1].disabled = true;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public set disabled(value: boolean) {
         this._disabled = value;
         if (this.stepper.linear) {
@@ -102,7 +120,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
      * this.stepper.steps[1].completed = true;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     @HostBinding('class.igx-stepper__step--completed')
     public completed = false;
 
@@ -119,7 +137,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
      * </igx-step>
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get isValid(): boolean {
         return this._valid;
     }
@@ -145,7 +163,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
      * this.stepper.steps[1].optional = true;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public optional = false;
 
     /**
@@ -162,7 +180,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
      * @param value: boolean
      */
     @HostBinding('attr.aria-selected')
-    @Input()
+    @Input({ transform: booleanAttribute })
     public set active(value: boolean) {
         if (value) {
             this.stepperService.expandThroughApi(this);
@@ -329,7 +347,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
     }
 
     /** @hidden @internal */
-    public get animationSettings(): ToggleAnimationSettings {
+    public override get animationSettings(): ToggleAnimationSettings {
         return this.stepper.verticalAnimationSettings;
     }
 
@@ -371,11 +389,11 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
         public renderer: Renderer2,
         protected platform: PlatformUtil,
         protected stepperService: IgxStepperService,
-        protected builder: AnimationBuilder,
+        @Inject(IgxAngularAnimationService) animationService: AnimationService,
         private element: ElementRef<HTMLElement>,
         private dir: IgxDirectionality
     ) {
-        super(builder);
+        super(animationService);
     }
 
     /** @hidden @internal */
@@ -427,11 +445,6 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
             this.stepperService.collapse(this);
             this.cdr.markForCheck();
         });
-    }
-
-    /** @hidden @internal */
-    public ngOnDestroy(): void {
-        super.ngOnDestroy();
     }
 
     /** @hidden @internal */
@@ -547,7 +560,7 @@ export class IgxStepComponent extends ToggleAnimationPlayer implements IgxStep, 
         this.stepperService.expand(this);
 
         if (!this.animationSettings.closeAnimation) {
-            this.stepperService.previousActiveStep.openAnimationPlayer?.finish();
+            this.stepperService.previousActiveStep?.openAnimationPlayer?.finish();
         }
 
         if (!this.animationSettings.openAnimation) {

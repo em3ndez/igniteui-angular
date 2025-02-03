@@ -1,10 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { IgxGridComponent } from 'igniteui-angular';
+import { NgFor, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IRowDataCancelableEventArgs, IRowDataEventArgs, IgxActionStripComponent, IgxButtonDirective, IgxCardComponent, IgxCardContentDirective, IgxCardHeaderComponent, IgxCardHeaderTitleDirective, IgxColumnComponent, IgxGridComponent, IgxGridEditingActionsComponent, IgxGridPinningActionsComponent, IgxInputDirective, IgxInputGroupComponent, IgxLabelDirective, IgxPaginatorComponent, IgxSelectComponent, IgxSelectItemComponent } from 'igniteui-angular';
 
 @Component({
     selector: 'app-grid-add-row',
     styleUrls: ['grid-add-row.sample.scss'],
-    templateUrl: `grid-add-row.sample.html`
+    templateUrl: `grid-add-row.sample.html`,
+    imports: [IgxGridComponent, NgFor, IgxColumnComponent, IgxActionStripComponent, IgxGridPinningActionsComponent, IgxGridEditingActionsComponent, NgIf, IgxPaginatorComponent, IgxCardComponent, IgxCardHeaderComponent, IgxCardHeaderTitleDirective, IgxCardContentDirective, IgxButtonDirective, IgxSelectComponent, FormsModule, IgxSelectItemComponent, IgxInputGroupComponent, IgxInputDirective, IgxLabelDirective]
 })
 export class GridAddRowSampleComponent implements OnInit {
 
@@ -41,7 +44,6 @@ export class GridAddRowSampleComponent implements OnInit {
         ];
 
         this.dataFull = [
-            /* eslint-disable max-len */
             { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative'},
             { ID: 'ANATR', CompanyName: 'Ana Trujillo Emparedados y helados', ContactName: 'Ana Trujillo', ContactTitle: 'Owner'},
             { ID: 'ANTON', CompanyName: 'Antonio Moreno Taquería', ContactName: 'Antonio Moreno', ContactTitle: 'Owner'},
@@ -72,7 +74,10 @@ export class GridAddRowSampleComponent implements OnInit {
         ];
 
         this.data = [];
-        /* eslint-enable max-len */
+    }
+
+    public add() {
+        this.grid.addRow({ ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative'});
     }
 
     public beginAddRowAtIndex(index: string) {
@@ -87,4 +92,10 @@ export class GridAddRowSampleComponent implements OnInit {
     public beginAddRowById(string: string) {
         this.grid.beginAddRowById(string);
     }
+
+    public log(args: IRowDataCancelableEventArgs | IRowDataEventArgs) {
+        console.log(args);
+        // const rowArgs = args as IRowDataCancellableEventArgs;
+    }
+
 }

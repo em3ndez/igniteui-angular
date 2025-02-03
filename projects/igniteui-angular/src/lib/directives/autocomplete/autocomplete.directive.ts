@@ -7,16 +7,15 @@ import {
     HostListener,
     Inject,
     Input,
-    NgModule,
     OnDestroy,
     Optional,
     Output,
     Self,
     AfterViewInit,
-    OnInit
+    OnInit,
+    booleanAttribute
 } from '@angular/core';
 import { NgModel, FormControlName } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { CancelableEventArgs, IBaseEventArgs } from '../../core/utils';
@@ -28,13 +27,12 @@ import {
     OverlaySettings
 } from '../../services/public_api';
 import {
-    IgxDropDownComponent,
-    IgxDropDownItemNavigationDirective,
-    IgxDropDownModule,
-    ISelectionEventArgs
-} from '../../drop-down/public_api';
+    IgxDropDownComponent
+} from '../../drop-down/drop-down.component';
+import { IgxDropDownItemNavigationDirective } from '../../drop-down/drop-down-navigation.directive';
 import { IgxInputGroupComponent } from '../../input-group/public_api';
 import { IgxOverlayOutletDirective } from '../toggle/toggle.directive';
+import { ISelectionEventArgs } from '../../drop-down/drop-down.common';
 
 /**
  * Interface that encapsulates onItemSelection event arguments - new value and cancel selection.
@@ -76,7 +74,8 @@ export interface AutocompleteOverlaySettings {
  */
 @Directive({
     selector: '[igxAutocomplete]',
-    exportAs: 'igxAutocomplete'
+    exportAs: 'igxAutocomplete',
+    standalone: true
 })
 export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective implements OnDestroy, AfterViewInit, OnInit {
     /**
@@ -92,10 +91,10 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
      * ```
      */
     @Input('igxAutocomplete')
-    public get target(): IgxDropDownComponent {
+    public override get target(): IgxDropDownComponent {
         return this._target as IgxDropDownComponent;
     }
-    public set target(v: IgxDropDownComponent) {
+    public override set target(v: IgxDropDownComponent) {
         this._target = v;
     }
 
@@ -147,7 +146,7 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
      * public disabled = true;
      * ```
      */
-    @Input('igxAutocompleteDisabled')
+    @Input({ alias: 'igxAutocompleteDisabled', transform: booleanAttribute })
     public disabled = false;
 
     /**
@@ -172,8 +171,7 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
 
     private get settings(): OverlaySettings {
         const settings = Object.assign({}, this.defaultSettings, this.autocompleteSettings);
-        const target = settings.target || settings.positionStrategy.settings.target;
-        if (!target) {
+        if (!settings.target) {
             const positionStrategyClone: IPositionStrategy = settings.positionStrategy.clone();
             settings.target = this.parentElement;
             settings.positionStrategy = positionStrategyClone;
@@ -211,13 +209,14 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
         return 'list';
     }
 
+    protected _composing: boolean;
     protected id: string;
     protected get model() {
         return this.ngModel || this.formControl;
     }
 
     private _shouldBeOpen = false;
-    private destroy$ = new Subject();
+    private destroy$ = new Subject<void>();
     private defaultSettings: OverlaySettings;
 
     constructor(@Self() @Optional() @Inject(NgModel) protected ngModel: NgModel,
@@ -232,6 +231,20 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
     @HostListener('input')
     public onInput() {
         this.open();
+    }
+
+    /** @hidden @internal */
+    @HostListener('compositionstart')
+    public onCompositionStart(): void {
+        if (!this._composing) {
+            this._composing = true;
+        }
+    }
+
+    /** @hidden @internal */
+    @HostListener('compositionend')
+    public onCompositionEnd(): void {
+        this._composing = false;
     }
 
     /** @hidden  @internal */
@@ -252,8 +265,8 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
     }
 
     /** @hidden  @internal */
-    public handleKeyDown(event) {
-        if (!this.collapsed) {
+    public override handleKeyDown(event) {
+        if (!this.collapsed && !this._composing) {
             switch (event.key.toLowerCase()) {
                 case 'space':
                 case 'spacebar':
@@ -268,22 +281,22 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
     }
 
     /** @hidden  @internal */
-    public onArrowDownKeyDown() {
+    public override onArrowDownKeyDown() {
         super.onArrowDownKeyDown();
     }
 
     /** @hidden  @internal */
-    public onArrowUpKeyDown() {
+    public override onArrowUpKeyDown() {
         super.onArrowUpKeyDown();
     }
 
     /** @hidden  @internal */
-    public onEndKeyDown() {
+    public override onEndKeyDown() {
         super.onEndKeyDown();
     }
 
     /** @hidden  @internal */
-    public onHomeKeyDown() {
+    public override onHomeKeyDown() {
         super.onHomeKeyDown();
     }
 
@@ -371,7 +384,7 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
         } else {
             this.nativeElement.value = newValue;
         }
-    };
+    }
 
     private highlightFirstItem() {
         if (this.target.focusedItem) {
@@ -380,13 +393,5 @@ export class IgxAutocompleteDirective extends IgxDropDownItemNavigationDirective
         }
         this.target.navigateFirst();
         this.cdr.detectChanges();
-    };
+    }
 }
-
-/** @hidden */
-@NgModule({
-    imports: [IgxDropDownModule, CommonModule],
-    declarations: [IgxAutocompleteDirective],
-    exports: [IgxAutocompleteDirective]
-})
-export class IgxAutocompleteModule { }

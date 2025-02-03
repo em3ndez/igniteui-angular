@@ -1,10 +1,11 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
-import { IgxHierarchicalGridModule, IgxHierarchicalGridComponent } from './public_api';
+import { TestBed } from '@angular/core/testing';
+import { IgxHierarchicalGridComponent } from './public_api';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxActionStripModule, IgxActionStripComponent } from '../../action-strip/public_api';
+import { IgxActionStripComponent } from '../../action-strip/public_api';
 import { IgxHierarchicalGridActionStripComponent } from '../../test-utils/hierarchical-grid-components.spec';
 import { wait } from '../../test-utils/ui-interactions.spec';
+import { By } from '@angular/platform-browser';
 
 describe('IgxHierarchicalGrid - Add Row UI #tGrid', () => {
     let fixture;
@@ -17,21 +18,18 @@ describe('IgxHierarchicalGrid - Add Row UI #tGrid', () => {
         animationElem.dispatchEvent(endEvent);
     };
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                IgxHierarchicalGridActionStripComponent
-            ],
-            imports: [IgxHierarchicalGridModule, NoopAnimationsModule, IgxActionStripModule]
+        return TestBed.configureTestingModule({
+            imports: [NoopAnimationsModule, IgxHierarchicalGridActionStripComponent]
         });
     }));
 
     describe(' Basic', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxHierarchicalGridActionStripComponent);
             fixture.detectChanges();
             hierarchicalGrid = fixture.componentInstance.hgrid;
             _actionStrip = fixture.componentInstance.actionStrip;
-        }));
+        });
 
         it('Should collapse an expanded record when beginAddRow is called for it', () => {
             const row = hierarchicalGrid.rowList.first;
@@ -71,6 +69,24 @@ describe('IgxHierarchicalGrid - Add Row UI #tGrid', () => {
             hierarchicalGrid.expandRow(newRow.key);
             fixture.detectChanges();
             expect(newRow.expanded).toBeTrue();
+        });
+
+        it('Should allow adding to child grid for parent row that has null/undefined child collection.', async () => {
+            const data = [ { ID: '1',  ProductName: 'Product: A'}];
+            hierarchicalGrid.data = data;
+            fixture.detectChanges();
+
+            hierarchicalGrid.expandRow('1');
+            fixture.detectChanges();
+
+            const child1Grids = fixture.debugElement.queryAll(By.css('igx-child-grid-row'));
+            const child1Grid = child1Grids[0].query(By.css('igx-hierarchical-grid'));
+            const childComponent: IgxHierarchicalGridComponent = child1Grid.componentInstance;
+            const childDataToAdd = { ID: '2',  ProductName: 'ChildProduct: A'};
+            childComponent.addRow(childDataToAdd);
+            fixture.detectChanges();
+            expect(data[0]['childData1'].length).toBe(1);
+            expect(data[0]['childData1'][0]).toBe(childDataToAdd);
         });
     });
 });

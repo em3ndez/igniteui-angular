@@ -1,10 +1,15 @@
 import { Component, ViewChild, ViewChildren, QueryList, DebugElement } from '@angular/core';
 import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
-import { FormsModule, FormBuilder, ReactiveFormsModule, Validators, FormControl, FormGroup } from '@angular/forms';
+import { FormsModule, UntypedFormBuilder, ReactiveFormsModule, Validators, UntypedFormControl, UntypedFormGroup, FormControl } from '@angular/forms';
 import { By } from '@angular/platform-browser';
-import { IgxInputGroupComponent, IgxInputGroupModule } from '../../input-group/input-group.component';
+import { IgxInputGroupComponent } from '../../input-group/input-group.component';
 import { IgxInputDirective, IgxInputState } from './input.directive';
 import { configureTestSuite } from '../../test-utils/configure-suite';
+import { UIInteractions } from '../../test-utils/ui-interactions.spec';
+import { IgxLabelDirective } from '../label/label.directive';
+import { IgxSuffixDirective } from '../suffix/suffix.directive';
+import { IgxIconComponent } from '../../icon/icon.component';
+import { IgxMaskDirective } from '../mask/mask.directive';
 
 const INPUT_CSS_CLASS = 'igx-input-group__input';
 const CSS_CLASS_INPUT_GROUP_LABEL = 'igx-input-group__label';
@@ -23,7 +28,7 @@ describe('IgxInput', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
                 InputComponent,
                 TextareaComponent,
                 InputWithPlaceholderComponent,
@@ -37,15 +42,10 @@ describe('IgxInput', () => {
                 ReactiveFormComponent,
                 InputsWithSameNameAttributesComponent,
                 ToggleRequiredWithNgModelInputComponent,
-                InputReactiveFormComponent
-            ],
-            imports: [
-                IgxInputGroupModule,
-                FormsModule,
-                ReactiveFormsModule
+                InputReactiveFormComponent,
+                FileInputFormComponent
             ]
-        })
-            .compileComponents();
+        }).compileComponents();
     }));
 
     it('Initializes an input.', () => {
@@ -264,10 +264,10 @@ describe('IgxInput', () => {
         fixture.detectChanges();
 
         const invalidInputGroups = fixture.debugElement.nativeElement.querySelectorAll(`.igx-input-group--invalid`);
-        expect(invalidInputGroups.length).toBe(4);
+        expect(invalidInputGroups.length).toBe(6);
 
         const requiredInputGroups = fixture.debugElement.nativeElement.querySelectorAll(`.igx-input-group--required`);
-        expect(requiredInputGroups.length).toBe(4);
+        expect(requiredInputGroups.length).toBe(6);
     });
 
     it('When updating two inputs with same attribute names through ngModel, label should responds', fakeAsync(() => {
@@ -696,7 +696,7 @@ describe('IgxInput', () => {
         const dom = fix.debugElement;
         const input = fix.componentInstance.input;
         const inputGroup = fix.componentInstance.igxInputGroup.element.nativeElement;
-        const formGroup: FormGroup = fix.componentInstance.reactiveForm;
+        const formGroup: UntypedFormGroup = fix.componentInstance.reactiveForm;
 
         // interaction test - expect actual asterisk
         // The only way to get a pseudo elements like :before OR :after is to use getComputedStyle(element [, pseudoElt]),
@@ -755,20 +755,156 @@ describe('IgxInput', () => {
         expect(asterisk).toBe('"*"');
         expect(input.nativeElement.attributes.getNamedItem('aria-required').nodeValue).toEqual('true');
     }));
+
+    it('should not hold old file input value in form after clearing the input', () => {
+        const fixture = TestBed.createComponent(FileInputFormComponent);
+        fixture.detectChanges();
+
+        const form = fixture.componentInstance.formWithFileInput;
+        const igxInput = fixture.componentInstance.input;
+        const igxInputGroup = fixture.componentInstance.igxInputGroup;
+        const inputElement = igxInput.nativeElement;
+
+        expect(igxInput.value).toEqual('');
+        expect(form.controls['fileInput'].value).toEqual('');
+
+        const list = new DataTransfer();
+        const file = new File(["content"], "filename.jpg");
+        list.items.add(file);
+        const myFileList = list.files;
+
+        inputElement.files = myFileList;
+        inputElement.dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+
+        expect(igxInput.value).toEqual('C:\\fakepath\\filename.jpg');
+        expect(form.controls['fileInput'].value).toEqual('C:\\fakepath\\filename.jpg')
+
+        const clearButton = igxInputGroup.element.nativeElement.querySelector('.igx-input-group__clear-icon');
+        expect(clearButton).toBeDefined();
+
+        UIInteractions.simulateClickEvent(clearButton);
+        fixture.detectChanges();
+
+        expect(igxInput.value).toEqual('');
+        expect(form.controls['fileInput'].value).toEqual('');
+    });
+
+    it('should not hold old file input value after clearing the input when ngModel is used', () => {
+        const fixture = TestBed.createComponent(FileInputFormComponent);
+        fixture.detectChanges();
+
+        const igxInput = fixture.componentInstance.inputWithNgModel;
+        const igxInputGroup = fixture.componentInstance.igxInputGroupNgModel;
+        const inputElement = igxInput.nativeElement;
+        const model = fixture.componentInstance.model;
+
+        expect(igxInput.value).toEqual('');
+        expect(model.inputValue).toEqual(null);
+
+        const list = new DataTransfer();
+        const file = new File(["content"], "filename.jpg");
+        list.items.add(file);
+        const myFileList = list.files;
+
+        inputElement.files = myFileList;
+        inputElement.dispatchEvent(new Event('input'));
+        fixture.detectChanges();
+
+        expect(igxInput.value).toEqual('C:\\fakepath\\filename.jpg');
+        expect(model.inputValue).toEqual('C:\\fakepath\\filename.jpg');
+
+        const clearButton = igxInputGroup.element.nativeElement.querySelector('.igx-input-group__clear-icon');
+        expect(clearButton).toBeDefined();
+
+        UIInteractions.simulateClickEvent(clearButton);
+        fixture.detectChanges();
+
+        expect(igxInput.value).toEqual('');
+        expect(model.inputValue).toEqual('');
+    });
+
+    it('Should update validity state when programmatically setting errors on reactive form controls', fakeAsync(() => {
+        const fix = TestBed.createComponent(InputReactiveFormComponent);
+        fix.detectChanges();
+
+        const inputGroup = fix.componentInstance.igxInputGroup.element.nativeElement;
+        const formGroup = fix.componentInstance.reactiveForm;
+
+        // the form control has validators
+        formGroup.markAllAsTouched();
+        formGroup.get('fullName').setErrors({ error: true });
+        fix.detectChanges();
+
+        expect(inputGroup.classList.contains(INPUT_GROUP_INVALID_CSS_CLASS)).toBe(true);
+        expect(inputGroup.classList.contains(INPUT_GROUP_REQUIRED_CSS_CLASS)).toBe(true);
+
+        // remove the validators and check the same
+        fix.componentInstance.removeValidators(formGroup);
+        formGroup.markAsUntouched();
+        tick();
+        fix.detectChanges();
+
+        expect(inputGroup.classList.contains(INPUT_GROUP_INVALID_CSS_CLASS)).toBe(false);
+        expect(inputGroup.classList.contains(INPUT_GROUP_REQUIRED_CSS_CLASS)).toBe(false);
+
+        formGroup.markAllAsTouched();
+        formGroup.get('fullName').setErrors({ error: true });
+        fix.detectChanges();
+
+        // no validator, but there is a set error
+        expect(inputGroup.classList.contains(INPUT_GROUP_INVALID_CSS_CLASS)).toBe(true);
+        expect(inputGroup.classList.contains(INPUT_GROUP_REQUIRED_CSS_CLASS)).toBe(false);
+    }));
+
+    it('should keep state as initial on type when there are no errors and validators on reactive form controls', fakeAsync(() => {
+        const fix = TestBed.createComponent(InputReactiveFormComponent);
+        fix.detectChanges();
+
+        const formGroup = fix.componentInstance.reactiveForm;
+
+        fix.componentInstance.removeValidators(formGroup);
+        formGroup.markAsUntouched();
+        fix.detectChanges();
+
+        const igxInput = fix.componentInstance.input;
+        const inputElement = fix.debugElement.query(By.directive(IgxInputDirective)).nativeElement;
+
+        dispatchInputEvent('focus', inputElement, fix);
+        dispatchInputEvent('blur', inputElement, fix);
+
+        const inputGroupElement = fix.debugElement.query(By.css('igx-input-group')).nativeElement;
+        expect(inputGroupElement.classList.contains(INPUT_GROUP_VALID_CSS_CLASS)).toBe(false);
+        expect(inputGroupElement.classList.contains(INPUT_GROUP_INVALID_CSS_CLASS)).toBe(false);
+        expect(inputGroupElement.classList.contains(INPUT_GROUP_FILLED_CSS_CLASS)).toBe(false);
+        expect(igxInput.valid).toBe(IgxInputState.INITIAL);
+
+        dispatchInputEvent('focus', inputElement, fix);
+        igxInput.value = 'test';
+        fix.detectChanges();
+
+        expect(inputGroupElement.classList.contains(INPUT_GROUP_INVALID_CSS_CLASS)).toBe(false);
+        expect(inputGroupElement.classList.contains(INPUT_GROUP_VALID_CSS_CLASS)).toBe(false);
+        expect(inputGroupElement.classList.contains(INPUT_GROUP_FILLED_CSS_CLASS)).toBe(true);
+
+        expect(igxInput.valid).toBe(IgxInputState.INITIAL);
+    }));
 });
 
 @Component({
     template: `
-                    <form>
-                        <igx-input-group #igxInputGroup>
-                            <label for="firstName" #igxLabel igxLabel>Name</label>
-                            <input name="firstName" [(ngModel)]="model.firstName" type="text" igxInput />
-                        </igx-input-group>
-                        <igx-input-group #igxInputGroup>
-                            <label for="firstName" #igxLabel igxLabel>Name</label>
-                            <input name="firstName" [(ngModel)]="model.firstName"  type="text" igxInput />
-                        </igx-input-group>
-                    </form>` })
+    <form>
+        <igx-input-group #igxInputGroup>
+            <label for="firstName" #igxLabel igxLabel>Name</label>
+            <input name="firstName" [(ngModel)]="model.firstName" type="text" igxInput />
+        </igx-input-group>
+        <igx-input-group #igxInputGroup>
+            <label for="firstName" #igxLabel igxLabel>Name</label>
+            <input name="firstName" [(ngModel)]="model.firstName"  type="text" igxInput />
+        </igx-input-group>
+    </form>`,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, FormsModule]
+})
 class InputsWithSameNameAttributesComponent {
     @ViewChildren('igxInputGroup') public igxInputGroup: QueryList<DebugElement>;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
@@ -780,57 +916,81 @@ class InputsWithSameNameAttributesComponent {
 
 
 @Component({
-    template: `<igx-input-group #igxInputGroup>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" #igxInput type="text" igxInput />
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group #igxInputGroup>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" #igxInput type="text" igxInput />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class InputComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
 }
 
 @Component({
-    template: `<igx-input-group>
-                            <label for="test" igxLabel>Test</label>
-                            <textarea name="test" igxInput></textarea>
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group>
+        <label for="test" igxLabel>Test</label>
+        <textarea name="test" igxInput></textarea>
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class TextareaComponent {
 }
 
 @Component({
-    template: `<igx-input-group>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" placeholder="Test" #igxInput type="text" igxInput />
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" placeholder="Test" #igxInput type="text" igxInput />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class InputWithPlaceholderComponent {
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
 }
 
 @Component({
-    template: `<igx-input-group #igxInputGroup>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" #igxInput type="text" igxInput value="Test" />
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group #igxInputGroup>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" #igxInput type="text" igxInput value="Test" />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class FilledInputComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
 }
 
 @Component({
-    template: `<igx-input-group #igxInputGroup>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" #igxInput type="text" igxInput value="Test" disabled="disabled" />
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group #igxInputGroup>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" #igxInput type="text" igxInput value="Test" disabled="disabled" />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class DisabledInputComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
 }
 
 @Component({
-    template: `<igx-input-group #igxInputGroup>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" #igxInput type="text" igxInput required="required" />
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group #igxInputGroup>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" #igxInput type="text" igxInput required="required" />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class RequiredInputComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
@@ -838,9 +998,11 @@ class RequiredInputComponent {
 
 @Component({
     template: `<igx-input-group #igxInputGroup>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" #igxInput type="text" igxInput [(ngModel)]="user.firstName" required="required" />
-                        </igx-input-group>` })
+                    <label for="test" igxLabel>Test</label>
+                    <input name="test" #igxInput type="text" igxInput [(ngModel)]="user.firstName" required="required" />
+                </igx-input-group>`,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, FormsModule]
+})
 class RequiredTwoWayDataBoundInputComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
@@ -851,46 +1013,49 @@ class RequiredTwoWayDataBoundInputComponent {
 }
 
 @Component({
-    template: `<igx-input-group #igxInputGroupNotFilledUndefined>
-                            <label for="not-filled-undefined" igxLabel>Not Filled Undefined</label>
-                            <input name="not-filled-undefined" igxInput [(ngModel)]="notFilledUndefined" />
-                        </igx-input-group>
+    template: `
+    <igx-input-group #igxInputGroupNotFilledUndefined>
+        <label for="not-filled-undefined" igxLabel>Not Filled Undefined</label>
+        <input name="not-filled-undefined" igxInput [(ngModel)]="notFilledUndefined" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupNotFilledNull>
-                            <label for="not-filled-null" igxLabel>Not Filled Null</label>
-                            <input name="not-filled-null" igxInput [(ngModel)]="notFilledNull" />
-                        </igx-input-group>
+    <igx-input-group #igxInputGroupNotFilledNull>
+        <label for="not-filled-null" igxLabel>Not Filled Null</label>
+        <input name="not-filled-null" igxInput [(ngModel)]="notFilledNull" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupNotFilledEmpty>
-                            <label for="not-filled-empty" igxLabel>Not Filled Empty</label>
-                            <input name="not-filled-empty" igxInput [(ngModel)]="notFilledEmpty" />
-                        </igx-input-group>
+    <igx-input-group #igxInputGroupNotFilledEmpty>
+        <label for="not-filled-empty" igxLabel>Not Filled Empty</label>
+        <input name="not-filled-empty" igxInput [(ngModel)]="notFilledEmpty" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupFilledString>
-                            <label for="filled-string" igxLabel>Filled String</label>
-                            <input name="filled-string" igxInput [(ngModel)]="user.firstName" />
-                        </igx-input-group>
+    <igx-input-group #igxInputGroupFilledString>
+        <label for="filled-string" igxLabel>Filled String</label>
+        <input name="filled-string" igxInput [(ngModel)]="user.firstName" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupFilledNumber>
-                            <label for="filled-number" igxLabel>Filled Number</label>
-                            <input name="filled-number" igxInput [(ngModel)]="user.age" />
-                        </igx-input-group>
+    <igx-input-group #igxInputGroupFilledNumber>
+        <label for="filled-number" igxLabel>Filled Number</label>
+        <input name="filled-number" igxInput [(ngModel)]="user.age" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupFilledBoolFalse>
-                            <label for="filled-bool-false" igxLabel>Filled Bool False</label>
-                            <input name="filled-bool-false" igxInput [(ngModel)]="user.vegetarian" />
-                        </igx-input-group>
+    <igx-input-group #igxInputGroupFilledBoolFalse>
+        <label for="filled-bool-false" igxLabel>Filled Bool False</label>
+        <input name="filled-bool-false" igxInput [(ngModel)]="user.vegetarian" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupFilledBoolTrue>
-                            <label for="filled-bool-true" igxLabel>Filled Bool True</label>
-                            <input name="filled-bool-true" igxInput [(ngModel)]="user.smoker" />
-                        </igx-input-group>
+    <igx-input-group #igxInputGroupFilledBoolTrue>
+        <label for="filled-bool-true" igxLabel>Filled Bool True</label>
+        <input name="filled-bool-true" igxInput [(ngModel)]="user.smoker" />
+    </igx-input-group>
 
-                        <igx-input-group #igxInputGroupFilledDate>
-                            <label for="filled-date" igxLabel>Filled Date</label>
-                            <input name="filled-date" igxInput [(ngModel)]="user.birthDate" />
-                        </igx-input-group>
-                        `})
+    <igx-input-group #igxInputGroupFilledDate>
+        <label for="filled-date" igxLabel>Filled Date</label>
+        <input name="filled-date" igxInput [(ngModel)]="user.birthDate" />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, FormsModule]
+})
 class InitiallyFilledInputComponent {
     @ViewChild('igxInputGroupNotFilledUndefined', { static: true }) public igxInputGroupNotFilledUndefined: IgxInputGroupComponent;
     @ViewChild('igxInputGroupNotFilledNull', { static: true }) public igxInputGroupNotFilledNull: IgxInputGroupComponent;
@@ -915,10 +1080,14 @@ class InitiallyFilledInputComponent {
 }
 
 @Component({
-    template: `<igx-input-group #igxInputGroup>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" #igxInput type="text" igxInput [disabled]="disabled" />
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group #igxInputGroup>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" #igxInput type="text" igxInput [disabled]="disabled" />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
+})
 class DataBoundDisabledInputComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild(IgxInputDirective, { static: true }) public igxInput: IgxInputDirective;
@@ -927,10 +1096,13 @@ class DataBoundDisabledInputComponent {
 }
 
 @Component({
-    template: `<igx-input-group #igxInputGroup>
-                    <label for="test" igxLabel>Test</label>
-                    <input name="test" #igxInput type="text" igxInput disabled />
-                </igx-input-group>`
+    template: `
+    <igx-input-group #igxInputGroup>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" #igxInput type="text" igxInput disabled />
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective]
 })
 class DataBoundDisabledInputWithoutValueComponent extends DataBoundDisabledInputComponent {
     public changeDisabledState() {
@@ -939,8 +1111,8 @@ class DataBoundDisabledInputWithoutValueComponent extends DataBoundDisabledInput
 }
 
 @Component({
-    template:
-        `<form class="wrapper" [formGroup]="form">
+    template: `
+    <form class="wrapper" [formGroup]="form">
         <section>
         <igx-input-group>
             <label igxLabel>single line</label>
@@ -963,7 +1135,21 @@ class DataBoundDisabledInputWithoutValueComponent extends DataBoundDisabledInput
             <input type="number" formControlName="num" igxInput igxMask="###">
         </igx-input-group>
         </section>
-    </form>`
+    </form>
+    <form>
+        <section>
+            <igx-input-group>
+                <label igxLabel>single line</label>
+                <input type="text" [formControl]="inputControl" igxInput>
+            </igx-input-group>
+            <igx-input-group>
+                <label igxLabel>multi line</label>
+                <textarea type="text" [formControl]="textareaControl" igxInput></textarea>
+            </igx-input-group>
+        </section>
+    </form>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, IgxMaskDirective, ReactiveFormsModule]
 })
 class ReactiveFormComponent {
     @ViewChild('strinput', { static: true, read: IgxInputDirective }) public strIgxInput: IgxInputDirective;
@@ -975,7 +1161,10 @@ class ReactiveFormComponent {
         num: [null, Validators.required]
     });
 
-    constructor(private fb: FormBuilder) { }
+    public inputControl = new FormControl('', [Validators.required]);
+    public textareaControl = new FormControl('', [Validators.required]);
+
+    constructor(private fb: UntypedFormBuilder) { }
 
     public markAsTouched() {
         if (!this.form.valid) {
@@ -986,18 +1175,28 @@ class ReactiveFormComponent {
                 }
             }
         }
+
+        this.inputControl.markAsTouched();
+        this.inputControl.updateValueAndValidity();
+
+        this.textareaControl.markAsTouched();
+        this.textareaControl.updateValueAndValidity();
     }
 }
 
 @Component({
-    template: `<igx-input-group>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" type="text" igxInput [(ngModel)]="data" [required]="isRequired"/>
-                        </igx-input-group>
-                        <igx-input-group>
-                            <label for="test" igxLabel>Test</label>
-                            <input name="test" type="text" igxInput [value]="data1" [required]="isRequired"/>
-                        </igx-input-group>` })
+    template: `
+    <igx-input-group>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" type="text" igxInput [(ngModel)]="data" [required]="isRequired"/>
+    </igx-input-group>
+    <igx-input-group>
+        <label for="test" igxLabel>Test</label>
+        <input name="test" type="text" igxInput [value]="data1" [required]="isRequired"/>
+    </igx-input-group>
+    `,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, FormsModule]
+})
 class ToggleRequiredWithNgModelInputComponent {
     @ViewChildren(IgxInputDirective)
     public igxInputs: QueryList<IgxInputDirective>;
@@ -1020,26 +1219,27 @@ class ToggleRequiredWithNgModelInputComponent {
                 </igx-suffix>
             </igx-input-group>
         </form>
-`
+`,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, IgxSuffixDirective, IgxIconComponent, ReactiveFormsModule]
 })
 
 class InputReactiveFormComponent {
     @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
     @ViewChild('inputReactive', { read: IgxInputDirective }) public input: IgxInputDirective;
-    public reactiveForm: FormGroup;
+    public reactiveForm: UntypedFormGroup;
 
     public validationType = {
         fullName: [Validators.required]
     };
 
-    constructor(fb: FormBuilder) {
+    constructor(fb: UntypedFormBuilder) {
         this.reactiveForm = fb.group({
-            fullName: new FormControl('', Validators.required)
+            fullName: new UntypedFormControl('', Validators.required)
         });
     }
     public onSubmitReactive() { }
 
-    public removeValidators(form: FormGroup) {
+    public removeValidators(form: UntypedFormGroup) {
         for (const key in form.controls) {
             if (form.controls.hasOwnProperty(key)) {
                 form.get(key).clearValidators();
@@ -1048,7 +1248,7 @@ class InputReactiveFormComponent {
         }
     }
 
-    public addValidators(form: FormGroup) {
+    public addValidators(form: UntypedFormGroup) {
         for (const key in form.controls) {
             if (form.controls.hasOwnProperty(key)) {
                 form.get(key).setValidators(this.validationType[key]);
@@ -1068,6 +1268,39 @@ class InputReactiveFormComponent {
                 }
             }
         }
+    }
+}
+
+@Component({
+    template: `
+        <form [formGroup]="formWithFileInput" (ngSubmit)="onSubmit()">
+            <igx-input-group #igxInputGroup>
+                <input igxInput #fileInput name="fileInput" type="file" formControlName="fileInput" />
+                <label igxLabel for="fileInput">File Name</label>
+            </igx-input-group>
+        </form>
+        <igx-input-group #igxInputGroupNgModel>
+            <input igxInput #inputNgModel name="inputNgModel" type="file" [(ngModel)]="model.inputValue"/>
+            <label igxLabel for="inputNgModel">File Name</label>
+        </igx-input-group>
+`,
+    imports: [IgxInputGroupComponent, IgxLabelDirective, IgxInputDirective, ReactiveFormsModule, FormsModule]
+})
+
+class FileInputFormComponent {
+    @ViewChild('igxInputGroup', { static: true }) public igxInputGroup: IgxInputGroupComponent;
+    @ViewChild('fileInput', { read: IgxInputDirective }) public input: IgxInputDirective;
+    @ViewChild('igxInputGroupNgModel', { static: true }) public igxInputGroupNgModel: IgxInputGroupComponent;
+    @ViewChild('inputNgModel', { read: IgxInputDirective }) public inputWithNgModel: IgxInputDirective;
+    public formWithFileInput: UntypedFormGroup;
+    public model = {
+        inputValue: null
+    };
+
+    constructor(fb: UntypedFormBuilder) {
+        this.formWithFileInput = fb.group({
+            fileInput: new UntypedFormControl('')
+        });
     }
 }
 

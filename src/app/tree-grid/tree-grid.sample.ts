@@ -1,37 +1,48 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
-import { IgxTreeGridComponent, IgxExcelExporterService, IgxCsvExporterService,
-    IgxCsvExporterOptions, IgxExcelExporterOptions, CsvFileTypes, GridSelectionMode, DisplayDensity, TreeGridFilteringStrategy } from 'igniteui-angular';
+import { Component, ViewChild, OnInit, HostBinding } from '@angular/core';
+import { NgIf, NgFor } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import { HIERARCHICAL_SAMPLE_DATA } from '../shared/sample-data';
+import { GridSearchBoxComponent } from '../grid-search-box/grid-search-box.component';
+import { IgxButtonGroupComponent, IgxTreeGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarExporterComponent, IgxExcelTextDirective, IgxCSVTextDirective, IgxPaginatorComponent, IgxSwitchComponent, IgxButtonDirective, IgxToggleActionDirective, IgxDropDownItemNavigationDirective, IgxDropDownComponent, IgxDropDownItemComponent, GridSelectionMode, TreeGridFilteringStrategy, IgxExcelExporterService, IgxCsvExporterService, IgxExcelExporterOptions, IgxCsvExporterOptions, CsvFileTypes } from 'igniteui-angular';
+
 
 @Component({
     providers: [],
     selector: 'app-tree-grid-sample',
-    styleUrls: ['tree-grid.sample.css'],
-    templateUrl: 'tree-grid.sample.html'
+    styleUrls: ['tree-grid.sample.scss'],
+    templateUrl: 'tree-grid.sample.html',
+    imports: [IgxButtonGroupComponent, IgxTreeGridComponent, IgxGridToolbarComponent, GridSearchBoxComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarExporterComponent, IgxExcelTextDirective, IgxCSVTextDirective, NgIf, IgxPaginatorComponent, IgxSwitchComponent, FormsModule, IgxButtonDirective, IgxToggleActionDirective, IgxDropDownItemNavigationDirective, IgxDropDownComponent, NgFor, IgxDropDownItemComponent]
 })
 
 export class TreeGridSampleComponent implements OnInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { static: true }) public grid1: IgxTreeGridComponent;
 
     public data: Array<any>;
     public columns: Array<any>;
     public selectionMode;
-    public density: DisplayDensity = 'comfortable';
-    public displayDensities;
+    public size = 'large';
+    public sizes;
     public selectionModes: GridSelectionMode[] = ['none', 'single', 'multiple', 'multipleCascade'];
     public filterStrategy = new TreeGridFilteringStrategy(['ID']);
+    public paging = false;
 
     private nextRow = 1;
 
-    constructor(private excelExporterService: IgxExcelExporterService,
-        private csvExporterService: IgxCsvExporterService) { }
-    
+    constructor(private excelExporterService: IgxExcelExporterService, private csvExporterService: IgxCsvExporterService) {
+
+    }
+
     public ngOnInit(): void {
         this.selectionMode = GridSelectionMode.multiple;
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }
+        this.sizes = [
+            { label: 'small', selected: this.size === 'small', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'large', selected: this.size === 'large', togglable: true }
         ];
 
         this.columns = [
@@ -66,7 +77,7 @@ export class TreeGridSampleComponent implements OnInit {
     }
 
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public addChildRow() {

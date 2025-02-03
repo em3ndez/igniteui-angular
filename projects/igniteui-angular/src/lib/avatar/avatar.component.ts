@@ -1,32 +1,31 @@
-import { CommonModule } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import {
     Component,
     ElementRef,
     HostBinding,
     Input,
-    NgModule,
     OnInit,
     TemplateRef,
     ViewChild
 } from '@angular/core';
-import { IgxIconModule } from '../icon/public_api';
-import { mkenum } from '../core/utils';
+
+import { mkenum, normalizeURI } from '../core/utils';
+import { IgxIconComponent } from '../icon/icon.component';
 
 let NEXT_ID = 0;
-export const IgxAvatarSize = mkenum({
+export const IgxAvatarSize = /*@__PURE__*/mkenum({
     SMALL: 'small',
     MEDIUM: 'medium',
     LARGE: 'large'
 });
 export type IgxAvatarSize = (typeof IgxAvatarSize)[keyof typeof IgxAvatarSize];
 
-export const IgxAvatarType = mkenum({
+export const IgxAvatarType = /*@__PURE__*/mkenum({
     INITIALS: 'initials',
     IMAGE: 'image',
     ICON: 'icon',
     CUSTOM: 'custom'
 });
-
 export type IgxAvatarType = (typeof IgxAvatarType)[keyof typeof IgxAvatarType];
 
 /**
@@ -47,13 +46,14 @@ export type IgxAvatarType = (typeof IgxAvatarType)[keyof typeof IgxAvatarType];
  *
  * @example
  * ```html
- * <igx-avatar initials="MS" [roundShape]="true" size="large">
+ * <igx-avatar initials="MS" shape="rounded" size="large">
  * </igx-avatar>
  * ```
  */
 @Component({
     selector: 'igx-avatar',
-    templateUrl: 'avatar.component.html'
+    templateUrl: 'avatar.component.html',
+    imports: [IgxIconComponent, NgTemplateOutlet]
 })
 export class IgxAvatarComponent implements OnInit {
     /**
@@ -117,18 +117,28 @@ export class IgxAvatarComponent implements OnInit {
     public id = `igx-avatar-${NEXT_ID++}`;
 
     /**
-     * Sets a round shape to the avatar, if `[roundShape]` is set to `true`.
-     * By default the shape of the avatar is a square.
+     * Sets square, rounded or circular shape to the avatar.
+     * By default the shape of the avatar is square.
      *
      * @example
      * ```html
-     * <igx-avatar [roundShape]="true" ></igx-avatar>
+     * <igx-avatar shape="rounded"></igx-avatar>
      * ```
      */
-
-    @HostBinding('class.igx-avatar--rounded')
     @Input()
-    public roundShape = false;
+    public shape: 'square' | 'rounded' | 'circle' = 'square';
+
+    /** @hidden @internal */
+    @HostBinding('class.igx-avatar--rounded')
+    public get isRounded(): boolean {
+        return this.shape === 'rounded';
+    }
+
+    /** @hidden @internal */
+    @HostBinding('class.igx-avatar--circle')
+    public get isCircle(): boolean {
+        return this.shape === 'circle';
+    }
 
     /**
      * Sets the color of the avatar's initials or icon.
@@ -137,6 +147,7 @@ export class IgxAvatarComponent implements OnInit {
      * ```html
      * <igx-avatar color="blue"></igx-avatar>
      * ```
+     * @deprecated in version 17.2.0.
      */
 
     @HostBinding('style.color')
@@ -151,6 +162,7 @@ export class IgxAvatarComponent implements OnInit {
      * <igx-avatar bgColor="yellow"></igx-avatar>
      * ```
      * @igxFriendlyName Background color
+     * @deprecated in version 17.2.0.
      */
 
     @HostBinding('style.background')
@@ -189,7 +201,13 @@ export class IgxAvatarComponent implements OnInit {
      * @igxFriendlyName Image URL
      */
     @Input()
-    public src: string;
+    public set src(value: string) {
+        this._src = normalizeURI(value);
+    }
+
+    public get src() {
+        return this._src;
+    }
 
     /** @hidden @internal */
     @ViewChild('defaultTemplate', { read: TemplateRef, static: true })
@@ -211,7 +229,9 @@ export class IgxAvatarComponent implements OnInit {
      * @hidden
      * @internal
      */
-    private _size: string | IgxAvatarSize = IgxAvatarSize.SMALL;
+    private _size: string | IgxAvatarSize;
+    private _src: string;
+
     /**
      * Returns the size of the avatar.
      *
@@ -222,7 +242,7 @@ export class IgxAvatarComponent implements OnInit {
      */
     @Input()
     public get size(): string | IgxAvatarSize {
-        return this._size;
+        return this._size || IgxAvatarSize.SMALL;
     }
 
     /**
@@ -244,22 +264,6 @@ export class IgxAvatarComponent implements OnInit {
             default:
                 this._size = 'small';
         }
-    }
-
-    /** @hidden @internal */
-    @HostBinding('class.igx-avatar--small')
-    public get _isSmallSize(): boolean {
-        return this.size === 'small';
-    }
-    /** @hidden @internal */
-    @HostBinding('class.igx-avatar--medium')
-    public get _isMediumSize(): boolean {
-        return this.size === 'medium';
-    }
-    /** @hidden @internal */
-    @HostBinding('class.igx-avatar--large')
-    public get _isLargeSize(): boolean {
-        return this.size === 'large';
     }
 
     /**
@@ -302,6 +306,13 @@ export class IgxAvatarComponent implements OnInit {
         return this.type === IgxAvatarType.INITIALS;
     }
 
+    @HostBinding('style.--component-size')
+    protected get componentSize() {
+        if (this._size) {
+            return `var(--ig-size-${this._size})`;
+        }
+    }
+
     /**
      * Returns the template of the avatar.
      *
@@ -330,7 +341,7 @@ export class IgxAvatarComponent implements OnInit {
      * @internal
      */
     public getSrcUrl() {
-        return `url(${this.src})`;
+        return `url("${this.src}")`;
     }
 
     /** @hidden @internal */
@@ -353,12 +364,3 @@ export class IgxAvatarComponent implements OnInit {
     }
 }
 
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxAvatarComponent],
-    exports: [IgxAvatarComponent],
-    imports: [CommonModule, IgxIconModule]
-})
-export class IgxAvatarModule { }

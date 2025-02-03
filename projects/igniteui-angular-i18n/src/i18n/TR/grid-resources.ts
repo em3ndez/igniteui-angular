@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsTR_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Turkish resource strings for IgxGrid
+ */
+export const GridResourceStringsTR = {
     igx_grid_groupByArea_message: 'Bir sütun başlığını sürükleyin ve o sütuna göre gruplandırmak için buraya bırakın.',
     igx_grid_groupByArea_select_message: 'Alan adı {0} ve değeri {1} olan gruptaki tüm satırları seçin.',
     igx_grid_groupByArea_deselect_message: 'Gruptaki {0} alan adına ve {1} değerine sahip tüm satırların seçimini kaldırın.',
@@ -89,7 +92,8 @@ const GridResourceStringsTR_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Boole filtresi',
     igx_grid_excel_currency_filter: 'Para birimi filtresi',
     igx_grid_excel_custom_filter: 'Özel filtre...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Eşleşme yok',
+    igx_grid_excel_matches_count: '{0} eşleşme',
     igx_grid_advanced_filter_title: 'Gelişmiş Filtreleme',
     igx_grid_advanced_filter_and_group: '"Ve" Grubu',
     igx_grid_advanced_filter_or_group: '"Veya" Grubu',
@@ -112,6 +116,7 @@ const GridResourceStringsTR_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Tümünün Sabitlemesini Kaldır',
     igx_grid_row_edit_btn_done: 'Bitti',
     igx_grid_row_edit_btn_cancel: 'İptal',
+    igx_grid_row_edit_text: 'Bu satırda {0} değişikliğiniz ve {1} gizli sütununuz var',
     igx_grid_toolbar_actions_filter_prompt: 'Sütun listesini filtrele ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Sütun sabitleme açılır menüsünü aç',
     igx_grid_toolbar_hiding_button_tooltip: 'Sütun gizleme açılır menüsünü aç',
@@ -134,33 +139,35 @@ const GridResourceStringsTR_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Sabitlemeyi Kaldır',
     igx_grid_actions_jumpUp_label: 'Yukarı atla',
     igx_grid_actions_jumpDown_label: 'Aşağı atla',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
+    igx_grid_pivot_date_dimension_total: 'Tüm Dönemler',
+    igx_grid_pivot_aggregate_count: 'Sayı',
     igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Turkish resource strings for IgxGrid
- */
-export const GridResourceStringsTR = GridResourceStringsTR_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_aggregate_max: 'Maksimum',
+    igx_grid_pivot_aggregate_sum: 'Toplam',
+    igx_grid_pivot_aggregate_avg: 'Ortalama',
+    igx_grid_pivot_aggregate_date_latest: 'Son tarih',
+    igx_grid_pivot_aggregate_date_earliest: 'En erken tarih',
+    igx_grid_pivot_aggregate_time_latest: 'Son zaman',
+    igx_grid_pivot_aggregate_time_earliest: 'En erken zaman',
+    igx_grid_pivot_empty_row_drop_area: 'Satır Alanlarını Buraya Bırakın.',
+    igx_grid_pivot_empty_column_drop_area: 'Sütun Alanlarını Buraya Bırakın.',
+    igx_grid_pivot_empty_filter_drop_area: 'Filtre Alanlarını Buraya Bırakın.',
+    igx_grid_pivot_empty_value_drop_area: 'Değer Alanlarını Buraya Bırakın.',
+    igx_grid_pivot_row_drop_chip: 'Satır olarak kullanmak için buraya bırakın',
+    igx_grid_pivot_column_drop_chip: 'Sütun olarak kullanmak için buraya bırakın',
+    igx_grid_pivot_filter_drop_chip: 'Filtre olarak kullanmak için buraya bırakın',
+    igx_grid_pivot_value_drop_chip: 'Değer olarak kullanmak için buraya bırakın',
+    igx_grid_pivot_selector_filters: 'Filtreler',
+    igx_grid_pivot_selector_rows: 'Satırlar',
+    igx_grid_pivot_selector_columns: 'Sütunlar',
+    igx_grid_pivot_selector_values: 'Değerler',
+    igx_grid_pivot_selector_panel_empty: 'Öğeleri buraya sürükleyin',
+    igx_grid_pivot_empty_message: 'Pivot Kılavuz boyutları ve değerleri yoktur.',
+    igx_grid_required_validation_error: 'Bu alan gereklidir',
+    igx_grid_min_validation_error: 'En az {0} değeri girilmelidir',
+    igx_grid_max_validation_error: 'En fazla {0} değeri girilmelidir',
+    igx_grid_min_length_validation_error: 'Giriş en az {0} karakter uzunluğunda olmalıdır',
+    igx_grid_max_length_validation_error: 'Giriş, {0} karakterden uzun olmamalıdır',
+    igx_grid_email_validation_error: 'Geçerli bir e-posta adresi girilmelidir',
+    igx_grid_pattern_validation_error: 'Giriş, gerekli modelle eşleşmiyor'
+} satisfies MakeRequired<IGridResourceStrings>;

@@ -17,7 +17,10 @@ import { IgxColumnResizingService } from './resizing.service';
  * @hidden
  * @internal
  */
-@Directive({ selector: '[igxResizeHandle]' })
+@Directive({
+    selector: '[igxResizeHandle]',
+    standalone: true
+})
 export class IgxResizeHandleDirective implements AfterViewInit, OnDestroy {
 
     /**
@@ -41,14 +44,6 @@ export class IgxResizeHandleDirective implements AfterViewInit, OnDestroy {
     constructor(protected zone: NgZone,
         protected element: ElementRef,
         public colResizingService: IgxColumnResizingService) { }
-
-    /**
-     * @hidden
-     */
-    @HostListener('mouseover')
-    public onMouseOver() {
-        this.colResizingService.resizeCursor = 'col-resize';
-    }
 
     /**
      * @hidden

@@ -1,7 +1,7 @@
 import { Component, ViewChild, OnInit, NgZone, DebugElement } from '@angular/core';
 import { TestBed, fakeAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxColumnComponent, IgxGridComponent, IgxGridModule, IGridCellEventArgs } from './public_api';
+import { IgxGridComponent } from './public_api';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { SampleTestData } from '../../test-utils/sample-test-data.spec';
@@ -12,6 +12,8 @@ import { VirtualGridComponent, NoScrollsComponent,
 import { GridFunctions } from '../../test-utils/grid-functions.spec';
 import { TestNgZone } from '../../test-utils/helper-utils.spec';
 import { CellType } from '../common/grid.interface';
+import { NgFor } from '@angular/common';
+import { IGridCellEventArgs, IgxColumnComponent } from '../public_api';
 
 describe('IgxGrid - Cell component #grid', () => {
 
@@ -23,22 +25,19 @@ describe('IgxGrid - Cell component #grid', () => {
         let firstCellElem: CellType;
 
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    NoScrollsComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, NoScrollsComponent]
             });
         }));
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(NoScrollsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
             cellElem = GridFunctions.getRowCells(fix, 0)[0];
             firstCell = grid.getCellByColumn(0, 'ID');
             firstCellElem = grid.gridAPI.get_cell_by_index(0, 'ID');
-        }));
+        });
 
         it('@Input properties and getters', () => {
             expect(firstCell.column.index).toEqual(grid.columnList.first.index);
@@ -125,16 +124,15 @@ describe('IgxGrid - Cell component #grid', () => {
 
         it('Should trigger contextMenu event when right click into cell', () => {
             spyOn(grid.contextMenu, 'emit').and.callThrough();
-            const event = new Event('contextmenu');
+            const event = new Event('contextmenu', { bubbles: true });
             cellElem.nativeElement.dispatchEvent(event);
-            const args: IGridCellEventArgs = {
-                cell: grid.getCellByColumn(0, 'ID'),
-                event
-            };
 
             fix.detectChanges();
             expect(grid.contextMenu.emit).toHaveBeenCalledTimes(1);
-            expect(grid.contextMenu.emit).toHaveBeenCalledWith(args);
+            expect(grid.contextMenu.emit).toHaveBeenCalledWith(jasmine.objectContaining({
+                cell: jasmine.anything(),
+                row: jasmine.anything()
+            }));
         });
 
         it('Should trigger doubleClick event when double click into cell', () => {
@@ -159,12 +157,9 @@ describe('IgxGrid - Cell component #grid', () => {
         let grid: IgxGridComponent;
 
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    VirtualGridComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
-                providers: [{ provide: NgZone, useFactory: () =>  new TestNgZone() }]
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, VirtualGridComponent],
+                providers: [{ provide: NgZone, useFactory: () => new TestNgZone() }]
             });
         }));
 
@@ -275,15 +270,12 @@ describe('IgxGrid - Cell component #grid', () => {
 
     describe('iOS tests', () => {
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    NoScrollsComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, NoScrollsComponent]
             });
         }));
 
-        it('Should not attach doubletap handler for non-iOS', fakeAsync(/** height/width setter rAF */() => {
+        it('Should not attach doubletap handler for non-iOS', () => {
             const addListenerSpy = spyOn(HammerGesturesManager.prototype, 'addEventListener');
             const platformUtil: PlatformUtil = TestBed.inject(PlatformUtil);
             const oldIsIOS = platformUtil.isIOS;
@@ -294,9 +286,9 @@ describe('IgxGrid - Cell component #grid', () => {
             expect(addListenerSpy).not.toHaveBeenCalled();
 
             platformUtil.isIOS = oldIsIOS;
-        }));
+        });
 
-        it('Should handle doubletap on iOS, trigger doubleClick event', fakeAsync(/** height/width setter rAF */() => {
+        it('Should handle doubletap on iOS, trigger doubleClick event', () => {
             const addListenerSpy = spyOn(HammerGesturesManager.prototype, 'addEventListener');
             const platformUtil: PlatformUtil = TestBed.inject(PlatformUtil);
             const oldIsIOS = platformUtil.isIOS;
@@ -329,37 +321,31 @@ describe('IgxGrid - Cell component #grid', () => {
             expect(grid.doubleClick.emit).toHaveBeenCalledWith(args);
 
             platformUtil.isIOS = oldIsIOS;
-        }));
+        });
     });
 
     describe('No column widths', () => {
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    NoColumnWidthGridComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule]
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, NoColumnWidthGridComponent]
             });
         }));
 
-        it('should not make last column width 0 when no column width is set', fakeAsync(/** height/width setter rAF */() => {
+        it('should not make last column width 0 when no column width is set', () => {
             const fix = TestBed.createComponent(NoColumnWidthGridComponent);
             fix.detectChanges();
-            const columns = fix.componentInstance.grid.columnList;
-            const lastCol: IgxColumnComponent = columns.last;
+            const columns = fix.componentInstance.grid.columns;
+            const lastCol: IgxColumnComponent = columns[columns.length - 1];
             lastCol._cells.forEach((cell) => {
                 expect(cell.nativeElement.clientWidth).toBeGreaterThan(100);
             });
-        }));
+        });
     });
 
     describe('Cells styles', () => {
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    ConditionalCellStyleTestComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule]
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, ConditionalCellStyleTestComponent]
             });
         }));
 
@@ -388,11 +374,8 @@ describe('IgxGrid - Cell component #grid', () => {
 
     describe('Cell properties', () => {
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    IgxGridDateTimeColumnComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule]
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, IgxGridDateTimeColumnComponent]
             });
         }));
 
@@ -435,6 +418,7 @@ describe('IgxGrid - Cell component #grid', () => {
         </igx-column>
     </igx-grid>`,
     styleUrls: ['../../test-utils/grid-cell-style-testing.scss'],
+    imports: [IgxGridComponent, IgxColumnComponent, NgFor]
 })
 export class ConditionalCellStyleTestComponent implements OnInit {
     @ViewChild('grid', { static: true }) public grid: IgxGridComponent;

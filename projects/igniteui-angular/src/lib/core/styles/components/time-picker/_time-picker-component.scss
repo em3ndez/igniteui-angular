@@ -1,14 +1,8 @@
 @use '../../base' as *;
 @use 'sass:string';
 
-////
-/// @group components
+/// @access private
 /// @author <a href="https://github.com/simeonoff" target="_blank">Simeon Simeonoff</a>
-/// @requires {mixin} bem-block
-/// @requires {mixin} bem-elem
-/// @requires {mixin} bem-mod
-////
-
 @mixin component {
     @include b(igx-time-picker) {
         $this: bem--selector-to-string(&);
@@ -26,8 +20,8 @@
             @extend %time-picker__header !optional;
         }
 
-        @include e(header-ampm) {
-            @extend %time-picker__header-ampm !optional;
+        @include e(wrapper) {
+            @extend %time-picker__wrapper !optional;
         }
 
         @include e(header-hour){
@@ -96,6 +90,18 @@
 
             @include e(header) {
                 @extend %time-picker__header--vertical !optional;
+            }
+
+            @include e(main) {
+                @extend %time-picker__main--vertical !optional;
+            }
+
+            @include e(body) {
+                @extend %time-picker__body--vertical !optional;
+            }
+
+            @include e(buttons) {
+                @extend %time-picker__buttons--vertical !optional;
             }
         }
     }

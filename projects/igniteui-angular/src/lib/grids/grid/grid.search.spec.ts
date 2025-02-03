@@ -1,6 +1,6 @@
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { IgxGridModule, IgxGridComponent } from './public_api';
+import { IgxGridComponent } from './public_api';
 import { BasicGridSearchComponent } from '../../test-utils/grid-base-components.spec';
 import { SampleTestData } from '../../test-utils/sample-test-data.spec';
 import { GridWithAvatarComponent, GroupableGridSearchComponent, ScrollableGridSearchComponent } from '../../test-utils/grid-samples.spec';
@@ -11,37 +11,41 @@ import { configureTestSuite } from '../../test-utils/configure-suite';
 import { wait, UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { GridColumnDataType } from '../../data-operations/data-util';
-import { setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
+import { clearGridSubs, setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
 import { IgxTextHighlightDirective } from '../../directives/text-highlight/text-highlight.directive';
 import { GridFunctions } from '../../test-utils/grid-functions.spec';
+import { firstValueFrom } from 'rxjs';
 
-describe('IgxGrid - search API #grid - ', () => {
+describe('IgxGrid - search API #grid', () => {
     const CELL_CSS_CLASS = '.igx-grid__td';
     const HIGHLIGHT_CSS_CLASS = '.igx-highlight';
     const HIGHLIGHT_ACTIVE_CSS_CLASS = '.igx-highlight__active';
-    let fix; let component; let grid: IgxGridComponent; let fixNativeElement;
+    let fix: ComponentFixture<any>;
+    let component; let grid: IgxGridComponent; let fixNativeElement;
 
-    configureTestSuite((() => {
+    configureTestSuite();
+
+    beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 BasicGridSearchComponent,
                 GridWithAvatarComponent,
                 GroupableGridSearchComponent,
                 ScrollableGridSearchComponent
-            ],
-            imports: [IgxGridModule, NoopAnimationsModule]
-        });
-    }));
+            ]
+        }).compileComponents();
+    }))
 
     describe('BasicGrid - ', () => {
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(BasicGridSearchComponent);
             fix.componentInstance.data = SampleTestData.personJobDataFull();
             fix.detectChanges();
             component = fix.componentInstance;
             grid = component.grid;
             fixNativeElement = fix.debugElement.nativeElement;
-        }));
+        });
 
         it('Should clear all highlights', () => {
             const count = grid.findNext('software');
@@ -281,22 +285,17 @@ describe('IgxGrid - search API #grid - ', () => {
             expect(activeHighlight).toBe(highlights[0]);
         });
 
-        xit('Should scroll properly when using paging', fakeAsync(() => {
+        xit('Should scroll properly when using paging', () => {
             fix.componentInstance.paging = true;
-            fix.detectChanges();
             grid.height = '240px';
-            fix.detectChanges();
-            grid.perPage = 7;
-            tick(100);
+            grid.paginator.perPage = 7;
             fix.detectChanges();
 
             const searchString = 'assoc';
             grid.findNext(searchString);
             fix.detectChanges();
-            tick(100);
-            fix.detectChanges();
 
-            expect(grid.page).toBe(0);
+            expect(grid.paginator.page).toBe(0);
             let activeHighlight = getActiveHighlight();
             let highlights = getHighlights();
             expect(activeHighlight).not.toBeNull();
@@ -304,7 +303,7 @@ describe('IgxGrid - search API #grid - ', () => {
 
             grid.findNext(searchString);
             fix.detectChanges();
-            expect(grid.page).toBe(1);
+            expect(grid.paginator.page).toBe(1);
             activeHighlight = getActiveHighlight();
             highlights = getHighlights();
             expect(activeHighlight).not.toBeNull();
@@ -312,12 +311,12 @@ describe('IgxGrid - search API #grid - ', () => {
 
             grid.findPrev(searchString);
             fix.detectChanges();
-            expect(grid.page).toBe(0);
+            expect(grid.paginator.page).toBe(0);
             activeHighlight = getActiveHighlight();
             highlights = getHighlights();
             expect(activeHighlight).not.toBeNull();
             expect(highlights.length).toBe(1);
-        }));
+        });
 
         it('Hidden columns shouldn\'t be part of the search', () => {
             grid.columnList.get(1).hidden = true;
@@ -398,7 +397,7 @@ describe('IgxGrid - search API #grid - ', () => {
             let highlights = getHighlights();
             expect(highlights.length).toBe(3);
             verifyActiveHighlight(0);
-            expect(grid.lastSearchInfo.matchInfoCache.length).toBe(3);
+            expect(grid.lastSearchInfo.matchCount).toBe(3);
             expect(grid.lastSearchInfo.activeMatchIndex).toBe(0);
 
             grid.columnList.get(1).hidden = true;
@@ -406,7 +405,7 @@ describe('IgxGrid - search API #grid - ', () => {
             highlights = getHighlights();
             expect(highlights.length).toBe(1);
             verifyActiveHighlight(0);
-            expect(grid.lastSearchInfo.matchInfoCache.length).toBe(1);
+            expect(grid.lastSearchInfo.matchCount).toBe(1);
             expect(grid.lastSearchInfo.activeMatchIndex).toBe(0);
         });
 
@@ -567,7 +566,7 @@ describe('IgxGrid - search API #grid - ', () => {
             verifyActiveHighlight(0);
         });
 
-        it('Active highlight should be preserved when all rows are filtered out', fakeAsync(() => {
+        it('Active highlight should be preserved when all rows are filtered out', () => {
             grid.height = '500px';
             fix.detectChanges();
 
@@ -588,13 +587,14 @@ describe('IgxGrid - search API #grid - ', () => {
             highlights = getHighlights();
             expect(highlights.length).toBe(1);
             verifyActiveHighlight(0);
-        }));
+        });
 
         it('Active highlight should be preserved when a column is moved', () => {
             grid.findNext('casey');
 
             const columns = grid.columnList.toArray();
             grid.moveColumn(columns[0], columns[1]);
+            fix.detectChanges();
 
             const highlights = getHighlights();
             expect(highlights.length).toBe(1);
@@ -723,7 +723,7 @@ describe('IgxGrid - search API #grid - ', () => {
     });
 
     describe('ScrollableGrid - ', () => {
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ScrollableGridSearchComponent);
             component = fix.componentInstance;
             grid = component.grid;
@@ -735,7 +735,11 @@ describe('IgxGrid - search API #grid - ', () => {
             grid.height = '600px';
             fixNativeElement = fix.debugElement.nativeElement;
             fix.detectChanges();
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('findNext scrolls to cells out of view', async () => {
             grid.findNext('30');
@@ -859,30 +863,30 @@ describe('IgxGrid - search API #grid - ', () => {
             fix.detectChanges();
             let activeHighlight = getActiveHighlight();
             expect(activeHighlight).not.toBeNull();
-            expect(grid.page).toBe(0);
+            expect(grid.paginator.page).toBe(0);
 
-            grid.perPage = 9;
+            grid.paginator.perPage = 9;
             fix.detectChanges();
             activeHighlight = getActiveHighlight();
             expect(activeHighlight).toBeNull();
             expect(grid.page).toBe(0);
 
-            grid.page = 1;
+            grid.paginator.page = 1;
             fix.detectChanges();
             activeHighlight = getActiveHighlight();
             expect(activeHighlight).not.toBeNull();
         });
     });
 
-    describe('GroupableGrid - ', () => {
-        beforeEach(fakeAsync(() => {
+    describe('Groupable Grid', () => {
+        beforeEach(() => {
             fix = TestBed.createComponent(GroupableGridSearchComponent);
             fix.detectChanges();
 
             component = fix.componentInstance;
             grid = component.grid;
             fixNativeElement = fix.debugElement.nativeElement;
-        }));
+        });
 
         it('Should be able to navigate through highlights with grouping enabled', () => {
             grid.groupBy({
@@ -979,7 +983,7 @@ describe('IgxGrid - search API #grid - ', () => {
             });
             fix.componentInstance.paging = true;
             fix.detectChanges();
-            grid.perPage = 6;
+            grid.paginator.perPage = 6;
             fix.detectChanges();
 
             grid.findNext('Software');
@@ -987,14 +991,14 @@ describe('IgxGrid - search API #grid - ', () => {
             let spans = getSpans();
             expect(spans.length).toBe(2);
             verifyActiveSpan(0);
-            expect(grid.page).toBe(0);
+            expect(grid.paginator.page).toBe(0);
 
             grid.findPrev('Software');
             fix.detectChanges();
             spans = getSpans();
             verifyActiveSpan(1);
             expect(spans.length).toBe(2);
-            expect(grid.page).toBe(2);
+            expect(grid.paginator.page).toBe(2);
 
             grid.findPrev('Software');
             grid.findPrev('Software');
@@ -1002,7 +1006,7 @@ describe('IgxGrid - search API #grid - ', () => {
             spans = getSpans();
             expect(spans.length).toBe(1);
             verifyActiveSpan(0);
-            expect(grid.page).toBe(1);
+            expect(grid.paginator.page).toBe(1);
         });
 
         it('Should be able to properly handle perPage changes with grouping and paging', () => {
@@ -1014,7 +1018,7 @@ describe('IgxGrid - search API #grid - ', () => {
                 ignoreCase: true,
                 strategy: DefaultSortingStrategy.instance()
             });
-            grid.perPage = 16;
+            grid.paginator.perPage = 16;
             grid.cdr.detectChanges();
             fix.detectChanges();
 
@@ -1025,9 +1029,9 @@ describe('IgxGrid - search API #grid - ', () => {
             let spans = getSpans();
             verifyActiveSpan(2);
             expect(spans.length).toBe(5);
-            expect(grid.page).toBe(0);
+            expect(grid.paginator.page).toBe(0);
 
-            grid.perPage = 8;
+            grid.paginator.perPage = 8;
             fix.detectChanges();
             spans = getSpans();
             const activeSpan = getActiveSpan();
@@ -1035,7 +1039,7 @@ describe('IgxGrid - search API #grid - ', () => {
             expect(activeSpan).toBeNull();
             expect(grid.page).toBe(0);
 
-            grid.page = 1;
+            grid.paginator.page = 1;
             fix.detectChanges();
             spans = getSpans();
             verifyActiveSpan(0);
@@ -1075,7 +1079,6 @@ describe('IgxGrid - search API #grid - ', () => {
 
         it('Should be able to navigate through highlights when scrolling with grouping enabled', async () => {
             grid.height = '500px';
-            await wait();
             fix.detectChanges();
 
             grid.groupBy({
@@ -1090,7 +1093,7 @@ describe('IgxGrid - search API #grid - ', () => {
             fix.detectChanges();
 
             (grid as any).scrollTo(9, 0);
-            await wait(16);
+            await firstValueFrom(grid.verticalScrollContainer.chunkLoad);
             fix.detectChanges();
             const row = grid.gridAPI.get_row_by_index(9);
             const spans = row.nativeElement.querySelectorAll(HIGHLIGHT_CSS_CLASS);
@@ -1109,7 +1112,7 @@ describe('IgxGrid - search API #grid - ', () => {
             });
             fix.detectChanges();
             grid.findNext('Casey');
-            await wait(30);
+            await wait(100);
             fix.detectChanges();
             let row = grid.gridAPI.get_row_by_index(17);
             let spans = row.nativeElement.querySelectorAll(HIGHLIGHT_CSS_CLASS);
@@ -1118,7 +1121,7 @@ describe('IgxGrid - search API #grid - ', () => {
             grid.toggleAllGroupRows();
             fix.detectChanges();
             (grid as any).scrollTo(0, 0);
-            await wait();
+            await wait(100);
             fix.detectChanges();
             grid.toggleGroup(grid.groupsRecords[0]);
             fix.detectChanges();
@@ -1126,7 +1129,7 @@ describe('IgxGrid - search API #grid - ', () => {
             fix.detectChanges();
 
             grid.findNext('Casey');
-            await wait();
+            await wait(100);
             fix.detectChanges();
             row = grid.gridAPI.get_row_by_index(11);
             spans = row.nativeElement.querySelectorAll(HIGHLIGHT_CSS_CLASS);
@@ -1142,7 +1145,7 @@ describe('IgxGrid - search API #grid - ', () => {
             });
             fix.componentInstance.paging = true;
             fix.detectChanges();
-            grid.perPage = 8;
+            grid.paginator.perPage = 8;
             fix.detectChanges();
             grid.findNext('software');
             grid.findNext('software');
@@ -1153,7 +1156,7 @@ describe('IgxGrid - search API #grid - ', () => {
             let spans = getSpans();
             expect(spans.length).toBe(3);
             verifyActiveSpan(0);
-            expect(grid.page).toBe(1);
+            expect(grid.paginator.page).toBe(1);
 
             grid.findNext('software');
             grid.findNext('software');
@@ -1163,7 +1166,7 @@ describe('IgxGrid - search API #grid - ', () => {
             expect(spans.length).toBe(2);
             verifyActiveSpan(0);
             expect(grid.isExpandedGroup(grid.groupsRecords[0])).toBeTruthy();
-            expect(grid.page).toBe(0);
+            expect(grid.paginator.page).toBe(0);
         });
 
         it('Should highlight search results in pinned and unpinned row areas separately', () => {
@@ -1199,11 +1202,11 @@ describe('IgxGrid - search API #grid - ', () => {
     });
 
     describe('Grid with Avatar - ', () => {
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(GridWithAvatarComponent);
             grid = fix.componentInstance.grid;
             fix.detectChanges();
-        }));
+        });
 
         it('Cells with no text should be excluded from the search', () => {
             const matches = grid.findNext('https');

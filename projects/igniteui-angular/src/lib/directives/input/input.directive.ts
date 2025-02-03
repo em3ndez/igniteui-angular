@@ -11,10 +11,10 @@ import {
     Optional,
     Renderer2,
     Self,
+    booleanAttribute,
 } from '@angular/core';
 import {
     AbstractControl,
-    FormControlName,
     NgControl,
     NgModel
 } from '@angular/forms';
@@ -61,10 +61,9 @@ export enum IgxInputState {
 @Directive({
     selector: '[igxInput]',
     exportAs: 'igxInput',
+    standalone: true
 })
 export class IgxInputDirective implements AfterViewInit, OnDestroy {
-    private static ngAcceptInputType_required: boolean | '';
-    private static ngAcceptInputType_disabled: boolean | '';
     /**
      * Sets/gets whether the `"igx-input-group__input"` class is added to the host element.
      * Default value is `false`.
@@ -100,6 +99,7 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
 
     private _valid = IgxInputState.INITIAL;
     private _statusChanges$: Subscription;
+    private _valueChanges$: Subscription;
     private _fileNames: string;
     private _disabled = false;
 
@@ -108,8 +108,8 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
         @Optional() @Self() @Inject(NgModel) protected ngModel: NgModel,
         @Optional()
         @Self()
-        @Inject(FormControlName)
-        protected formControl: FormControlName,
+        @Inject(NgControl)
+        protected formControl: NgControl,
         protected element: ElementRef<HTMLInputElement>,
         protected cdr: ChangeDetectorRef,
         protected renderer: Renderer2
@@ -157,10 +157,10 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
      * </input-group>
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     @HostBinding('disabled')
     public set disabled(value: boolean) {
-        this._disabled = this.inputGroup.disabled = !!((value as any === '') || value);
+        this._disabled = this.inputGroup.disabled = value;
         if (this.focused && this._disabled) {
             // Browser focus may not fire in good time and mess with change detection, adjust here in advance:
             this.inputGroup.isFocused = false;
@@ -190,9 +190,9 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
      * </input-group>
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public set required(value: boolean) {
-        this.nativeElement.required = this.inputGroup.isRequired = (value as any === '') || value;
+        this.nativeElement.required = this.inputGroup.isRequired = value;
     }
 
     /**
@@ -263,6 +263,7 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
 
     /** @hidden @internal */
     public clear() {
+        this.ngControl?.control?.setValue('');
         this.nativeElement.value = null;
         this._fileNames = '';
     }
@@ -305,6 +306,10 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
             this._statusChanges$ = this.ngControl.statusChanges.subscribe(
                 this.onStatusChanged.bind(this)
             );
+
+            this._valueChanges$ = this.ngControl.valueChanges.subscribe(
+                this.onValueChanged.bind(this)
+            );
         }
 
         this.cdr.detectChanges();
@@ -313,6 +318,10 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
     public ngOnDestroy() {
         if (this._statusChanges$) {
             this._statusChanges$.unsubscribe();
+        }
+
+        if (this._valueChanges$) {
+            this._valueChanges$.unsubscribe();
         }
     }
     /**
@@ -345,30 +354,37 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
         }
         this.updateValidityState();
     }
+
+    /** @hidden @internal */
+    protected onValueChanged() {
+        if (this._fileNames && !this.value) {
+            this._fileNames = '';
+        }
+    }
+
     /**
      * @hidden
      * @internal
      */
     protected updateValidityState() {
         if (this.ngControl) {
-            if (this.ngControl.control.validator || this.ngControl.control.asyncValidator) {
-                // Run the validation with empty object to check if required is enabled.
-                const error = this.ngControl.control.validator({} as AbstractControl);
-                this.inputGroup.isRequired = error && error.required;
-                if (!this.disabled && (this.ngControl.control.touched || this.ngControl.control.dirty)) {
-                    // the control is not disabled and is touched or dirty
-                    this._valid = this.ngControl.invalid ?
-                        IgxInputState.INVALID : this.focused ? IgxInputState.VALID :
-                            IgxInputState.INITIAL;
+            if (!this.disabled && this.isTouchedOrDirty) {
+                if (this.hasValidators) {
+                    // Run the validation with empty object to check if required is enabled.
+                    const error = this.ngControl.control.validator({} as AbstractControl);
+                    this.inputGroup.isRequired = error && error.required;
+                    if (this.focused) {
+                        this._valid = this.ngControl.valid ? IgxInputState.VALID : IgxInputState.INVALID;
+                    } else {
+                        this._valid = this.ngControl.valid ? IgxInputState.INITIAL : IgxInputState.INVALID;
+                    }
                 } else {
-                    //  if control is untouched, pristine, or disabled its state is initial. This is when user did not interact
-                    //  with the input or when form/control is reset
-                    this._valid = IgxInputState.INITIAL;
+                    // If validator is dynamically cleared, reset label's required class(asterisk) and IgxInputState #10010
+                    this.inputGroup.isRequired = false;
+                    this._valid = this.ngControl.valid ? IgxInputState.INITIAL : IgxInputState.INVALID;
                 }
             } else {
-                // If validator is dynamically cleared, reset label's required class(asterisk) and IgxInputState #10010
                 this._valid = IgxInputState.INITIAL;
-                this.inputGroup.isRequired = false;
             }
             this.renderer.setAttribute(this.nativeElement, 'aria-required', this.required.toString());
             const ariaInvalid = this.valid === IgxInputState.INVALID;
@@ -377,6 +393,15 @@ export class IgxInputDirective implements AfterViewInit, OnDestroy {
             this.checkNativeValidity();
         }
     }
+
+    private get isTouchedOrDirty(): boolean {
+        return (this.ngControl.control.touched || this.ngControl.control.dirty);
+    }
+
+    private get hasValidators(): boolean {
+        return (!!this.ngControl.control.validator || !!this.ngControl.control.asyncValidator);
+    }
+
     /**
      * Gets whether the igxInput has a placeholder.
      *

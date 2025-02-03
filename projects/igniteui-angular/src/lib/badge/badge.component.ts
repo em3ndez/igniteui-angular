@@ -1,14 +1,14 @@
-import { CommonModule } from '@angular/common';
-import { Component, HostBinding, Input, NgModule } from '@angular/core';
-import { IgxIconModule } from '../icon/public_api';
+import { NgIf } from '@angular/common';
+import { booleanAttribute, Component, HostBinding, Input } from '@angular/core';
 import { mkenum } from '../core/utils';
+import { IgxIconComponent } from '../icon/icon.component';
 
 let NEXT_ID = 0;
 
 /**
  * Determines the igxBadge type
  */
-export const IgxBadgeType = mkenum({
+export const IgxBadgeType = /*@__PURE__*/mkenum({
     PRIMARY: 'primary',
     INFO: 'info',
     SUCCESS: 'success',
@@ -40,7 +40,8 @@ export type IgxBadgeType = (typeof IgxBadgeType)[keyof typeof IgxBadgeType];
  */
 @Component({
     selector: 'igx-badge',
-    templateUrl: 'badge.component.html'
+    templateUrl: 'badge.component.html',
+    imports: [NgIf, IgxIconComponent]
 })
 export class IgxBadgeComponent {
 
@@ -106,6 +107,12 @@ export class IgxBadgeComponent {
     public icon: string;
 
     /**
+     * The name of the icon set. Used in case the icon is from a different icon set.
+     */
+    @Input()
+    public iconSet: string;
+
+    /**
      * Sets/gets the role attribute value.
      *
      * @example
@@ -120,7 +127,7 @@ export class IgxBadgeComponent {
     public role = 'status';
 
     /**
-     * Sets/gets the the css class to use on the badge.
+     * Sets/gets the css class to use on the badge.
      *
      * @example
      * ```typescript
@@ -132,6 +139,24 @@ export class IgxBadgeComponent {
      */
     @HostBinding('class.igx-badge')
     public cssClass = 'igx-badge';
+
+    /**
+     * Sets a square shape to the badge, if `shape` is set to `square`.
+     * By default the shape of the badge is rounded.
+     *
+     * @example
+     * ```html
+     * <igx-badge shape="square"></igx-badge>
+     * ```
+     */
+    @Input()
+    public shape: 'rounded' | 'square' = 'rounded';
+
+    /** @hidden @internal */
+    @HostBinding('class.igx-badge--square')
+    public get _squareShape(): boolean {
+        return this.shape === 'square';
+    }
 
     /**
      * Sets/gets the aria-label attribute value.
@@ -146,6 +171,19 @@ export class IgxBadgeComponent {
      */
     @HostBinding('attr.aria-label')
     public label = 'badge';
+
+    /**
+     * Sets/gets whether the badge is outlined.
+     * Default value is `false`.
+     *
+     * @example
+     * ```html
+     * <igx-badge outlined></igx-badge>
+     * ```
+     */
+    @Input({transform: booleanAttribute})
+    @HostBinding('class.igx-badge--outlined')
+    public outlined = false;
 
     /**
      * Defines a human-readable, accessor, author-localized description for
@@ -184,13 +222,3 @@ export class IgxBadgeComponent {
         return this.type === IgxBadgeType.ERROR;
     }
 }
-
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxBadgeComponent],
-    exports: [IgxBadgeComponent],
-    imports: [CommonModule, IgxIconModule]
-})
-export class IgxBadgeModule { }

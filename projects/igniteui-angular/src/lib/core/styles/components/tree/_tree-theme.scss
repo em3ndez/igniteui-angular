@@ -1,8 +1,7 @@
-@use '../../base' as *;
-@use '../../themes/schemas' as *;
-@use '../../typography/base' as *;
 @use 'sass:map';
 @use 'sass:meta';
+@use '../../base' as *;
+@use '../../themes/schemas' as *;
 
 ////
 /// @group themes
@@ -11,10 +10,10 @@
 ////
 
 /// Returns a map containing all style properties related to the theming of the tree component.
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} background [null] - The background color used for the tree node.
 /// @param {Color} foreground [null] - The color used for the tree node content.
+/// @param {Color} icon-color [null] - The color used for the tree node icon.
 /// @param {Color} background-selected [null] - The background color used for the selected tree node.
 /// @param {Color} foreground-selected [null] - The color used for the content of the selected tree node.
 /// @param {Color} background-active [null] - The background color used for the active tree node.
@@ -25,17 +24,16 @@
 /// @param {Color} foreground-disabled [null] - The color used for the content of the disabled tree node.
 /// @param {Color} drop-area-color [null] - The background color used for the tree node drop aria.
 /// @param {Color} border-color [null] - The outline shadow color used for tree node in focus state.
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-/// @requires text-contrast
+/// @param {Color} hover-color [null] - The background color used for the tree node on hover.
+/// @param {Color} hover-selected-color [null] - The background color used for the selected tree node on hover.
+/// @requires $light-material-schema
+///
 /// @example scss Change the tree background
 ///   $my-tree-theme: tree-theme($background: magenta);
-///   // Pass the theme to the tree component mixin
-///   @include tree($my-tree-theme);
+///   // Pass the theme to the css-vars() mixin
+///   @include css-vars($my-tree-theme);
 @function tree-theme(
-    $palette: null,
-    $schema: $light-schema,
+    $schema: $light-material-schema,
     $background: null,
     $background-selected: null,
     $background-active: null,
@@ -46,19 +44,25 @@
     $foreground-active: null,
     $foreground-active-selected: null,
     $foreground-disabled: null,
+    $icon-color: null,
     $drop-area-color: null,
     $border-color: null,
+    $hover-color: null,
+    $hover-selected-color: null,
+    $size: null,
 ) {
     $name: 'igx-tree';
+    $selector: 'igx-tree-node';
     $tree-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $tree-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'tree') {
+        $tree-schema: map.get($schema, 'tree');
     } @else {
         $tree-schema: $schema;
     }
 
-    $theme: apply-palette($tree-schema, $palette);
+    $theme: digest-schema($tree-schema);
+    $meta: map.get($theme, '_meta');
 
     @if not($foreground) and $background {
         $foreground: text-contrast($background);
@@ -78,9 +82,10 @@
 
     @return extend($theme, (
         name: $name,
-        palette: $palette,
+        selector: $selector,
         background: $background,
         foreground: $foreground,
+        icon-color: $icon-color,
         background-selected: $background-selected,
         foreground-selected: $foreground-selected,
         background-active: $background-active,
@@ -91,35 +96,69 @@
         foreground-disabled: $foreground-disabled,
         drop-area-color: $drop-area-color,
         border-color: $border-color,
+        hover-color: $hover-color,
+        hover-selected-color: $hover-selected-color,
+        theme: map.get($schema, '_meta', 'theme'),
+        _meta: map.merge(if($meta, $meta, ()), (
+            variant: map.get($schema, '_meta', 'theme')
+        )),
+        size: $size,
     ));
 }
 
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires var-get
 @mixin tree($theme) {
     @include css-vars($theme);
 
-    $left: if-ltr(left, right);
-    $right: if-ltr(right, left);
+    $variant: map.get($theme, '_meta', 'variant');
+    $indigo-theme: $variant == 'indigo';
 
-    $variant: map.get($theme, variant);
-    $indigo-theme: $variant == 'indigo-design';
-
-    $node-indent: (
+    $node-indent-default: (
         comfortable: rem(24px),
         cosy: rem(16px),
         compact: rem(12px)
     );
 
-    $node-height: (
-        comfortable: rem(50px),
-        cosy: rem(40px),
-        compact: rem(32px)
+    $node-indent-indigo: (
+        comfortable: rem(16px),
+        cosy: rem(12px),
+        compact: rem(8px)
     );
 
-    $icon-size: rem(24px);
-    $icon-space: rem(8px);
+    $icon-size-default: rem(24px);
+    $icon-space-default: rem(8px);
+
+    $icon-size-indigo: rem(16px);
+    $icon-space-indigo: rem(4px);
+
+    $node-indent: map.get((
+        'material': $node-indent-default,
+        'fluent': $node-indent-default,
+        'bootstrap': $node-indent-default,
+        'indigo': $node-indent-indigo
+    ), $variant);
+
+    $icon-size: map.get((
+        'material': $icon-size-default,
+        'fluent': $icon-size-default,
+        'bootstrap': $icon-size-default,
+        'indigo': $icon-size-indigo
+    ), $variant);
+
+    $icon-space: map.get((
+        'material': $icon-space-indigo,
+        'fluent': $icon-space-default,
+        'bootstrap': $icon-space-default,
+        'indigo': $icon-space-indigo
+    ), $variant);
+
+    $circular-bar-size: (
+        comfortable: #{$icon-size},
+        cosy: calc(#{$icon-size} - 4px),
+        compact: calc(#{$icon-size} - 6px)
+    );
 
     $drop-indicator-width: (
         comfortable: calc(100% - ((#{map.get($node-indent, 'comfortable')} * 2) + (#{$icon-size} + #{$icon-space}))),
@@ -130,6 +169,7 @@
     %tree-display {
         display: block;
         z-index: 0;
+        overflow-y: auto;
     }
 
     %tree-node,
@@ -141,7 +181,21 @@
     }
 
     %tree-node {
+        @include sizable();
+
+        --component-size: var(--ig-size, #{var-get($theme, 'default-size')});
+        --tree-size: var(--component-size);
         flex-direction: column;
+
+        %cbx-composite-wrapper {
+            @if $variant == 'material' {
+                padding: 0;
+            }
+        }
+
+        @if $variant == 'indigo' {
+            border-radius: rem(4px);
+        }
     }
 
     %node-wrapper,
@@ -152,7 +206,19 @@
 
     %node-toggle-button,
     %node-select {
-        margin-#{$right}: $icon-space;
+        margin-inline-end: $icon-space;
+    }
+
+    @if $variant == 'material' {
+        %node-select {
+            margin-inline: rem(10px) rem(14px);
+        }
+    }
+
+    @if $variant == 'indigo' {
+        %node-select {
+            margin-inline-end: rem(8px);
+        }
     }
 
     %node-content,
@@ -166,24 +232,41 @@
     }
 
     %node-wrapper {
-        min-height: map.get($node-height, 'comfortable');
-        padding: 0 map.get($node-indent, 'comfortable');
+        min-height: var-get($theme, 'size');
+        padding-inline: pad-inline(map.get($node-indent, 'compact'), map.get($node-indent, 'cosy'), map.get($node-indent, 'comfortable'));
+        padding-block: 0;
         position: relative;
         background: var-get($theme, 'background');
         color: var-get($theme, 'foreground');
 
-        // We need this here, since we count on it to calculate the width of the tree drop indicator
+        @if $variant == 'indigo' {
+            border-radius: rem(4px);
+            margin-block-end: rem(4px);
+
+            &::after {
+                border-radius: rem(4px);
+            }
+
+            igx-icon {
+                color: var-get($theme, 'icon-color');
+            }
+        }
+
         igx-icon {
-            width: $icon-size;
-            height: $icon-size;
-            font-size: $icon-size;
+            --component-size: #{if($variant == 'indigo', 2, 3)};
+        }
+
+        [dir='rtl'] & {
+            igx-icon {
+                transform: scaleX(-1);
+            }
         }
 
         &::after {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
+            inset-inline-start: 0;
             width: 100%;
             height: 100%;
             background: transparent;
@@ -194,6 +277,10 @@
             &::after {
                 background: var-get($theme, 'hover-color');
             }
+
+            @if $variant == 'indigo' {
+                color: var-get($theme, 'foreground-active');
+            }
         }
 
         &:focus {
@@ -201,67 +288,38 @@
         }
 
         igx-circular-bar {
-            width: $icon-size;
-            height: $icon-size;
-        }
-
-        &--cosy {
-            min-height: map.get($node-height, 'cosy');
-            padding: 0 map.get($node-indent, 'cosy');
-
-            %node-spacer {
-                width: map.get($node-indent, 'cosy')
-            }
-
-            %node-drop-indicator {
-                #{$right}: map.get($node-indent, 'cosy');
-                width: map.get($drop-indicator-width, 'cosy');
-            }
-
-            igx-circular-bar {
-                width: calc(#{$icon-size} - 4px);
-                height: calc(#{$icon-size} - 4px);
-            }
-        }
-
-        &--compact {
-            min-height: map.get($node-height, 'compact');
-            padding: 0 map.get($node-indent, 'compact');
-
-            %node-spacer {
-                width: map.get($node-indent, 'compact')
-            }
-
-            %node-drop-indicator {
-                #{$right}: map.get($node-indent, 'compact');
-                width: map.get($drop-indicator-width, 'compact');
-            }
-
-            igx-circular-bar {
-                width: calc(#{$icon-size} - 6px);
-                height: calc(#{$icon-size} - 6px);
-            }
+            --circular-bar: #{sizable(#{map.get($circular-bar-size, 'compact')}, #{map.get($circular-bar-size, 'cosy')}, #{map.get($circular-bar-size, 'comfortable')})};
+            width: var(--circular-bar);
+            height: var(--circular-bar);
         }
     }
 
     %node-wrapper--selected {
         background: var-get($theme, 'background-selected');
         color: var-get($theme, 'foreground-selected');
+
+        &:hover {
+            &::after {
+                background: var-get($theme, 'hover-selected-color');
+
+                @if $variant == 'indigo' {
+                    background: var-get($theme, 'hover-color');
+                }
+            }
+        }
     }
 
     %node-wrapper--active {
         background: var-get($theme, 'background-active');
         color: var-get($theme, 'foreground-active');
-    }
 
-    %indigo-opacity {
-        $bg-active: map.get($theme, 'background-active');
+        @if $variant == 'indigo' {
+            &:hover {
+                background: var-get($theme, 'hover-selected-color');
 
-        @if ($indigo-theme) {
-            @if meta.type-of($bg-active) == 'color' and lightness($bg-active) < 50 {
-                opacity: .8;
-            } @else {
-                opacity: .3;
+                &::after {
+                    background: transparent;
+                }
             }
         }
     }
@@ -269,15 +327,35 @@
     %node-wrapper--active-selected {
         background: var-get($theme, 'background-active-selected');
         color: var-get($theme, 'foreground-active-selected');
+
+        @if $variant == 'indigo' {
+            &:hover {
+                background: var-get($theme, 'hover-selected-color');
+            }
+
+            &::after {
+                background: transparent;
+            }
+        }
     }
 
     %node-wrapper--focused {
-        box-shadow: inset 0 0 0 1px var-get($theme, 'border-color');
+        box-shadow: inset 0 0 0 rem(1px) var-get($theme, 'border-color');
+
+        @if $variant == 'indigo' {
+            box-shadow: inset 0 0 0 rem(2px) var-get($theme, 'border-color');
+        }
     }
 
     %node-wrapper--disabled {
         background: var-get($theme, 'background-disabled') !important;
         color: var-get($theme, 'foreground-disabled') !important;
+
+        @if $variant == 'indigo' {
+            igx-icon {
+                color: var-get($theme, 'foreground-disabled') !important;
+            }
+        }
 
         box-shadow: none !important;
 
@@ -293,8 +371,15 @@
     }
 
     %node-spacer {
+        --component-size: var(--tree-size);
+        --spacer: #{sizable(#{map.get($node-indent, 'compact')}, #{map.get($node-indent, 'cosy')}, #{map.get($node-indent, 'comfortable')})};
+
+        @if $variant == 'indigo' {
+            --spacer: #{$icon-size};
+        }
+
+        width: var(--spacer);
         display: inline-block;
-        width: map.get($node-indent, 'comfortable');
     }
 
     %node-content {
@@ -315,9 +400,9 @@
         display: flex;
         visibility: hidden;
         position: absolute;
-        #{$right}: map.get($node-indent, 'comfortable');
+        inset-inline-end: pad(map.get($node-indent, 'compact'), map.get($node-indent, 'cosy'), map.get($node-indent, 'comfortable'));
         bottom: 0;
-        width: map.get($drop-indicator-width, 'comfortable');
+        width: pad(map.get($drop-indicator-width, 'compact'), map.get($drop-indicator-width, 'cosy'), map.get($drop-indicator-width, 'comfortable'));
 
         > div {
             flex: 1;
@@ -334,16 +419,13 @@
 /// Adds typography styles for the igx-tree component.
 /// Uses the 'subtitle-1' category from the typographic scale.
 /// @group typography
-/// @param {Map} $type-scale - A typographic scale as produced by igx-type-scale.
 /// @param {Map} $categories [(label: 'subtitle-1')] - The categories from the typographic scale used for type styles.
-/// @requires {mixin} type-style
 @mixin tree-typography(
-    $type-scale,
     $categories: (label: 'body-2')
 ) {
     $text: map.get($categories, 'label');
 
     %node-content {
-        @include type-style($type-scale, $text)
+        @include type-style($text)
     }
 }

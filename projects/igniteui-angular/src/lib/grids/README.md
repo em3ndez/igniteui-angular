@@ -166,11 +166,9 @@ Below is the list of all inputs that the developers may set to configure the gri
 |`data`|Array|The data source for the grid.|
 |`resourceStrings`| IGridResourceStrings | Resource strings of the grid. |
 |`autoGenerate`|boolean|Autogenerate grid's columns, default value is _false_|
+|`autoGenerateExclude`|Array|A list of property keys to be excluded from the generated column collection, default is _[]_|
 |`batchEditing`|boolean|Toggles batch editing in the grid, default is _false_|
 |`moving`|boolean|Enables the columns moving feature. Defaults to _false_|
-|`paging`|boolean|Enables the paging feature. Defaults to _false_.|
-|`page`| number | The current page index.|
-|`perPage`|number|Visible items per page, default is 15|
 |`allowFiltering`| boolean | Enables quick filtering functionality in the grid. |
 |`allowAdvancedFiltering`| boolean | Enables advanced filtering functionality in the grid. |
 |`filterMode`| `FilterMode` | Determines the filter mode, default value is `quickFilter`.|
@@ -183,8 +181,6 @@ Below is the list of all inputs that the developers may set to configure the gri
 |`rowSelectable`|boolean|Enables multiple row selection, default is _false_.|
 |`height`|string|The height of the grid element. You can pass values such as `1000px`, `75%`, etc.|
 |`width`|string|The width of the grid element. You can pass values such as `1000px`, `75%`, etc.|
-|`evenRowCSS`|string|Additional styling classes applied to all even rows in the grid.|
-|`oddRowCSS`|string|Additional styling classes applied to all odd rows in the grid.|
 |`paginationTemplate`|TemplateRef|You can provide a custom `ng-template` for the pagination part of the grid.|
 |`groupStrategy`| IGridGroupingStrategy | Provides custom group strategy to be used when grouping |
 |`groupingExpressions`| Array | The group by state of the grid.
@@ -236,16 +232,16 @@ A list of the events emitted by the **igx-grid**:
 |`columnInit`|Emitted when the grid columns are initialized. Returns the column object.|
 |`sortingDone`|Emitted when sorting is performed through the UI. Returns the sorting expression.|
 |`filteringDone`|Emitted when filtering is performed through the UI. Returns the filtering expressions tree of the column for which the filtering was performed.|
-|`pagingDone`|Emitted when paging is performed. Returns an object consisting of the previous and the new page.|
 |`rowAdded`|Emitted when a row is being added to the grid through the API. Returns the data for the new row object.|
+|`rowClick`|Emitted when a row is clicked. Returns the row object.|
 |`rowDeleted`|Emitted when a row is deleted through the grid API. Returns the row object being removed.|
 |`dataPreLoad`| Emitted when a new chunk of data is loaded from virtualization. |
 |`columnPin`|Emitted when a column is pinned or unpinned through the grid API. The index that the column is inserted at may be changed through the `insertAtIndex` property. Use `isPinned` to check whether the column is pinned or unpinned.|
 |`columnResized`|Emitted when a column is resized. Returns the column object, previous and new column width.|
-|`contextMenu`|Emitted when a cell is right clicked. Returns the cell object.|
+|`contextMenu`|Emitted when a cell or row is right clicked. Returns the cell or row object.|
 |`doubleClick`|Emitted when a cell is double clicked. Returns the cell object.|
 |`columnVisibilityChanged`| Emitted when `IgxColumnComponent` visibility is changed. Args: { column: any, newValue: boolean } |
-|`onGroupingDone`|Emitted when the grouping state changes as a result of grouping columns, ungrouping columns or a combination of both. Provides an array of `ISortingExpression`, an array of the **newly** grouped columns as `IgxColumnComponent` references and an array of the **newly** ungrouped columns as `IgxColumnComponent` references.|
+|`groupingDone`|Emitted when the grouping state changes as a result of grouping columns, ungrouping columns or a combination of both. Provides an array of `ISortingExpression`, an array of the **newly** grouped columns as `IgxColumnComponent` references and an array of the **newly** ungrouped columns as `IgxColumnComponent` references.|
 |`toolbarExporting`| Emitted when an export process is initiated by the user.|
 | `rowDragStart` | Emitted when the user starts dragging a row. |
 | `rowDragEnd` | Emitted when the user drops a row or cancel the drag. |
@@ -277,7 +273,6 @@ Here is a list of all public methods exposed by **igx-grid**:
 |`updateRow(value: any, rowIndex: number)`|Updates the row object and the data source record with the passed value.|
 |`updateCell(value: any, rowIndex: number, column: string)`|Updates the cell object and the record field in the data source.|
 |`filter(name: string, value: any, conditionOrExpressionTree?: IFilteringOperation | IFilteringExpressionsTree, ignoreCase?: boolean)`|Filters a single column. A filtering condition or filtering expressions tree could be used. Check the available [filtering conditions](#filtering-conditions)|
-|`filterGlobal(value: any, condition?, ignoreCase?)`|Filters all the columns in the grid with the same condition.|
 |`clearFilter(name?: string)`|If `name` is provided, clears the filtering state of the corresponding column, otherwise clears the filtering state of all columns.|
 |`sort(expression: ISortingExpression)`|Sorts a single column.|
 |`sort(expressions: Array)`|Sorts the grid columns based on the provided array of sorting expressions.|
@@ -286,9 +281,6 @@ Here is a list of all public methods exposed by **igx-grid**:
 |`enableSummaries(expressions: Array)`|Enable summaries for the columns and apply your `customSummary` if it is provided.|
 |`disableSummaries(fieldName: string)`|Disable summaries for the specified column.|
 |`disableSummaries(columns: string[])`|Disable summaries for the listed columns.|
-|`previousPage()`|Goes to the previous page if paging is enabled and the current page is not the first.|
-|`nextPage()`|Goes to the next page if paging is enabled and current page is not the last.|
-|`paginate(page: number)`|Goes to the specified page if paging is enabled. Page indices are 0 based.|
 |`markForCheck()`|Manually triggers a change detection cycle for the grid and its children.|
 |`pinColumn(name: string): boolean`|Pins a column by field name. Returns whether the operation is successful.|
 |`unpinColumn(name: string): boolean`|Unpins a column by field name. Returns whether the operation is successful.|
@@ -349,6 +341,8 @@ Inputs available on the **IgxGridColumnComponent** to define columns:
 |`filteringIgnoreCase`|boolean|Ignore capitalization of strings when filtering is applied. Defaults to _true_.|
 |`sortingIgnoreCase`|boolean|Ignore capitalization of strings when sorting is applied. Defaults to _true_.|
 |`dataType`|GridColumnDataType|One of string, number, boolean or Date. When filtering is enabled the filter UI conditions are based on the `dataType` of the column. Defaults to `string` if it is not provided. With `autoGenerate` enabled the grid will try to resolve the correct data type for each column based on the data source.|
+|`editorOptions`|IColumnEditorOptions|Allows to pass optional parameters to control properties of the default column editors.|
+|`pipeArgs`|IFieldPipeArgs|Pass optional parameters for DatePipe and/or DecimalPipe to format the display value for date and numeric columns.|
 |`pinned`|boolean|Set column to be pinned or not|
 |`searchable`|boolean|Determines whether the column is included in the search. If set to false, the cell values for this column will not be included in the results of the search API of the grid (defaults to true)|
 |`groupable`|boolean| Determines whether the column may be grouped via the UI.|

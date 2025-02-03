@@ -1,7 +1,7 @@
 
 import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxTreeGridModule, IgxTreeGridComponent } from './public_api';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { IgxTreeGridComponent } from './public_api';
 import { IgxTreeGridFilteringComponent, IgxTreeGridFilteringESFTemplatesComponent, IgxTreeGridFilteringRowEditingComponent } from '../../test-utils/tree-grid-components.spec';
 import { TreeGridFunctions } from '../../test-utils/tree-grid-functions.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
@@ -10,7 +10,7 @@ import { FilteringStrategy } from '../../data-operations/filtering-strategy';
 import { TreeGridFilteringStrategy, TreeGridFormattedValuesFilteringStrategy, TreeGridMatchingRecordsOnlyFilteringStrategy } from './tree-grid.filtering.strategy';
 import { FilterMode } from '../common/enums';
 import { GridFunctions } from '../../test-utils/grid-functions.spec';
-import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
+import { UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { SampleTestData } from '../../test-utils/sample-test-data.spec';
 import { By } from '@angular/platform-browser';
 
@@ -23,22 +23,18 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 IgxTreeGridFilteringComponent,
                 IgxTreeGridFilteringRowEditingComponent,
                 IgxTreeGridFilteringESFTemplatesComponent
-            ],
-            imports: [
-                BrowserAnimationsModule,
-                IgxTreeGridModule]
-        })
-        .compileComponents();
+            ]
+        }).compileComponents();
     }));
 
-    beforeEach(fakeAsync(/** height/width setter rAF */() => {
+    beforeEach(waitForAsync(() => {
         fix = TestBed.createComponent(IgxTreeGridFilteringComponent);
         fix.detectChanges();
-        tick(16);
         grid = fix.componentInstance.treeGrid;
     }));
 
@@ -304,7 +300,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
         expect(rows.length).toEqual(17, 'Wrong rows count');
     });
 
-    it('\'Blanks\' should be always visible', (async () => {
+    it('\'Blanks\' should be always visible', fakeAsync(() => {
         const formattedStrategy = new TreeGridFormattedValuesFilteringStrategy();
         grid.filterStrategy = formattedStrategy;
         const idFormatter = (val: Date): string => {
@@ -332,7 +328,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
         fix.detectChanges();
 
         GridFunctions.clickExcelFilterIcon(fix, 'HireDate');
-        await wait(100);
+        tick();
         fix.detectChanges();
         let searchComponent = GridFunctions.getExcelFilteringSearchComponent(fix, null, 'igx-tree-grid');
         let items = GridFunctions.getExcelStyleSearchComponentListItems(fix, searchComponent);
@@ -342,12 +338,12 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
         const checkboxes = GridFunctions.getExcelStyleFilteringCheckboxes(fix, null, 'igx-tree-grid');
         checkboxes[0].click();
         checkboxes[2].click();
-        await wait(100);
+        tick();
         GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
         fix.detectChanges();
 
         GridFunctions.clickExcelFilterIcon(fix, 'HireDate');
-        await wait(200);
+        tick();
         fix.detectChanges();
         searchComponent = GridFunctions.getExcelFilteringSearchComponent(fix, null, 'igx-tree-grid');
         items = GridFunctions.getExcelStyleSearchComponentListItems(fix, searchComponent);
@@ -358,10 +354,8 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
     describe('Tree grid ESF', () => {
         let tGrid: IgxTreeGridComponent;
 
-        beforeEach(fakeAsync(() => {
+        beforeEach(waitForAsync(() => {
             fix = TestBed.createComponent(IgxTreeGridFilteringComponent);
-            fix.detectChanges();
-            tick(16);
             tGrid = fix.componentInstance.treeGrid;
 
             const hierarchicalFilterStrategy = new TreeGridFilteringStrategy(['ID']);
@@ -371,43 +365,43 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             fix.detectChanges();
         }));
 
-        it('Should render and expand tree nodes correctly', (async () => {
+        it('Should render and expand tree nodes correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            await wait(100);
             fix.detectChanges();
+            tick();
 
             let treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, null);
             expect(treeItems.length).toBe(4, 'incorrect rendered tree node count');
 
             GridFunctions.clickExcelTreeNodeExpandIcon(fix, 0);
-            await wait(100);
             fix.detectChanges();
+            tick();
 
             treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, null);
             expect(treeItems.length).toBe(6, 'incorrect rendered tree node count');
         }));
 
-        it('Should change arrow icon on expand', fakeAsync (() => {
+        it('Should change arrow icon on expand', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const icon = GridFunctions.getExcelFilterTreeNodeIcon(fix, 0);
             let iconText = icon.children[0].innerText;
-            expect(iconText).toBe('keyboard_arrow_right', 'incorrect rendered icon');
+            expect(iconText).toBe('chevron_right', 'incorrect rendered icon');
 
             GridFunctions.clickExcelTreeNodeExpandIcon(fix, 0);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             iconText = icon.children[0].innerText;
-            expect(iconText).toBe('keyboard_arrow_down', 'incorrect rendered icon');
+            expect(iconText).toBe('expand_more', 'incorrect rendered icon');
         }));
 
-        it('Should display Select All item', (async () => {
+        it('Should display Select All item', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            await wait(100);
             fix.detectChanges();
+            tick();
 
             const label = fix.debugElement.queryAll(By.css(IGX_CHECKBOX_LABEL))[0].nativeElement;
             expect(label.innerText).toBe('Select All');
@@ -415,34 +409,34 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
         it('Should display "Add current selection to filter" item correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             const inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '1', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const label = fix.debugElement.queryAll(By.css(IGX_CHECKBOX_LABEL))[1].nativeElement;
             expect(label.innerText).toBe('Add current selection to filter');
         }));
 
-        it('Should set indeterminate state correctly', fakeAsync (() => {
+        it('Should set indeterminate state correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             GridFunctions.clickExcelTreeNodeExpandIcon(fix, 0);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             let excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
 
             let checkboxes: any[] = GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid');
             checkboxes[2].parentElement.click();
-            tick(100);
             fix.detectChanges();
+            tick();
 
             checkboxes = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
             expect(checkboxes[0].indeterminate && !checkboxes[0].checked).toBe(true);
@@ -452,21 +446,21 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             // Click Select All twice to deselect all items and check only one child item
             checkboxes[0].click();
             checkboxes[0].click();
-            tick(100);
             fix.detectChanges();
+            tick();
 
             checkboxes[2].click();
-            tick(100);
             fix.detectChanges();
+            tick();
 
             // Apply changes and open excel style filter dialog
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             // Verify Select All is indeterminate
             excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
@@ -474,10 +468,10 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             expect(checkboxes[0].indeterminate).toBe(true);
         }));
 
-        it('Should filter items and clear the search component correctly', async () => {
+        it('Should filter items and clear the search component correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            await wait(100);
             fix.detectChanges();
+            tick();
 
             const searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
 
@@ -486,8 +480,8 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
             const inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '6', fix);
-            await wait(100);
             fix.detectChanges();
+            tick();
 
             treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
             expect(treeItems.length).toBe(2, 'incorrect rendered items count');
@@ -500,7 +494,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
             treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
             expect(treeItems.length).toBe(4, 'incorrect rendered items count');
-        });
+        }));
 
         it('Should filter items and clear filters correctly', fakeAsync(() => {
             let gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
@@ -510,8 +504,8 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             expect(gridCellValues.length).toEqual(18);
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             let searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             let treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
@@ -519,15 +513,15 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
             const inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '8', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
             expect(treeItems.length).toBe(4, 'incorrect rendered items count');
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
                 .map(c => c.nativeElement.innerText)
@@ -536,23 +530,23 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             expect(gridCellValues.length).toEqual(7);
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
             const btn = GridFunctions.getExcelFilteringClearFiltersComponent(fix, excelMenu);
             const clearIcon: any = btn.querySelector('igx-icon');
             clearIcon.click();
-            tick(100);
             fix.detectChanges();
+            tick();
 
             searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
             expect(treeItems.length).toBe(4, 'incorrect rendered tree node items count');
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
                 .map(c => c.nativeElement.innerText)
@@ -563,30 +557,30 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
         it('Should update checkboxes after clearing column filters correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             let searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
 
             let inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '8', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
             const btn = GridFunctions.getExcelFilteringClearFiltersComponent(fix, excelMenu);
             const clearIcon: any = btn.querySelector('igx-icon');
             clearIcon.click();
-            tick(100);
             fix.detectChanges();
+            tick();
 
             let checkboxes: any[] = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
             checkboxes.forEach(ch => expect(ch.checked).toBe(true, 'incorrect checkbox state'));
@@ -594,8 +588,8 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '8', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             checkboxes = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
             const addToFilterCheckbox = checkboxes.splice(1,1)[0];
@@ -606,22 +600,22 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
         it('Should filter tree grid correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             const inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
 
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '6', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
             expect(treeItems.length).toEqual(2, 'incorrect rendered items count');
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
                 .map(c => c.nativeElement.innerText)
@@ -630,29 +624,29 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             expect(gridCellValues.length).toEqual(3);
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
-            let checkboxes: any[] = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
+            const checkboxes: any[] = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
             expect(!checkboxes[1].checked && !checkboxes[2].checked && !checkboxes[3].checked && checkboxes[4].indeterminate).toBe(true);
         }));
 
         it('Should add list items to current filtered items when "Add current selection to filter" is selected', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             let searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             let inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
 
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '6', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             let gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
                 .map(c => c.nativeElement.innerText)
@@ -661,25 +655,25 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             expect(gridCellValues.length).toEqual(3);
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
 
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '15', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
             const checkbox = GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid')[1];
             checkbox.click();
-            tick(100);
             fix.detectChanges();
+            tick();
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
                 .map(c => c.nativeElement.innerText)
@@ -690,17 +684,71 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
         it('Should display message when search results are empty', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
-            let searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
-            let inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
+            const searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
+            const inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
 
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '77', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const emptyTextEl = searchComponent.querySelector('.igx-excel-filter__empty');
+            expect(emptyTextEl.innerText).toEqual('No matches');
+        }));
+
+        it('Should display message when there is no data', fakeAsync(() => {
+            const data = tGrid.data;
+            tGrid.data = [];
+            GridFunctions.clickExcelFilterIcon(fix, 'ID');
+            fix.detectChanges();
+            tick();
+
+            let searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
+            let emptyTextEl = searchComponent.querySelector('.igx-excel-filter__empty');
+            expect(emptyTextEl.innerText).toEqual('No matches');
+
+            tGrid.data = data;
+            GridFunctions.clickExcelFilterIcon(fix, 'ID');
+            fix.detectChanges();
+            tick();
+
+            searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
+            emptyTextEl = searchComponent.querySelector('.igx-excel-filter__empty');
+            expect(emptyTextEl).toBeFalsy();
+
+        }));
+
+        it('Should display message when the last row is deleted', fakeAsync(() => {
+            tGrid.data = [];
+            tGrid.primaryKey = 'ID';
+            const row = {
+                ID: 0,
+                Name: 'John Winchester',
+                HireDate: new Date(2008, 3, 20),
+                Age: 55,
+                OnPTO: false,
+                Employees: []
+            };
+            tGrid.addRow(row);
+            fix.detectChanges();
+
+            GridFunctions.clickExcelFilterIcon(fix, 'ID');
+            fix.detectChanges();
+            tick();
+
+            let searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
+            let emptyTextEl = searchComponent.querySelector('.igx-excel-filter__empty');
+            expect(emptyTextEl).toBeFalsy();
+
+            tGrid.deleteRowById(0);
+            GridFunctions.clickExcelFilterIcon(fix, 'ID');
+            fix.detectChanges();
+            tick();
+
+            searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
+            emptyTextEl = searchComponent.querySelector('.igx-excel-filter__empty');
             expect(emptyTextEl.innerText).toEqual('No matches');
         }));
     });
@@ -708,10 +756,8 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
     describe('Tree grid ESF templates', () => {
         let tGrid: IgxTreeGridComponent;
 
-        beforeEach(fakeAsync(() => {
+        beforeEach(waitForAsync(() => {
             fix = TestBed.createComponent(IgxTreeGridFilteringESFTemplatesComponent);
-            fix.detectChanges();
-            tick(16);
             tGrid = fix.componentInstance.treeGrid;
 
             const hierarchicalFilterStrategy = new TreeGridFilteringStrategy(['ID']);
@@ -723,8 +769,8 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
         it('Should use custom templates for ESF components instead of default ones.', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
 
@@ -744,22 +790,22 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
 
         it('Should filter tree grid with templates correctly', fakeAsync(() => {
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const searchComponent = GridFunctions.getExcelStyleSearchComponent(fix, null, 'igx-tree-grid');
             const inputNativeElement = GridFunctions.getExcelStyleSearchComponentInput(fix, searchComponent, 'igx-tree-grid');
 
             UIInteractions.clickAndSendInputElementValue(inputNativeElement, '6', fix);
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const treeItems = GridFunctions.getExcelStyleSearchComponentTreeNodes(fix, searchComponent);
             expect(treeItems.length).toEqual(2, 'incorrect rendered items count');
 
             GridFunctions.clickApplyExcelStyleFiltering(fix, null, 'igx-tree-grid');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const gridCellValues = GridFunctions.getColumnCells(fix, 'ID', 'igx-tree-grid-cell')
                 .map(c => c.nativeElement.innerText)
@@ -768,49 +814,48 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             expect(gridCellValues.length).toEqual(3);
 
             GridFunctions.clickExcelFilterIcon(fix, 'ID');
-            tick(100);
             fix.detectChanges();
+            tick();
 
             const excelMenu = GridFunctions.getExcelStyleFilteringComponent(fix, 'igx-tree-grid');
-            let checkboxes: any[] = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
+            const checkboxes: any[] = Array.from(GridFunctions.getExcelStyleFilteringCheckboxes(fix, excelMenu, 'igx-tree-grid'));
             expect(!checkboxes[1].checked && !checkboxes[2].checked && !checkboxes[3].checked && checkboxes[4].indeterminate).toBe(true);
         }));
 
-        it('Should use custom excel style filter icon instead of default one.', fakeAsync(() => {
+        it('Should use custom excel style filter icon instead of default one.', () => {
             const header = GridFunctions.getColumnHeader('ID', fix);
             fix.detectChanges();
             const icon = GridFunctions.getHeaderFilterIcon(header);
             fix.detectChanges();
             expect(icon).not.toBeNull();
             expect(icon.nativeElement.textContent.toLowerCase().trim()).toBe('filter_alt');
-        }));
+        });
     });
 
     describe('Filtering: Row editing', () => {
         let treeGrid: IgxTreeGridComponent;
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(waitForAsync(() => {
             fix = TestBed.createComponent(IgxTreeGridFilteringRowEditingComponent);
             fix.detectChanges();
-            tick(16);
             treeGrid = fix.componentInstance.treeGrid;
         }));
 
         it('should remove a filtered parent row from the filtered list', fakeAsync(() => {
             const newCellValue = 'John McJohn';
             treeGrid.filter('Name', 'in', IgxStringFilteringOperand.instance().condition('contains'), true);
-            tick(16);
+            tick();
 
             // modify the first filtered node
             const targetCell = treeGrid.getCellByColumn(0, 'Name');
             targetCell.update(newCellValue);
-            tick(16);
+            tick();
             fix.detectChanges();
 
             // verify that the edited row was removed from the filtered list
             expect(treeGrid.filteredData.length).toBe(1);
 
             treeGrid.clearFilter();
-            tick(16);
+            tick();
             fix.detectChanges();
 
             // check if the changes made were preserved
@@ -821,19 +866,19 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             fakeAsync(() => {
                 const newCellValue = 'John McJohn';
                 treeGrid.filter('Name', 'on', IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(16);
+                tick();
 
                 // modify a parent node which has a child that matches the filtering condition
                 const targetCell = treeGrid.getCellByColumn(0, 'Name');
                 targetCell.update(newCellValue);
-                tick(16);
+                tick();
                 fix.detectChanges();
 
                 // verify that the parent node is still in the filtered list
                 expect(treeGrid.filteredData.filter(p => p.Name === targetCell.value).length).toBeGreaterThan(0);
 
                 treeGrid.clearFilter();
-                tick(16);
+                tick();
                 fix.detectChanges();
 
                 // verify the changes were preserved after the filtering is removed
@@ -846,19 +891,19 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
                 const newCellValue = 'John McJohn';
                 const filterValue = 'Langdon';
                 treeGrid.filter('Name', filterValue, IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(16);
+                tick();
 
                 // modify the first child node that meets the filtering condition
                 const targetCell = treeGrid.getCellByColumn(1, 'Name');
                 targetCell.update(newCellValue);
-                tick(16);
+                tick();
                 fix.detectChanges();
 
                 // verify that the parent node is no longer in the filtered list
                 expect(grid.filteredData).toBeFalsy();
 
                 treeGrid.clearFilter();
-                tick(16);
+                tick();
                 fix.detectChanges();
 
                 // verify that there is a parent which contains the updated child node
@@ -872,12 +917,12 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             fakeAsync(() => {
                 const newCellValue = 'Peter Peterson';
                 treeGrid.filter('Name', 'h', IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(16);
+                tick();
 
                 // modify the first child node which meets the filtering condition
                 const targetCell = treeGrid.getCellByColumn(1, 'Name');
                 targetCell.update(newCellValue);
-                tick(16);
+                tick();
                 fix.detectChanges();
 
                 // check if the edited child row is removed
@@ -887,7 +932,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
                 expect(treeGrid.filteredData.filter(p => p.Name === targetCell.row.parent.data.Name).length).toBeGreaterThan(0);
 
                 treeGrid.clearFilter();
-                tick(16);
+                tick();
                 fix.detectChanges();
 
                 // verify that there is a parent which contains the updated child node
@@ -900,7 +945,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             it('should be able to apply custom filter strategy', fakeAsync(() => {
                 expect(treeGrid.filterStrategy).toBeDefined();
                 treeGrid.filter('Name', 'd', IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(30);
+                tick();
                 fix.detectChanges();
 
                 expect(treeGrid.rowList.length).toBe(9);
@@ -914,7 +959,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
                 fix.detectChanges();
 
                 treeGrid.filter('Name', 'd', IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(30);
+                tick();
                 fix.detectChanges();
 
                 expect(treeGrid.rowList.length).toBe(4);
@@ -924,7 +969,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
             it('should display only the filtered records when using TreeGridMatchingRecordsOnlyFilteringStrategy', fakeAsync(() => {
                 expect(treeGrid.filterStrategy).toBeDefined();
                 treeGrid.filter('Name', 'Trevor', IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(30);
+                tick();
                 fix.detectChanges();
 
                 expect(treeGrid.rowList.length).toBe(3);
@@ -934,7 +979,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
                 fix.detectChanges();
 
                 treeGrid.filter('Name', 'Trevor', IgxStringFilteringOperand.instance().condition('contains'), true);
-                tick(30);
+                tick();
                 fix.detectChanges();
 
                 expect(treeGrid.rowList.length).toBe(1);
@@ -943,7 +988,7 @@ describe('IgxTreeGrid - Filtering actions #tGrid', () => {
     });
     class CustomTreeGridFilterStrategy  extends FilteringStrategy {
 
-        public filter(data: [], expressionsTree): any[] {
+        public override filter(data: [], expressionsTree): any[] {
                 const result = [];
                 if (!expressionsTree || !expressionsTree.filteringOperands ||
                     expressionsTree.filteringOperands.length === 0 || !data.length) {

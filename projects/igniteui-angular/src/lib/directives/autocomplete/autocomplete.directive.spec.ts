@@ -2,15 +2,17 @@ import { Component, ViewChild, Pipe, PipeTransform, ElementRef } from '@angular/
 import { TestBed, tick, fakeAsync, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxAutocompleteModule, IgxAutocompleteDirective, AutocompleteOverlaySettings } from './autocomplete.directive';
+import { IgxAutocompleteDirective, AutocompleteOverlaySettings } from './autocomplete.directive';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { IgxInputDirective } from '../input/input.directive';
-import { IgxInputGroupModule, IgxInputGroupComponent } from '../../input-group/public_api';
-import { IgxDropDownModule, IgxDropDownComponent, IgxDropDownItemNavigationDirective } from '../../drop-down/public_api';
-import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { IgxIconModule } from '../../icon/public_api';
+import { IgxInputGroupComponent, IgxLabelDirective, IgxPrefixDirective, IgxSuffixDirective } from '../../input-group/public_api';
+import { IgxDropDownComponent, IgxDropDownItemComponent, IgxDropDownItemNavigationDirective } from '../../drop-down/public_api';
+import { FormsModule, ReactiveFormsModule, UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 import { ConnectedPositioningStrategy, VerticalAlignment, HorizontalAlignment } from '../../services/public_api';
+import { NgFor } from '@angular/common';
+import { IgxRippleDirective } from '../ripple/ripple.directive';
+import { IgxIconComponent } from '../../icon/icon.component';
 
 const CSS_CLASS_DROPDOWNLIST = 'igx-drop-down__list';
 const CSS_CLASS_DROPDOWNLIST_SCROLL = 'igx-drop-down__list-scroll';
@@ -28,23 +30,13 @@ describe('IgxAutocomplete', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 AutocompleteComponent,
                 AutocompleteInputComponent,
-                AutocompleteFormComponent,
-                IgxAutocompletePipeStartsWith
-            ],
-            imports: [
-                IgxInputGroupModule,
-                IgxDropDownModule,
-                IgxAutocompleteModule,
-                FormsModule,
-                ReactiveFormsModule,
-                NoopAnimationsModule,
-                IgxIconModule
+                AutocompleteFormComponent
             ]
-        })
-            .compileComponents();
+        }).compileComponents();
     }));
     describe('General tests: ', () => {
         beforeEach(waitForAsync(() => {
@@ -781,6 +773,14 @@ describe('IgxAutocomplete', () => {
             fixture.detectChanges();
             expect(input.nativeElement.attributes['aria-expanded'].value).toEqual('false');
         }));
+        it('Should accept Japanese input', fakeAsync(() => {
+            UIInteractions.setInputElementValue(input, '東京', fixture);
+            fixture.detectChanges();
+            tick();
+            UIInteractions.triggerKeyDownEvtUponElem('enter', input.nativeElement, true);
+            fixture.detectChanges();
+            expect(input.value).toBe('東京');
+        }));
     });
     describe('Positioning settings tests', () => {
         it('Panel settings - direction and startPoint: top', fakeAsync(() => {
@@ -925,8 +925,22 @@ describe('IgxAutocomplete', () => {
     });
 });
 
+@Pipe({
+    name: 'startsWith',
+    standalone: true
+})
+export class IgxAutocompletePipeStartsWith implements PipeTransform {
+    public transform(collection: any[], term = '', key?: string) {
+        return collection.filter(item => {
+            const currItem = key ? item[key] : item;
+            return currItem.toString().toLowerCase().startsWith(term.toString().toLowerCase());
+        });
+    }
+}
+
 @Component({
-    template: `<igx-input-group style="width: 300px;">
+    template: `
+    <igx-input-group style="width: 300px;">
         <igx-prefix igxRipple><igx-icon>home</igx-icon> </igx-prefix>
         <input igxInput name="towns" type="text" [(ngModel)]="townSelected" required
             [igxAutocomplete]='townsPanel'
@@ -938,7 +952,20 @@ describe('IgxAutocomplete', () => {
         <igx-drop-down-item *ngFor="let town of towns | startsWith:townSelected" [value]="town">
             {{town}}
         </igx-drop-down-item>
-    </igx-drop-down>`
+    </igx-drop-down>`,
+    imports: [
+        FormsModule,
+        IgxInputGroupComponent,
+        IgxPrefixDirective,
+        IgxSuffixDirective,
+        IgxInputDirective,
+        IgxDropDownComponent,
+        IgxDropDownItemComponent,
+        IgxIconComponent,
+        IgxAutocompleteDirective,
+        IgxAutocompletePipeStartsWith,
+        NgFor
+    ]
 })
 class AutocompleteComponent {
     @ViewChild(IgxAutocompleteDirective, { static: true }) public autocomplete: IgxAutocompleteDirective;
@@ -952,11 +979,10 @@ class AutocompleteComponent {
 
     constructor() {
         this.towns = [
-            // eslint-disable-next-line max-len
             'Sofia', 'Plovdiv', 'Varna', 'Burgas', 'Ruse', 'Stara Zagora', 'Pleven', 'Dobrich', 'Sliven', 'Shumen', 'Pernik', 'Haskovo', 'Yambol', 'Pazardzhik', 'Blagoevgrad', 'Veliko Tarnovo', 'Vratsa', 'Gabrovo', 'Asenovgrad', 'Vidin', 'Kazanlak', 'Kyustendil', 'Kardzhali', 'Montana', 'Dimitrovgrad', 'Targovishte', 'Lovech', 'Silistra', 'Dupnitsa', 'Svishtov', 'Razgrad', 'Gorna Oryahovitsa', 'Smolyan', 'Petrich', 'Sandanski', 'Samokov', 'Sevlievo', 'Lom', 'Karlovo', 'Velingrad', 'Nova Zagora', 'Troyan', 'Aytos', 'Botevgrad', 'Gotse Delchev', 'Peshtera', 'Harmanli', 'Karnobat', 'Svilengrad', 'Panagyurishte', 'Chirpan', 'Popovo', 'Rakovski', 'Radomir', 'Novi Iskar', 'Kozloduy', 'Parvomay', 'Berkovitsa', 'Cherven Bryag', 'Pomorie', 'Ihtiman', 'Radnevo', 'Provadiya', 'Novi Pazar', 'Razlog', 'Byala Slatina', 'Nesebar', 'Balchik', 'Kostinbrod', 'Stamboliyski', 'Kavarna', 'Knezha', 'Pavlikeni', 'Mezdra', 'Etropole', 'Levski', 'Teteven', 'Elhovo', 'Bankya', 'Tryavna', 'Lukovit', 'Tutrakan', 'Sredets', 'Sopot', 'Byala', 'Veliki Preslav', 'Isperih', 'Belene', 'Omurtag', 'Bansko', 'Krichim', 'Galabovo', 'Devnya', 'Septemvri', 'Rakitovo', 'Lyaskovets', 'Svoge', 'Aksakovo', 'Kubrat', 'Dryanovo', 'Beloslav', 'Pirdop', 'Lyubimets', 'Momchilgrad', 'Slivnitsa', 'Hisarya', 'Zlatograd', 'Kostenets', 'Devin', 'General Toshevo', 'Simeonovgrad', 'Simitli', 'Elin Pelin', 'Dolni Chiflik', 'Tervel', 'Dulovo', 'Varshets', 'Kotel', 'Madan', 'Straldzha', 'Saedinenie', 'Bobov Dol', 'Tsarevo', 'Kuklen', 'Tvarditsa', 'Yakoruda', 'Elena', 'Topolovgrad', 'Bozhurishte', 'Chepelare', 'Oryahovo', 'Sozopol', 'Belogradchik', 'Perushtitsa', 'Zlatitsa', 'Strazhitsa', 'Krumovgrad', 'Kameno', 'Dalgopol', 'Vetovo', 'Suvorovo', 'Dolni Dabnik', 'Dolna Banya', 'Pravets', 'Nedelino', 'Polski Trambesh', 'Trastenik', 'Bratsigovo', 'Koynare', 'Godech', 'Slavyanovo', 'Dve Mogili', 'Kostandovo', 'Debelets', 'Strelcha', 'Sapareva Banya', 'Ignatievo', 'Smyadovo', 'Breznik', 'Sveti Vlas', 'Nikopol', 'Shivachevo', 'Belovo', 'Tsar Kaloyan', 'Ivaylovgrad', 'Valchedram', 'Marten', 'Glodzhevo', 'Sarnitsa', 'Letnitsa', 'Varbitsa', 'Iskar', 'Ardino', 'Shabla', 'Rudozem', 'Vetren', 'Kresna', 'Banya', 'Batak', 'Maglizh', 'Valchi Dol', 'Gulyantsi', 'Dragoman', 'Zavet', 'Kran', 'Miziya', 'Primorsko', 'Sungurlare', 'Dolna Mitropoliya', 'Krivodol', 'Kula', 'Kalofer', 'Slivo Pole', 'Kaspichan', 'Apriltsi', 'Belitsa', 'Roman', 'Dzhebel', 'Dolna Oryahovitsa', 'Buhovo', 'Gurkovo', 'Pavel Banya', 'Nikolaevo', 'Yablanitsa', 'Kableshkovo', 'Opaka', 'Rila', 'Ugarchin', 'Dunavtsi', 'Dobrinishte', 'Hadzhidimovo', 'Bregovo', 'Byala Cherkva', 'Zlataritsa', 'Kocherinovo', 'Dospat', 'Tran', 'Sadovo', 'Laki', 'Koprivshtitsa', 'Malko Tarnovo', 'Loznitsa', 'Obzor', 'Kilifarevo', 'Borovo', 'Batanovtsi', 'Chernomorets', 'Aheloy', 'Byala', 'Pordim', 'Suhindol', 'Merichleri', 'Glavinitsa', 'Chiprovtsi', 'Kermen', 'Brezovo', 'Plachkovtsi', 'Zemen', 'Balgarovo', 'Alfatar', 'Boychinovtsi', 'Gramada', 'Senovo', 'Momin Prohod', 'Kaolinovo', 'Shipka', 'Antonovo', 'Ahtopol', 'Boboshevo', 'Bolyarovo', 'Brusartsi', 'Klisura', 'Dimovo', 'Kiten', 'Pliska', 'Madzharovo', 'Melnik'
         ];
     }
-    public selectionChanging() { } // eslint-disable-line
+    public selectionChanging() { }
 
     public filterTowns(startsWith: string) {
         return this.towns.filter(city => city.toString().toLowerCase().startsWith(startsWith.toLowerCase()));
@@ -974,7 +1000,16 @@ class AutocompleteComponent {
         <igx-drop-down-item *ngFor="let town of towns | startsWith:townSelected" [value]="town">
             {{town}}
         </igx-drop-down-item>
-    </igx-drop-down>`
+    </igx-drop-down>`,
+    imports: [
+        FormsModule,
+        IgxAutocompleteDirective,
+        IgxLabelDirective,
+        IgxDropDownComponent,
+        IgxDropDownItemComponent,
+        IgxAutocompletePipeStartsWith,
+        NgFor
+    ]
 })
 class AutocompleteInputComponent extends AutocompleteComponent {
     @ViewChild('plainInput', { static: true }) public plainInput: ElementRef<HTMLInputElement>;
@@ -983,24 +1018,38 @@ class AutocompleteInputComponent extends AutocompleteComponent {
 
 @Component({
     template: `
-<form [formGroup]="reactiveForm" (ngSubmit)="onSubmitReactive()">
-<igx-input-group>
-        <igx-prefix igxRipple><igx-icon>home</igx-icon> </igx-prefix>
-        <input igxInput name="towns" formControlName="towns" type="text" required
-            [igxAutocomplete]='townsPanel'
-            [igxAutocompleteSettings]='settings' />
-        <label igxLabel for="towns">Towns</label>
-        <igx-suffix igxRipple><igx-icon>clear</igx-icon> </igx-suffix>
-    </igx-input-group>
-    <igx-drop-down #townsPanel>
-        <igx-drop-down-item *ngFor="let town of towns | startsWith:townSelected" [value]="town">
-            {{town}}
-        </igx-drop-down-item>
-    </igx-drop-down>
-    <input #plainInput/>
-    <button type="submit" [disabled]="!reactiveForm.valid">Submit</button>
-</form>
-`
+    <form [formGroup]="reactiveForm" (ngSubmit)="onSubmitReactive()">
+        <igx-input-group>
+            <igx-prefix igxRipple><igx-icon>home</igx-icon> </igx-prefix>
+            <input igxInput name="towns" formControlName="towns" type="text" required
+                [igxAutocomplete]='townsPanel'
+                [igxAutocompleteSettings]='settings' />
+            <label igxLabel for="towns">Towns</label>
+            <igx-suffix igxRipple><igx-icon>clear</igx-icon> </igx-suffix>
+        </igx-input-group>
+        <igx-drop-down #townsPanel>
+            <igx-drop-down-item *ngFor="let town of towns | startsWith:townSelected" [value]="town">
+                {{town}}
+            </igx-drop-down-item>
+        </igx-drop-down>
+        <input #plainInput/>
+        <button type="submit" [disabled]="!reactiveForm.valid">Submit</button>
+    </form>
+    `,
+    imports: [
+        ReactiveFormsModule,
+        IgxInputGroupComponent,
+        IgxInputDirective,
+        IgxLabelDirective,
+        IgxPrefixDirective,
+        IgxRippleDirective,
+        IgxDropDownComponent,
+        IgxDropDownItemComponent,
+        IgxIconComponent,
+        IgxAutocompleteDirective,
+        IgxAutocompletePipeStartsWith,
+        NgFor
+    ]
 })
 
 class AutocompleteFormComponent {
@@ -1011,12 +1060,11 @@ class AutocompleteFormComponent {
     @ViewChild('plainInput', { static: true }) public plainInput: ElementRef<HTMLInputElement>;
     public towns: string[];
 
-    public reactiveForm: FormGroup;
+    public reactiveForm: UntypedFormGroup;
 
-    constructor(fb: FormBuilder) {
+    constructor(fb: UntypedFormBuilder) {
 
         this.towns = [
-            // eslint-disable-next-line max-len
             'Sofia', 'Plovdiv', 'Varna', 'Burgas', 'Ruse', 'Stara Zagora', 'Pleven', 'Dobrich', 'Sliven', 'Shumen', 'Pernik', 'Haskovo', 'Yambol', 'Pazardzhik', 'Blagoevgrad', 'Veliko Tarnovo', 'Vratsa', 'Gabrovo', 'Asenovgrad', 'Vidin', 'Kazanlak', 'Kyustendil', 'Kardzhali', 'Montana', 'Dimitrovgrad', 'Targovishte', 'Lovech', 'Silistra', 'Dupnitsa', 'Svishtov', 'Razgrad', 'Gorna Oryahovitsa', 'Smolyan', 'Petrich', 'Sandanski', 'Samokov', 'Sevlievo', 'Lom', 'Karlovo', 'Velingrad', 'Nova Zagora', 'Troyan', 'Aytos', 'Botevgrad', 'Gotse Delchev', 'Peshtera', 'Harmanli', 'Karnobat', 'Svilengrad', 'Panagyurishte', 'Chirpan', 'Popovo', 'Rakovski', 'Radomir', 'Novi Iskar', 'Kozloduy', 'Parvomay', 'Berkovitsa', 'Cherven Bryag', 'Pomorie', 'Ihtiman', 'Radnevo', 'Provadiya', 'Novi Pazar', 'Razlog', 'Byala Slatina', 'Nesebar', 'Balchik', 'Kostinbrod', 'Stamboliyski', 'Kavarna', 'Knezha', 'Pavlikeni', 'Mezdra', 'Etropole', 'Levski', 'Teteven', 'Elhovo', 'Bankya', 'Tryavna', 'Lukovit', 'Tutrakan', 'Sredets', 'Sopot', 'Byala', 'Veliki Preslav', 'Isperih', 'Belene', 'Omurtag', 'Bansko', 'Krichim', 'Galabovo', 'Devnya', 'Septemvri', 'Rakitovo', 'Lyaskovets', 'Svoge', 'Aksakovo', 'Kubrat', 'Dryanovo', 'Beloslav', 'Pirdop', 'Lyubimets', 'Momchilgrad', 'Slivnitsa', 'Hisarya', 'Zlatograd', 'Kostenets', 'Devin', 'General Toshevo', 'Simeonovgrad', 'Simitli', 'Elin Pelin', 'Dolni Chiflik', 'Tervel', 'Dulovo', 'Varshets', 'Kotel', 'Madan', 'Straldzha', 'Saedinenie', 'Bobov Dol', 'Tsarevo', 'Kuklen', 'Tvarditsa', 'Yakoruda', 'Elena', 'Topolovgrad', 'Bozhurishte', 'Chepelare', 'Oryahovo', 'Sozopol', 'Belogradchik', 'Perushtitsa', 'Zlatitsa', 'Strazhitsa', 'Krumovgrad', 'Kameno', 'Dalgopol', 'Vetovo', 'Suvorovo', 'Dolni Dabnik', 'Dolna Banya', 'Pravets', 'Nedelino', 'Polski Trambesh', 'Trastenik', 'Bratsigovo', 'Koynare', 'Godech', 'Slavyanovo', 'Dve Mogili', 'Kostandovo', 'Debelets', 'Strelcha', 'Sapareva Banya', 'Ignatievo', 'Smyadovo', 'Breznik', 'Sveti Vlas', 'Nikopol', 'Shivachevo', 'Belovo', 'Tsar Kaloyan', 'Ivaylovgrad', 'Valchedram', 'Marten', 'Glodzhevo', 'Sarnitsa', 'Letnitsa', 'Varbitsa', 'Iskar', 'Ardino', 'Shabla', 'Rudozem', 'Vetren', 'Kresna', 'Banya', 'Batak', 'Maglizh', 'Valchi Dol', 'Gulyantsi', 'Dragoman', 'Zavet', 'Kran', 'Miziya', 'Primorsko', 'Sungurlare', 'Dolna Mitropoliya', 'Krivodol', 'Kula', 'Kalofer', 'Slivo Pole', 'Kaspichan', 'Apriltsi', 'Belitsa', 'Roman', 'Dzhebel', 'Dolna Oryahovitsa', 'Buhovo', 'Gurkovo', 'Pavel Banya', 'Nikolaevo', 'Yablanitsa', 'Kableshkovo', 'Opaka', 'Rila', 'Ugarchin', 'Dunavtsi', 'Dobrinishte', 'Hadzhidimovo', 'Bregovo', 'Byala Cherkva', 'Zlataritsa', 'Kocherinovo', 'Dospat', 'Tran', 'Sadovo', 'Laki', 'Koprivshtitsa', 'Malko Tarnovo', 'Loznitsa', 'Obzor', 'Kilifarevo', 'Borovo', 'Batanovtsi', 'Chernomorets', 'Aheloy', 'Byala', 'Pordim', 'Suhindol', 'Merichleri', 'Glavinitsa', 'Chiprovtsi', 'Kermen', 'Brezovo', 'Plachkovtsi', 'Zemen', 'Balgarovo', 'Alfatar', 'Boychinovtsi', 'Gramada', 'Senovo', 'Momin Prohod', 'Kaolinovo', 'Shipka', 'Antonovo', 'Ahtopol', 'Boboshevo', 'Bolyarovo', 'Brusartsi', 'Klisura', 'Dimovo', 'Kiten', 'Pliska', 'Madzharovo', 'Melnik'
         ];
         this.reactiveForm = fb.group({
@@ -1025,14 +1073,4 @@ class AutocompleteFormComponent {
 
     }
     public onSubmitReactive() { }
-}
-
-@Pipe({ name: 'startsWith' })
-export class IgxAutocompletePipeStartsWith implements PipeTransform {
-    public transform(collection: any[], term = '', key?: string) {
-        return collection.filter(item => {
-            const currItem = key ? item[key] : item;
-            return currItem.toString().toLowerCase().startsWith(term.toString().toLowerCase());
-        });
-    }
 }

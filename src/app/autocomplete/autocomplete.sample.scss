@@ -1,0 +1,39 @@
+.sample-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 16px;
+    background: var(--ig-gray-50);
+    border-radius: 4px;
+}
+
+igx-input-group {
+    flex: 1;
+    margin: 8px;
+}
+
+.dd-item {
+    display: flex;
+    align-items: center;
+}
+
+.dd-item > span {
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.dd-icon {
+    margin-right: 16px;
+}
+
+button {
+    margin: 16px 8px !important;
+}
+
+igx-switch {
+    margin: 16px 0;
+    align-self: center;
+}

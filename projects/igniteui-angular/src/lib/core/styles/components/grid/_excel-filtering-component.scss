@@ -1,20 +1,17 @@
 @use '../../base' as *;
 
-////
 /// @access private
-/// @group components
 /// @author <a href="https://github.com/simeonoff" target="_blank">Simeon Simeonoff</a>
-/// @requires {mixin} bem-block
-/// @requires {mixin} bem-elem
-/// @requires {mixin} bem-mod
-////
-
 @mixin excel-filtering-partial {
     @include b(igx-excel-filter) {
         @extend %grid-excel-filter !optional;
 
         @include e(loading) {
             @extend %igx-excel-filter__loading !optional;
+        }
+
+        @include e(sizing) {
+            @extend %igx-excel-filter__sizing !optional;
         }
 
         @include e(tree) {
@@ -34,6 +31,7 @@
         }
 
         @include e(menu) {
+            @include sizable();
             @extend %grid-excel-menu !optional;
         }
 
@@ -110,6 +108,12 @@
 
         @include e(actions-filter) {
             @extend %grid-excel-actions__action !optional;
+            @extend %grid-excel-actions__action-filter !optional;
+        }
+
+        @include e(actions-filter, $m: active) {
+            @extend %grid-excel-actions__action !optional;
+            @extend %grid-excel-actions__action--active !optional;
         }
 
         @include e(actions-clear) {
@@ -169,6 +173,10 @@
 
         @include m(inline) {
             @extend %grid-excel-filter--inline !optional;
+        }
+
+        @include e(filter-results) {
+            @extend %grid-excel-menu__filter-results !optional;
         }
     }
 }

@@ -7,12 +7,24 @@ export class NoOpScrollStrategy extends ScrollStrategy {
     constructor() {
         super();
     }
-    /** @inheritdoc */
+    /**
+     * Initializes the strategy. Should be called once
+     */
     public initialize() { }
 
-    /** @inheritdoc */
+    /**
+     * Detaches the strategy
+     * ```typescript
+     * settings.scrollStrategy.detach();
+     * ```
+     */
     public attach(): void { }
 
-    /** @inheritdoc */
+    /**
+     * Detaches the strategy
+     * ```typescript
+     * settings.scrollStrategy.detach();
+     * ```
+     */
     public detach(): void { }
 }

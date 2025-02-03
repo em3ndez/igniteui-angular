@@ -9,6 +9,10 @@ import { ListResourceStringsZHHANS } from './list-resources';
 import { TreeResourceStringsZHHANS } from './tree-resources';
 import { InputResourceStringsZHHANS } from './input-resources';
 import { ChipResourceStringsZHHANS } from './chip-resources';
+import { ComboResourceStringsZHHANS } from './combo-resources';
+import { QueryBuilderResourceStringsZHHANS } from './query-builder-resources';
+import { BannerResourceStringsZHHANS } from './banner-resources';
+import { ActionStripResourceStringsZHHANS } from './action-strip-resources';
 
 /**
  * Simplified Chinese (zh-Hans) resource strings for all components
@@ -24,5 +28,9 @@ export const IgxResourceStringsZHHANS = {
     ...ListResourceStringsZHHANS,
     ...TreeResourceStringsZHHANS,
     ...InputResourceStringsZHHANS,
-    ...ChipResourceStringsZHHANS
+    ...ChipResourceStringsZHHANS,
+    ...ComboResourceStringsZHHANS,
+    ...QueryBuilderResourceStringsZHHANS,
+    ...BannerResourceStringsZHHANS,
+    ...ActionStripResourceStringsZHHANS,
 };

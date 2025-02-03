@@ -1,17 +1,32 @@
-import { CommonModule } from '@angular/common';
-import { NgModule, Component, ViewChild, Output, EventEmitter, HostListener, HostBinding } from '@angular/core';
-import { IgxCalendarComponent, IgxCalendarModule } from '../../calendar/public_api';
+import { NgIf, NgTemplateOutlet } from '@angular/common';
+import {
+    Component,
+    ViewChild,
+    Output, EventEmitter,
+    HostListener,
+    HostBinding
+} from '@angular/core';
 import { IBaseEventArgs } from '../../core/utils';
 import { PickerInteractionMode } from '../../date-common/types';
-import { IgxButtonModule } from '../../directives/button/button.directive';
-import { IgxRippleModule } from '../../directives/ripple/ripple.directive';
+import { IgxButtonDirective } from '../../directives/button/button.directive';
+import { IgxRippleDirective } from '../../directives/ripple/ripple.directive';
 import { IgxPickerActionsDirective } from '../picker-icons.common';
+import { IgxCalendarComponent } from '../../calendar/calendar.component';
+import { IgxDividerDirective } from "../../directives/divider/divider.directive";
 
 /** @hidden */
 @Component({
     selector: 'igx-calendar-container',
     styles: [':host {display: block;}'],
-    templateUrl: 'calendar-container.component.html'
+    templateUrl: 'calendar-container.component.html',
+    imports: [
+        NgIf,
+        IgxButtonDirective,
+        IgxRippleDirective,
+        IgxCalendarComponent,
+        NgTemplateOutlet,
+        IgxDividerDirective,
+    ]
 })
 export class IgxCalendarContainerComponent {
     @ViewChild(IgxCalendarComponent, { static: true })
@@ -31,15 +46,10 @@ export class IgxCalendarContainerComponent {
         return this.mode === PickerInteractionMode.DropDown;
     }
 
-    @HostBinding('class.igx-date-picker--vertical')
-    public get verticalCSS(): boolean {
-        return this.vertical && this.mode === PickerInteractionMode.Dialog;
-    }
-
     public vertical = false;
     public closeButtonLabel: string;
     public todayButtonLabel: string;
-    public mode = PickerInteractionMode.DropDown;
+    public mode: PickerInteractionMode = PickerInteractionMode.DropDown;
     public pickerActions: IgxPickerActionsDirective;
 
     @HostListener('keydown.alt.arrowup', ['$event'])
@@ -54,14 +64,4 @@ export class IgxCalendarContainerComponent {
 }
 
 /** @hidden */
-@NgModule({
-    declarations: [IgxCalendarContainerComponent],
-    imports: [
-        CommonModule,
-        IgxButtonModule,
-        IgxRippleModule,
-        IgxCalendarModule
-    ],
-    exports: [IgxCalendarContainerComponent]
-})
-export class IgxCalendarContainerModule { }
+

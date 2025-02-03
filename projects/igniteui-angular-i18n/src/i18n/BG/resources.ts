@@ -9,6 +9,11 @@ import { CalendarResourceStringsBG } from './calendar-resources';
 import { TreeResourceStringsBG } from './tree-resources';
 import { InputResourceStringsBG } from './input-resources';
 import { ChipResourceStringsBG} from './chip-resources';
+import { ComboResourceStringsBG } from './combo-resources';
+import { QueryBuilderResourceStringsBG } from './query-builder-resources';
+import { BannerResourceStringsBG } from './banner-resources';
+import { ActionStripResourceStringsBG } from './action-strip-resources';
+
 
 /**
  * Bulgarian resource strings for all components
@@ -24,5 +29,9 @@ export const IgxResourceStringsBG = {
     ...CalendarResourceStringsBG,
     ...TreeResourceStringsBG,
     ...InputResourceStringsBG,
-    ...ChipResourceStringsBG
+    ...ChipResourceStringsBG,
+    ...ComboResourceStringsBG,
+    ...QueryBuilderResourceStringsBG,
+    ...BannerResourceStringsBG,
+    ...ActionStripResourceStringsBG,
 };

@@ -1,23 +1,28 @@
+import { AnimationBuilder } from '@angular/animations';
+import { NgIf } from '@angular/common';
 import { Component, ViewChild } from '@angular/core';
-import { fakeAsync, ComponentFixture, TestBed, waitForAsync, tick } from '@angular/core/testing';
-import { configureTestSuite } from '../test-utils/configure-suite';
-import { IgxStepperComponent, IgxStepperModule } from './stepper.component';
+import { ComponentFixture, fakeAsync, TestBed, tick, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { UIInteractions } from '../test-utils/ui-interactions.spec';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { take } from 'rxjs/operators';
+import { IgxIconComponent } from '../icon/icon.component';
+import { IgxInputDirective, IgxInputGroupComponent } from '../input-group/public_api';
+import { Direction } from '../services/direction/directionality';
+import { configureTestSuite } from '../test-utils/configure-suite';
+import { UIInteractions } from '../test-utils/ui-interactions.spec';
+import { IgxStepComponent } from './step/step.component';
 import {
+    HorizontalAnimationType,
     IgxStepperOrientation,
     IgxStepperTitlePosition,
     IgxStepType,
     IStepChangedEventArgs,
-    IStepChangingEventArgs
+    IStepChangingEventArgs,
+    VerticalAnimationType
 } from './stepper.common';
-import { take } from 'rxjs/operators';
-import { IgxIconModule } from '../icon/public_api';
+import { IgxStepperComponent } from './stepper.component';
+import { IgxStepActiveIndicatorDirective, IgxStepCompletedIndicatorDirective, IgxStepContentDirective, IgxStepIndicatorDirective, IgxStepInvalidIndicatorDirective, IgxStepSubtitleDirective, IgxStepTitleDirective } from './stepper.directive';
 import { IgxStepperService } from './stepper.service';
-import { AnimationMetadata, AnimationOptions } from '@angular/animations';
-import { Direction } from '../services/direction/directionality';
-import { IgxStepComponent } from './step/step.component';
 
 const STEPPER_CLASS = 'igx-stepper';
 const STEPPER_HEADER = 'igx-stepper__header';
@@ -78,15 +83,11 @@ describe('Rendering Tests', () => {
     beforeAll(
         waitForAsync(() => {
             TestBed.configureTestingModule({
-                declarations: [
-                    IgxStepperSampleTestComponent
-                ],
                 imports: [
                     NoopAnimationsModule,
-                    IgxStepperModule,
-                    IgxIconModule
-                ],
-                providers: []
+                    IgxStepperSampleTestComponent,
+                    IgxStepperLinearComponent
+                ]
             }).compileComponents();
         })
     );
@@ -146,6 +147,22 @@ describe('Rendering Tests', () => {
             expect(stepper.steps[2].active).toBeTruthy();
             expect(serviceExpandSpy).toHaveBeenCalledOnceWith(stepper.steps[2]);
             expect(serviceCollapseSpy).toHaveBeenCalledOnceWith(stepper.steps[0]);
+        }));
+
+        it('should calculate disabled steps properly when the stepper is initially in linear mode', fakeAsync(()=>{
+            const fixture = TestBed.createComponent(IgxStepperLinearComponent);
+            fixture.detectChanges();
+            const linearStepper = fixture.componentInstance.stepper;
+
+            const serviceExpandSpy = spyOn((linearStepper as any).stepperService, 'expand').and.callThrough();
+            linearStepper.next();
+            fixture.detectChanges();
+            tick();
+
+            expect(linearStepper.steps[1].active).toBeFalsy();
+            expect(linearStepper.steps[0].active).toBeTruthy();
+            expect(linearStepper.steps[1].linearDisabled).toBeTruthy();
+            expect(serviceExpandSpy).not.toHaveBeenCalled();
         }));
 
         it('should not allow moving forward to next step in linear mode if the previous step is invalid', fakeAsync(() => {
@@ -907,7 +924,7 @@ describe('Stepper service unit tests', () => {
     let mockElement: any;
     let mockElementRef: any;
     let mockCdr: any;
-    let mockAnimationBuilder: any;
+    let mockAnimationService: any;
     let mockPlatform: any;
     let mockDocument: any;
     let mockDir: any;
@@ -931,26 +948,27 @@ describe('Stepper service unit tests', () => {
         mockElement.parentNode = mockElement;
         mockElementRef = { nativeElement: mockElement };
 
-        mockAnimationBuilder = {
-            build: (_a: AnimationMetadata | AnimationMetadata[]) => ({
-                create: (_e: any, _opt?: AnimationOptions) => ({
-                    onDone: (_fn: any) => { },
-                    onStart: (_fn: any) => { },
-                    onDestroy: (_fn: any) => { },
-                    init: () => { },
-                    hasStarted: () => true,
-                    play: () => { },
-                    pause: () => { },
-                    restart: () => { },
-                    finish: () => { },
-                    destroy: () => { },
-                    rest: () => { },
-                    setPosition: (_p: any) => { },
-                    getPosition: () => 0,
-                    parentPlayer: {},
-                    totalTime: 0,
-                    beforeDestroy: () => { }
-                })
+        mockAnimationService = {
+            buildAnimation: (_builder: AnimationBuilder) => ({
+                animationEnd: {
+                    pipe: () => ({
+                        subscribe: () => { }
+                    }),
+                    subscribe: () => { }
+                },
+                animationStart: {
+                    pipe: () => ({
+                        subscribe: () => { }
+                    }),
+                    subscribe: () => { }
+                },
+                position: 0,
+                init: () => { },
+                hasStarted: () => true,
+                play: () => { },
+                finish: () => { },
+                reset: () => { },
+                destroy: () => { }
             })
         };
 
@@ -980,11 +998,11 @@ describe('Stepper service unit tests', () => {
         };
 
         stepperService = new IgxStepperService();
-        stepper = new IgxStepperComponent(mockCdr, mockAnimationBuilder, stepperService, mockElementRef);
+        stepper = new IgxStepperComponent(mockCdr, mockAnimationService, stepperService, mockElementRef);
         steps = [];
         for (let index = 0; index < 4; index++) {
             const newStep = new IgxStepComponent(stepper, mockCdr, null,
-                mockPlatform, stepperService, mockAnimationBuilder, mockElementRef, mockDir);
+                mockPlatform, stepperService, mockAnimationService, mockElementRef, mockDir);
             newStep._index = index;
             steps.push(newStep);
         }
@@ -1213,7 +1231,7 @@ describe('Stepper service unit tests', () => {
 
 @Component({
     template: `
-     <igx-stepper #stepper  [orientation]="'Horizontal'" [verticalAnimationType]="verticalAnimationType"
+     <igx-stepper #stepper  [orientation]="'horizontal'" [verticalAnimationType]="verticalAnimationType"
         [horizontalAnimationType]="horizontalAnimationType" [animationDuration]="animationDuration">
 
         <ng-template igxStepInvalidIndicator>
@@ -1231,16 +1249,18 @@ describe('Stepper service unit tests', () => {
         <igx-step #step1  [active]="true">
             <span igxStepIndicator>1</span>
             <span igxStepTitle>Step No 1</span>
-            <span igxStepSubTitle>Step SubTitle</span>
-              <div igxStepContent class="sample-body">
-                <input igxInput name="firstName" type="text" />
+            <span igxStepSubtitle>Step SubTitle</span>
+            <div igxStepContent class="sample-body">
+                <igx-input-group>
+                    <input igxInput name="firstName" type="text" />
+                </igx-input-group>
             </div>
         </igx-step>
 
         <igx-step #step2>
             <span igxStepIndicator>2</span>
             <span igxStepTitle>Step No 2</span>
-            <span igxStepSubTitle>Step SubTitle</span>
+            <span igxStepSubtitle>Step SubTitle</span>
             <div igxStepContent class="sample-body">
                <p>Test step 2</p>
             </div>
@@ -1249,7 +1269,7 @@ describe('Stepper service unit tests', () => {
         <igx-step #hiddenStep *ngIf="displayHiddenStep">
             <span igxStepIndicator>*</span>
             <span igxStepTitle>Hidden step</span>
-            <span igxStepSubTitle>Step SubTitle</span>
+            <span igxStepSubtitle>Step SubTitle</span>
             <div igxStepContent class="sample-body">
                <p>Test hidden step</p>
             </div>
@@ -1258,7 +1278,7 @@ describe('Stepper service unit tests', () => {
         <igx-step #step3>
             <span igxStepIndicator>3</span>
             <span igxStepTitle>Step No 3</span>
-            <span igxStepSubTitle>Step SubTitle</span>
+            <span igxStepSubtitle>Step SubTitle</span>
             <div igxStepContent class="sample-body">
                <p>Test step 3</p>
             </div>
@@ -1273,21 +1293,55 @@ describe('Stepper service unit tests', () => {
 
         <igx-step #step5 >
             <span igxStepTitle>Step No 5</span>
-            <span igxStepSubTitle>Step SubTitle</span>
+            <span igxStepSubtitle>Step SubTitle</span>
             <div igxStepContent class="sample-body">
                <p>Test step 5</p>
             </div>
         </igx-step>
     </igx-stepper>
     <br>
-    `
+    `,
+    imports: [
+        IgxStepperComponent,
+        IgxStepComponent,
+        IgxStepTitleDirective,
+        IgxStepIndicatorDirective,
+        IgxStepSubtitleDirective,
+        IgxStepContentDirective,
+        IgxStepInvalidIndicatorDirective,
+        IgxStepCompletedIndicatorDirective,
+        IgxStepActiveIndicatorDirective,
+        IgxIconComponent,
+        IgxInputDirective,
+        IgxInputGroupComponent,
+        NgIf
+    ]
 })
 export class IgxStepperSampleTestComponent {
     @ViewChild(IgxStepperComponent) public stepper: IgxStepperComponent;
 
-    public horizontalAnimationType = 'slide';
-    public verticalAnimationType = 'grow';
+    public horizontalAnimationType: HorizontalAnimationType = 'slide';
+    public verticalAnimationType: VerticalAnimationType = 'grow';
     public animationDuration = 300;
     public displayHiddenStep = false;
 
+}
+
+@Component({
+    template: `
+     <igx-stepper #stepper [linear]="true">
+        <igx-step #step1 [isValid]="false">
+        </igx-step>
+
+        <igx-step #step2 [isValid]="false">
+        </igx-step>
+
+        <igx-step #step3 [isValid]="false">
+        </igx-step>
+    </igx-stepper>
+    `,
+    imports: [IgxStepperComponent, IgxStepComponent]
+})
+export class IgxStepperLinearComponent {
+    @ViewChild(IgxStepperComponent) public stepper: IgxStepperComponent;
 }

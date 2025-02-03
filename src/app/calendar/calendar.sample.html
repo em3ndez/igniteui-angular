@@ -1,51 +1,84 @@
-<div class="calendar-sample-component">
-    <section class="sample-content">
+<div class="preview sample-min-width">
+    <div class="preview__sample">
+        <div class="calendar-wrapper">
+            <strong>Angular Calendar</strong>
+            <igx-calendar
+                #calendar
+                [selection]="selectionAngular"
+                [locale]="properties.locale"
+                [hideOutsideDays]="properties.hideOutsideDays"
+                [monthsViewNumber]="properties.monthsViewNumber"
+                [weekStart]="weekStartAngular"
+                [headerOrientation]="properties.headerOrientation"
+                [orientation]="properties.viewOrientation"
+                [showWeekNumbers]="properties.showWeekNumbers"
+                [hasHeader]="!properties.hideHeader"
+                [formatOptions]="formatOptions"
+                [disabledDates]="disabledDates"
+                [specialDates]="specialDates"
+                (selected)="onSelection($event)"
+                (viewDateChanged)="viewDateChanged($event)"
+                (activeViewChanged)="activeViewChanged($event)"
+            >
+            </igx-calendar>
+        </div>
 
-        <article class="sample-column">
+        <div class="calendar-wrapper">
+            <strong>WC Calendar</strong>
+            <igc-calendar
+                [locale]="properties.locale"
+                [visibleMonths]="properties.monthsViewNumber"
+                [showWeekNumbers]="properties.showWeekNumbers"
+                [selection]="properties.selection"
+                [hideHeader]="properties.hideHeader"
+                [hideOutsideDays]="properties.hideOutsideDays"
+                [headerOrientation]="properties.headerOrientation"
+                [orientation]="properties.viewOrientation"
+                [weekStart]="properties.weekStart"
+                [formatOptions]="formatOptions"
+                [disabledDates]="disabledDates"
+                [specialDates]="specialDates"
+            >
+            </igc-calendar>
+        </div>
+    </div>
 
-            <div class="calendar-sample">
-                {{cal.activeDate}}
-                <h4 class="sample-title">Calendar Sample (NO Card wrapper)</h4>
-                <igx-calendar #cal [weekStart]="1" [selection]="'single'" [activeView]="'year'" [hideOutsideDays]="false" [monthsViewNumber]="2"></igx-calendar>
-            </div>
+    <ng-template #customControls>
+        <div class="custom-controls">
+            <label>Special Dates</label>
+            <igx-date-range-picker
+                mode="dialog"
+                [(ngModel)]="specialRange"
+            ></igx-date-range-picker>
 
-            <div class="calendar-sample">
-                <h4 class="sample-title">Default Calendar</h4>
-                <div class="calendar-sample-buttons">
-                    <button igxButton="raised" igxRipple (click)="select()">Select</button>
-                    <button igxButton="flat" igxRipple (click)="deselect()">Deselect</button>
-                    <br>
-                    <button igxButton="raised" igxRipple (click)="showHide()">Hide days</button>
-                    <button igxButton="raised" igxRipple (click)="setMonthsViewNumber(monthsviewnumber)">Set months number</button>
-                    <input type="number" #monthsviewnumber style="margin-right: 10px;"/>
-                    <br>
-                    <button igxButton="raised" igxRipple (click)="setSelection('single')">Single</button>
-                    <button igxButton="raised" igxRipple (click)="setSelection('multi')">Multi</button>
-                    <button igxButton="raised" igxRipple (click)="setSelection('range')">Range</button>
-                    {{calendar.activeDate}}
-                </div>
-                <igx-card>
-                    <igx-calendar #calendar [showWeekNumbers]="true" [weekStart]="1" [monthsViewNumber]="3" [selection]="selectionType" (viewDateChanged)="viewDateChanged($event)" (activeViewChanged)="activeViewChanged($event)" (selected)="onSelection($event)" [hideOutsideDays]="false"></igx-calendar>
-                </igx-card>
-            </div>
+            <label>Weekday format</label>
+            <igx-buttongroup selectionMode="singleRequired">
+                @for(option of ['narrow', 'short', 'long']; track option) {
+                <button
+                    igxButton
+                    value="option"
+                    (click)="setWeekDayFormat(option)"
+                    [selected]="option === formatOptions['weekday']"
+                >
+                    {{option}}
+                </button>
+                }
+            </igx-buttongroup>
 
-            <div class="calendar-sample">
-                <h4 class="sample-title">Vertical Calendar</h4>
-                <igx-card>
-                    <igx-calendar  [viewDate]="ppNovember" [showWeekNumbers]="true" [weekStart]="1" [vertical]="true"></igx-calendar>
-                </igx-card>
-            </div>
-
-            <div class="calendar-sample dark-calendar">
-                <h4 class="sample-title">Calendar with Special and Disabled Dates</h4>
-                <article class="sample-column calendar-wrapper">
-                    <igx-calendar [showWeekNumbers]="true" #calendar1 [weekStart]="1" [selection]="'multi'" (selected)="selectPTOdays($event)">
-                    </igx-calendar>
-                    <igx-dialog #alert title="Request Time Off" leftButtonLabel="OK" (leftButtonSelect)="alert.close()">
-                    </igx-dialog>
-                    <button igxButton="raised" class="submit" (click)="submitPTOdays()">Submit Request</button>
-                </article>
-            </div>
-        </article>
-    </section>
+            <label>Month format</label>
+            <igx-buttongroup selectionMode="singleRequired">
+                @for(option of ['numeric', '2-digit', 'narrow', 'short',
+                'long']; track option) {
+                <button
+                    igxButton
+                    value="option"
+                    (click)="setMonthFormat(option)"
+                    [selected]="option === formatOptions['month']"
+                >
+                    {{option}}
+                </button>
+                }
+            </igx-buttongroup>
+        </div>
+    </ng-template>
 </div>

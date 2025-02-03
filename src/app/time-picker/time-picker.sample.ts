@@ -1,14 +1,27 @@
 import { Component, ViewChild } from '@angular/core';
-import { IgxTimePickerComponent,
+import { NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import {
+    IgxTimePickerComponent,
     IgxInputDirective,
     AutoPositionStrategy,
     OverlaySettings,
-    DatePart } from 'igniteui-angular';
+    DatePart,
+    IgxHintDirective,
+    IgxButtonDirective,
+    IgxPickerActionsDirective,
+    IgxPickerToggleComponent,
+    IgxPrefixDirective,
+    IgxIconComponent,
+    IgxPickerClearComponent,
+    IgxSuffixDirective
+} from 'igniteui-angular';
 
 @Component({
     selector: 'app-time-picker-sample',
     styleUrls: ['time-picker.sample.scss'],
-    templateUrl: 'time-picker.sample.html'
+    templateUrl: 'time-picker.sample.html',
+    imports: [IgxTimePickerComponent, FormsModule, NgIf, IgxHintDirective, IgxButtonDirective, IgxPickerActionsDirective, IgxPickerToggleComponent, IgxPrefixDirective, IgxIconComponent, IgxPickerClearComponent, IgxSuffixDirective]
 })
 export class TimePickerSampleComponent {
     @ViewChild('tp', { read: IgxTimePickerComponent, static: true })
@@ -18,7 +31,7 @@ export class TimePickerSampleComponent {
     public target: IgxInputDirective;
 
     public itemsDelta = { hours: 1, minutes: 15, seconds: 20 };
-    public format = 'hh:mm:ss tt';
+    public format = 'hh:mm:ss:SS a';
     public spinLoop = true;
     public datePart = DatePart.Hours;
 

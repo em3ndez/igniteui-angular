@@ -9,6 +9,10 @@ import { ListResourceStringsIT } from './list-resources';
 import { TreeResourceStringsIT } from './tree-resources';
 import { InputResourceStringsIT } from './input-resources';
 import { ChipResourceStringsIT } from './chip-resources';
+import { ComboResourceStringsIT } from './combo-resources';
+import { QueryBuilderResourceStringsIT } from './query-builder-resources';
+import { BannerResourceStringsIT } from './banner-resources';
+import { ActionStripResourceStringsIT } from './action-strip-resources';
 
 /**
  * Italian resource strings for all components
@@ -24,5 +28,9 @@ export const IgxResourceStringsIT = {
     ...ListResourceStringsIT,
     ...TreeResourceStringsIT,
     ...InputResourceStringsIT,
-    ...ChipResourceStringsIT
+    ...ChipResourceStringsIT,
+    ...ComboResourceStringsIT,
+    ...QueryBuilderResourceStringsIT,
+    ...BannerResourceStringsIT,
+    ...ActionStripResourceStringsIT,
 };

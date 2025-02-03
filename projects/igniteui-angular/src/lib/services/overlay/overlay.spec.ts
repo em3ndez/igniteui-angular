@@ -1,25 +1,25 @@
 import {
-    ApplicationRef,
     Component,
     ComponentRef,
     ElementRef,
     HostBinding,
     Inject,
-    NgModule,
+    Injector,
     ViewChild,
+    ViewContainerRef,
     ViewEncapsulation
 } from '@angular/core';
-import { fakeAsync, inject, TestBed, tick, waitForAsync } from '@angular/core/testing';
-import { BrowserModule } from '@angular/platform-browser';
+import { fakeAsync, TestBed, tick, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { scaleInVerTop, scaleOutVerTop } from '../../animations/main';
-import { IgxAvatarComponent, IgxAvatarModule } from '../../avatar/avatar.component';
-import { IgxCalendarComponent, IgxCalendarModule } from '../../calendar/public_api';
+import { first } from 'rxjs/operators';
+import { IgxAvatarComponent } from '../../avatar/avatar.component';
+import { IgxCalendarComponent } from '../../calendar/public_api';
 import { IgxCalendarContainerComponent } from '../../date-common/calendar-container/calendar-container.component';
-import { IgxDatePickerModule } from '../../date-picker/public_api';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { UIInteractions } from '../../test-utils/ui-interactions.spec';
-import { IgxOverlayOutletDirective, IgxToggleDirective, IgxToggleModule } from './../../directives/toggle/toggle.directive';
+import { IgxAngularAnimationService } from '../animation/angular-animation-service';
+import { AnimationService } from '../animation/animation';
+import { IgxOverlayOutletDirective, IgxToggleDirective } from './../../directives/toggle/toggle.directive';
 import { IgxOverlayService } from './overlay';
 import { ContainerPositionStrategy } from './position';
 import { AutoPositionStrategy } from './position/auto-position-strategy';
@@ -34,6 +34,7 @@ import { CloseScrollStrategy } from './scroll/close-scroll-strategy';
 import { NoOpScrollStrategy } from './scroll/NoOpScrollStrategy';
 import {
     HorizontalAlignment,
+    OffsetMode,
     OverlayCancelableEventArgs,
     OverlayEventArgs,
     OverlaySettings,
@@ -41,6 +42,8 @@ import {
     PositionSettings,
     VerticalAlignment
 } from './utilities';
+import { NgIf } from '@angular/common';
+import { scaleInVerTop, scaleOutVerTop } from 'igniteui-angular/animations';
 
 const CLASS_OVERLAY_CONTENT = 'igx-overlay__content';
 const CLASS_OVERLAY_CONTENT_MODAL = 'igx-overlay__content--modal';
@@ -65,7 +68,7 @@ const css = (element) => {
     for (const key in sheets) {
         if (sheets.hasOwnProperty(key)) {
             const sheet = sheets[key];
-            const rules: any = sheet.rules || sheet.cssRules;
+            const rules: any = sheet.cssRules;
 
             for (const r in rules) {
                 if (element.matches(rules[r].selectorText)) {
@@ -216,14 +219,13 @@ describe('igxOverlay', () => {
         configureTestSuite();
         let mockElement: any;
         let mockElementRef: any;
-        let mockFactoryResolver: any;
         let mockApplicationRef: any;
-        let mockInjector: any;
         let mockAnimationBuilder: any;
         let mockDocument: any;
         let mockNgZone: any;
         let mockPlatformUtil: any;
         let overlay: IgxOverlayService;
+        let mockAnimationService: AnimationService;
         beforeEach(() => {
             mockElement = {
                 style: { visibility: '', cursor: '', transitionDuration: '' },
@@ -255,20 +257,8 @@ describe('igxOverlay', () => {
             mockElement.parent = mockElement;
             mockElement.parentElement = mockElement;
             mockElement.parentNode = mockElement;
-            mockElementRef = { nativeElement: mockElement };
-            mockFactoryResolver = {
-                resolveComponentFactory: () => ({
-                    create: () => ({
-                        hostView: '',
-                        location: mockElementRef,
-                        changeDetectorRef: { detectChanges: () => { } },
-                        destroy: () => { },
-                        onDestroy: () => { }
-                    })
-                })
-            };
+            mockElementRef = new ElementRef(mockElement);
             mockApplicationRef = { attachView: () => { }, detachView: () => { } };
-            mockInjector = {};
             mockAnimationBuilder = {};
             mockDocument = {
                 body: mockElement,
@@ -303,9 +293,10 @@ describe('igxOverlay', () => {
             };
             mockNgZone = {};
             mockPlatformUtil = { isIOS: false };
+            mockAnimationService = new IgxAngularAnimationService(mockAnimationBuilder);
 
             overlay = new IgxOverlayService(
-                mockFactoryResolver, mockApplicationRef, mockInjector, mockAnimationBuilder, mockDocument, mockNgZone, mockPlatformUtil);
+                mockApplicationRef, mockDocument, mockNgZone, mockPlatformUtil, mockAnimationService);
         });
 
         it('Should set cursor to pointer on iOS', () => {
@@ -378,8 +369,7 @@ describe('igxOverlay', () => {
         configureTestSuite();
         beforeEach(waitForAsync(() => {
             TestBed.configureTestingModule({
-                imports: [IgxToggleModule, DynamicModule, NoopAnimationsModule],
-                declarations: DIRECTIVE_COMPONENTS
+                imports: [NoopAnimationsModule, SimpleDynamicWithDirectiveComponent]
             }).compileComponents();
         }));
 
@@ -553,6 +543,7 @@ describe('igxOverlay', () => {
             spyOn(overlayInstance.closed, 'emit');
             spyOn(overlayInstance.closing, 'emit');
             spyOn(overlayInstance.opened, 'emit');
+            spyOn(overlayInstance.contentAppending, 'emit');
             spyOn(overlayInstance.contentAppended, 'emit');
             spyOn(overlayInstance.opening, 'emit');
             spyOn(overlayInstance.animationStarting, 'emit');
@@ -566,6 +557,7 @@ describe('igxOverlay', () => {
                 .toHaveBeenCalledWith({ id: firstCallId, componentRef: jasmine.any(ComponentRef) as any, cancel: false });
             const args: OverlayEventArgs = (overlayInstance.opening.emit as jasmine.Spy).calls.mostRecent().args[0];
             expect(args.componentRef.instance).toEqual(jasmine.any(SimpleDynamicComponent));
+            expect(overlayInstance.contentAppending.emit).toHaveBeenCalledTimes(1);
             expect(overlayInstance.contentAppended.emit).toHaveBeenCalledTimes(1);
             expect(overlayInstance.animationStarting.emit).toHaveBeenCalledTimes(1);
 
@@ -590,6 +582,7 @@ describe('igxOverlay', () => {
             tick();
             expect(overlayInstance.opening.emit).toHaveBeenCalledTimes(2);
             expect(overlayInstance.opening.emit).toHaveBeenCalledWith({ componentRef: undefined, id: secondCallId, cancel: false });
+            expect(overlayInstance.contentAppending.emit).toHaveBeenCalledTimes(2);
             expect(overlayInstance.contentAppended.emit).toHaveBeenCalledTimes(2);
             expect(overlayInstance.animationStarting.emit).toHaveBeenCalledTimes(3);
 
@@ -611,6 +604,70 @@ describe('igxOverlay', () => {
             overlayInstance.detachAll();
         }));
 
+        it('Should properly emit contentAppending event', fakeAsync(() => {
+            const fixture = TestBed.createComponent(SimpleRefComponent);
+            fixture.detectChanges();
+            const overlayInstance = fixture.componentInstance.overlay;
+            const os: OverlaySettings = {
+                excludeFromOutsideClick: [],
+                positionStrategy: new GlobalPositionStrategy(),
+                scrollStrategy: new NoOpScrollStrategy(),
+                modal: true,
+                closeOnOutsideClick: true,
+                closeOnEscape: false
+            };
+
+            spyOn(overlayInstance.contentAppending, 'emit');
+            spyOn(overlayInstance.contentAppended, 'emit');
+
+            const firstCallId = overlayInstance.attach(SimpleDynamicComponent);
+            overlayInstance.show(firstCallId);
+            tick();
+
+            expect(overlayInstance.contentAppending.emit).toHaveBeenCalledTimes(1);
+            expect(overlayInstance.contentAppended.emit).toHaveBeenCalledTimes(1);
+
+            expect(overlayInstance.contentAppending.emit).toHaveBeenCalledWith({
+                id: firstCallId, elementRef: jasmine.any(Object),
+                componentRef: jasmine.any(ComponentRef) as any, settings: os
+            })
+        }));
+
+        it('Should properly be able to override OverlaySettings using contentAppending event args', fakeAsync(() => {
+            const fixture = TestBed.createComponent(SimpleRefComponent);
+            fixture.detectChanges();
+            const overlayInstance = fixture.componentInstance.overlay;
+            const os: OverlaySettings = {
+                excludeFromOutsideClick: [],
+                positionStrategy: new GlobalPositionStrategy(),
+                scrollStrategy: new CloseScrollStrategy(),
+                modal: false,
+                closeOnOutsideClick: false,
+                closeOnEscape: true
+            };
+
+            overlayInstance.contentAppending.pipe(first()).subscribe((e: OverlayEventArgs) => {
+                // override the default settings
+                e.settings = os;
+            });
+            overlayInstance.contentAppended.pipe(first()).subscribe((e: OverlayEventArgs) => {
+                const overlay = overlayInstance.getOverlayById(e.id);
+                expect(overlay.settings.closeOnEscape).toBeTrue();
+                expect(overlay.settings.modal).toBeFalsy();
+                expect(overlay.settings.closeOnOutsideClick).toBeFalsy();
+            });
+
+            spyOn(overlayInstance.contentAppended, 'emit').and.callThrough();
+            spyOn(overlayInstance.contentAppending, 'emit').and.callThrough();
+
+            const firstCallId = overlayInstance.attach(SimpleDynamicComponent);
+            overlayInstance.show(firstCallId);
+            tick();
+
+            expect(overlayInstance.contentAppending.emit).toHaveBeenCalledTimes(1);
+            expect(overlayInstance.contentAppended.emit).toHaveBeenCalledTimes(1);
+        }));
+
         it('Should properly set style on position method call - GlobalPosition.', () => {
             const mockParent = document.createElement('div');
             const mockItem = document.createElement('div');
@@ -618,8 +675,7 @@ describe('igxOverlay', () => {
 
             const mockPositioningSettings1: PositionSettings = {
                 horizontalDirection: HorizontalAlignment.Right,
-                verticalDirection: VerticalAlignment.Bottom,
-                target: mockItem
+                verticalDirection: VerticalAlignment.Bottom
             };
 
             const horAl = Object.keys(HorizontalAlignment).filter(key => !isNaN(Number(HorizontalAlignment[key])));
@@ -775,6 +831,39 @@ describe('igxOverlay', () => {
             expect(componentElementRectNew.top).not.toEqual(componentElementRect.top);
             expect(componentElementRectNew.left).not.toEqual(componentElementRect.left);
             expect(overlayContentTransform).toEqual(secondTransform);
+
+            overlayInstance.detachAll();
+        }));
+
+        it('Should offset the overlay content correctly using setOffset method and optional offsetMode', fakeAsync(() => {
+            const fixture = TestBed.createComponent(WidthTestOverlayComponent);
+            const overlayInstance = fixture.componentInstance.overlay;
+
+            const id = fixture.componentInstance.overlay.attach(SimpleRefComponent);
+            overlayInstance.show(id);
+            fixture.detectChanges();
+            tick();
+
+            // Set initial offset
+            overlayInstance.setOffset(id, 20, 20);
+            const overlayInfo = overlayInstance.getOverlayById(id);
+            expect(overlayInfo.transformX).toEqual(20);
+            expect(overlayInfo.transformY).toEqual(20);
+
+            // Add offset values to the existing ones (default behavior)
+            overlayInstance.setOffset(id, 10, 10);
+            expect(overlayInfo.transformX).toEqual(30);
+            expect(overlayInfo.transformY).toEqual(30);
+
+            // Add offset values using OffsetMode.Add
+            overlayInstance.setOffset(id, 20, 20, OffsetMode.Add);
+            expect(overlayInfo.transformX).toEqual(50);
+            expect(overlayInfo.transformY).toEqual(50);
+
+            // Set offset values using OffsetMode.Set
+            overlayInstance.setOffset(id, 10, 10, OffsetMode.Set);
+            expect(overlayInfo.transformX).toEqual(10);
+            expect(overlayInfo.transformY).toEqual(10);
 
             overlayInstance.detachAll();
         }));
@@ -1063,12 +1152,12 @@ describe('igxOverlay', () => {
             document.body.removeChild(wrapperElement);
         });
 
-        it('#3988 - Should use ngModuleRef to create component', inject([ApplicationRef], (appRef: ApplicationRef) => {
+        it('#3988 - Should use viewContainerRef to create component', () => {
             const fixture = TestBed.createComponent(EmptyPageComponent);
             const overlay = fixture.componentInstance.overlay;
+            const viewContainerRef = fixture.componentInstance.viewContainerRef;
             fixture.detectChanges();
 
-            spyOn(appRef, 'attachView');
             const mockNativeElement = document.createElement('div');
             const mockComponent = {
                 hostView: fixture.componentRef.hostView,
@@ -1076,22 +1165,83 @@ describe('igxOverlay', () => {
                 location: { nativeElement: mockNativeElement },
                 destroy: () => { }
             };
-            const factoryMock = jasmine.createSpyObj('factoryMock', {
-                create: mockComponent
-            });
-            const injector = 'testInjector';
-            const componentFactoryResolver = jasmine.createSpyObj('componentFactoryResolver', {
-                resolveComponentFactory: factoryMock
-            });
-
-            const id = overlay.attach(SimpleDynamicComponent, {}, { componentFactoryResolver, injector } as any);
-            expect(componentFactoryResolver.resolveComponentFactory).toHaveBeenCalledWith(SimpleDynamicComponent);
-            expect(factoryMock.create).toHaveBeenCalledWith(injector);
-            expect(appRef.attachView).toHaveBeenCalledWith(fixture.componentRef.hostView);
+            spyOn(viewContainerRef, 'createComponent').and.returnValue(mockComponent as any);
+            const id = overlay.attach(SimpleDynamicComponent, viewContainerRef);
+            expect(viewContainerRef.createComponent).toHaveBeenCalledWith(SimpleDynamicComponent as any);
             expect(overlay.getOverlayById(id).componentRef as any).toBe(mockComponent);
 
             overlay.detachAll();
-        }));
+        });
+
+        it('#14364 - Should provide injector to attach method', () => {
+            const fixture = TestBed.createComponent(EmptyPageComponent);
+            const overlay = fixture.componentInstance.overlay;
+            const injector = Injector.create({
+                parent: fixture.componentInstance.injector,
+                providers: [
+                    { provide: 'SomeConst', useValue: 100 },
+                ],
+            });
+            fixture.detectChanges();
+
+            const id = overlay.attach(SimpleDynamicComponent, { injector });
+            expect(id).toBeDefined();
+
+            const overlayInfo = overlay.getOverlayById(id);
+            expect(overlayInfo).toBeDefined();
+
+            const elementInjector = overlayInfo.componentRef.injector;
+            expect(elementInjector).toBeDefined();
+
+            const result = elementInjector.get('SomeConst');
+            expect(result).toEqual(100);
+
+            overlay.detachAll();
+        });
+
+        it('#14364 - Should provide different injectors to attach method to each component', () => {
+            const fixture = TestBed.createComponent(EmptyPageComponent);
+            const overlay = fixture.componentInstance.overlay;
+            const injector1 = Injector.create({
+                parent: fixture.componentInstance.injector,
+                providers: [
+                    { provide: 'SomeConst', useValue: 'First Value' },
+                ],
+            });
+            const injector2 = Injector.create({
+                parent: fixture.componentInstance.injector,
+                providers: [
+                    { provide: 'SomeConst', useValue: 'Second Value' },
+                ],
+            });
+            fixture.detectChanges();
+
+            const id1 = overlay.attach(SimpleDynamicComponent, { injector: injector1 });
+            expect(id1).toBeDefined();
+
+            const overlayInfo1 = overlay.getOverlayById(id1);
+            expect(overlayInfo1).toBeDefined();
+
+            const elementInjector1 = overlayInfo1.componentRef.injector;
+            expect(elementInjector1).toBeDefined();
+
+            const result1 = elementInjector1.get('SomeConst');
+            expect(result1).toEqual('First Value');
+
+            const id2 = overlay.attach(SimpleDynamicComponent, { injector: injector2 });
+            expect(id2).toBeDefined();
+
+            const overlayInfo2 = overlay.getOverlayById(id2);
+            expect(overlayInfo2).toBeDefined();
+
+            const elementInjector2 = overlayInfo2.componentRef.injector;
+            expect(elementInjector2).toBeDefined();
+
+            const result2 = elementInjector2.get('SomeConst');
+            expect(result2).toEqual('Second Value');
+
+            overlay.detachAll();
+        });
 
         // it('##6474 - should calculate correctly position', () => {
         //     const elastic: ElasticPositionStrategy = new ElasticPositionStrategy();
@@ -1207,13 +1357,65 @@ describe('igxOverlay', () => {
 
             overlay.detachAll();
         }));
+
+        it('Should properly move computed size style to the overlay content container.', fakeAsync(() => {
+            const fixture = TestBed.createComponent(SimpleRefComponent);
+            fixture.detectChanges();
+
+            fixture.componentInstance.item.nativeElement.style.setProperty('--ig-size', 'var(--ig-size-small)');
+            fixture.detectChanges();
+            const overlayInstance = fixture.componentInstance.overlay;
+            const overlaySettings: OverlaySettings = {
+                positionStrategy: new ConnectedPositioningStrategy(),
+                modal: false,
+                closeOnOutsideClick: false
+            };
+            const firstCallId = overlayInstance.attach(fixture.componentInstance.item, overlaySettings);
+            overlayInstance.show(firstCallId);
+            tick();
+
+            const overlayContent = document.getElementsByClassName(CLASS_OVERLAY_CONTENT)[0] as HTMLElement;
+            expect(overlayContent.style.getPropertyValue('--ig-size')).toEqual('1');
+            overlayInstance.detach(firstCallId);
+        }));
+
+        it('#15228 - Should use provided in show overlay settings ', fakeAsync(() => {
+            const fixture = TestBed.createComponent(SimpleRefComponent);
+            fixture.detectChanges();
+            const overlayInstance = fixture.componentInstance.overlay;
+            const id = overlayInstance.attach(SimpleDynamicComponent);
+            const info = overlayInstance.getOverlayById(id);
+            const initialPositionSpy = spyOn(info.settings.positionStrategy, 'position').and.callThrough();
+
+            overlayInstance.show(id);
+            tick();
+
+            expect(initialPositionSpy).toHaveBeenCalledTimes(1);
+            overlayInstance.hide(id);
+            tick();
+
+            const os: OverlaySettings = {
+                excludeFromOutsideClick: [],
+                positionStrategy: new GlobalPositionStrategy(),
+                scrollStrategy: new CloseScrollStrategy(),
+                modal: false,
+                closeOnOutsideClick: false,
+                closeOnEscape: true
+            };
+            const lastPositionSpy = spyOn(os.positionStrategy, 'position').and.callThrough();
+            overlayInstance.show(id, os);
+            tick();
+
+            expect(lastPositionSpy).toHaveBeenCalledTimes(1);
+            expect(info.settings.scrollStrategy).toBe(os.scrollStrategy);
+            expect(info.settings.positionStrategy).toBe(os.positionStrategy);
+        }));
     });
 
     describe('Unit Tests - Scroll Strategies: ', () => {
         beforeEach(waitForAsync(() => {
             TestBed.configureTestingModule({
-                imports: [IgxToggleModule, DynamicModule, NoopAnimationsModule],
-                declarations: DIRECTIVE_COMPONENTS
+                imports: [NoopAnimationsModule, SimpleDynamicWithDirectiveComponent]
             });
         }));
         afterAll(() => {
@@ -1391,8 +1593,7 @@ describe('igxOverlay', () => {
         configureTestSuite();
         beforeEach(waitForAsync(() => {
             TestBed.configureTestingModule({
-                imports: [IgxToggleModule, DynamicModule, NoopAnimationsModule],
-                declarations: DIRECTIVE_COMPONENTS
+                imports: [NoopAnimationsModule, SimpleDynamicWithDirectiveComponent]
             }).compileComponents();
         }));
 
@@ -3054,24 +3255,53 @@ describe('igxOverlay', () => {
 
         // 3. Interaction
         // 3.1 Modal
-        // it('Should apply a greyed-out mask layers when is modal.', fakeAsync(() => {
-        //     const fixture = TestBed.createComponent(EmptyPageComponent);
-        //     const overlay = fixture.componentInstance.overlay;
-        //     const overlaySettings: OverlaySettings = {
-        //         modal: true,
-        //     };
+        it('Should apply a greyed-out mask layers when is modal.', fakeAsync(() => {
+            const fixture = TestBed.createComponent(EmptyPageComponent);
+            const overlay = fixture.componentInstance.overlay;
+            const overlaySettings: OverlaySettings = {
+                modal: true,
+            };
 
-        //     overlay.show(overlay.attach(SimpleDynamicComponent, overlaySettings));
-        //     tick();
+            overlay.show(overlay.attach(SimpleDynamicComponent, overlaySettings));
+            tick(100);
 
-        //     const wrapperElement = (fixture.nativeElement as HTMLElement)
-        //         .parentElement.getElementsByClassName(CLASS_OVERLAY_WRAPPER_MODAL)[0] as HTMLElement;
-        //     const styles = css(wrapperElement);
-        //     const expectedBackgroundColor = 'background: var(--background-color)';
-        //     const appliedBackgroundStyles = styles[2];
-        //     console.log(appliedBackgroundStyles);
-        //     expect(appliedBackgroundStyles).toContain(expectedBackgroundColor);
-        // }));
+            const wrapperElement = (fixture.nativeElement as HTMLElement)
+                .parentElement.getElementsByClassName(CLASS_OVERLAY_WRAPPER_MODAL)[0] as HTMLElement;
+
+            expect(wrapperElement).toBeDefined();
+            const styles = css(wrapperElement);
+            expect(styles.findIndex(
+                (e) => e.includes('--background-color: var(--igx-overlay-background-color, hsl(from var(--ig-gray-500) h s l/0.54));')))
+                .toBeGreaterThan(-1);
+            expect(styles.findIndex(
+                (e) => e.includes('background: var(--background-color);')))
+                .toBeGreaterThan(-1);
+
+            fixture.componentInstance.overlay.detachAll();
+        }));
+
+        it('Should apply a greyed-out mask layers when is modal and has no animation.', fakeAsync(() => {
+            const fixture = TestBed.createComponent(EmptyPageComponent);
+            const overlay = fixture.componentInstance.overlay;
+            const overlaySettings: OverlaySettings = {
+                modal: true,
+                positionStrategy: new GlobalPositionStrategy({
+                    openAnimation: null,
+                    closeAnimation: null
+                })
+            };
+            overlay.show(overlay.attach(SimpleDynamicComponent, overlaySettings));
+            tick(100);
+
+            const wrapperElement = (fixture.nativeElement as HTMLElement)
+                .parentElement.getElementsByClassName(CLASS_OVERLAY_WRAPPER_MODAL)[0] as HTMLElement;
+            expect(wrapperElement).toBeDefined();
+            const styles = css(wrapperElement);
+            expect(styles.findIndex((e) => e.includes('--background-color: var(--igx-overlay-background-color, hsl(from var(--ig-gray-500) h s l/0.54));'))).toBeGreaterThan(-1);
+            expect(styles.findIndex((e) => e.includes('background: var(--background-color);'))).toBeGreaterThan(-1);
+
+            fixture.componentInstance.overlay.detachAll();
+        }));
 
         it('Should allow interaction only for the shown component when is modal.', fakeAsync(() => {
             // Utility handler meant for later detachment
@@ -3350,8 +3580,7 @@ describe('igxOverlay', () => {
     describe('Integration tests - Scroll Strategies: ', () => {
         beforeEach(waitForAsync(() => {
             TestBed.configureTestingModule({
-                imports: [IgxToggleModule, DynamicModule, NoopAnimationsModule],
-                declarations: DIRECTIVE_COMPONENTS
+                imports: [NoopAnimationsModule, SimpleDynamicWithDirectiveComponent]
             });
         }));
         // If adding a component near the visible window borders(left,right,up,down)
@@ -4215,8 +4444,7 @@ describe('igxOverlay', () => {
     describe('Integration tests p3 (IgniteUI components): ', () => {
         beforeEach(waitForAsync(() => {
             TestBed.configureTestingModule({
-                imports: [IgxToggleModule, DynamicModule, NoopAnimationsModule, IgxComponentsModule],
-                declarations: DIRECTIVE_COMPONENTS
+                imports: [NoopAnimationsModule, SimpleDynamicWithDirectiveComponent]
             }).compileComponents();
         }));
         it(`Should properly be able to render components that have no initial content(IgxCalendar, IgxAvatar)`, fakeAsync(() => {
@@ -4279,20 +4507,21 @@ describe('igxOverlay', () => {
 });
 
 @Component({
-    // eslint-disable-next-line @angular-eslint/component-selector
     selector: `simple - dynamic - component`,
-    template: `<div style='width:100px; height: 100px; background-color: red;'></div>`
+    template: `<div style='width:100px; height: 100px; background-color: red;'></div>`,
+    standalone: true
 })
 export class SimpleDynamicComponent {
     @HostBinding('style.display')
     public hostDisplay = 'block';
     @HostBinding('style.width')
     @HostBinding('style.height')
-    public hostDimenstions = '100px';
+    public hostDimensions = '100px';
 }
 
 @Component({
-    template: `<div #item class="simpleRef" style='position: absolute; width:100px; height: 100px; background-color: red;'></div>`
+    template: `<div #item class="simpleRef" style='position: absolute; width:100px; height: 100px; background-color: red;'></div>`,
+    standalone: true
 })
 export class SimpleRefComponent {
     @ViewChild('item', { static: true })
@@ -4302,7 +4531,8 @@ export class SimpleRefComponent {
 }
 
 @Component({
-    template: `<div style='width:3000px; height: 1000px; background-color: red;'></div>`
+    template: `<div style='width:3000px; height: 1000px; background-color: red;'></div>`,
+    standalone: true
 })
 export class SimpleBigSizeComponent {
     @HostBinding('style.display')
@@ -4328,7 +4558,8 @@ export class SimpleBigSizeComponent {
                     <p> AAAAA </p>
                     <p> AAAAA </p>
                 </div>
-            </div>`
+            </div>`,
+    imports: [NgIf, IgxToggleDirective]
 })
 export class SimpleDynamicWithDirectiveComponent {
     @ViewChild(IgxToggleDirective, { static: true })
@@ -4365,13 +4596,17 @@ export class SimpleDynamicWithDirectiveComponent {
         padding: 0;
         margin: 0;
         border: none;
-    }`]
+    }`],
+    standalone: true
 })
 export class EmptyPageComponent {
     @ViewChild('button', { static: true }) public buttonElement: ElementRef;
     @ViewChild('div', { static: true }) public divElement: ElementRef;
 
-    constructor(@Inject(IgxOverlayService) public overlay: IgxOverlayService) { }
+    constructor(
+        @Inject(IgxOverlayService) public overlay: IgxOverlayService,
+        public viewContainerRef: ViewContainerRef,
+        public injector: Injector) { }
 
     public click() {
         this.overlay.show(this.overlay.attach(SimpleDynamicComponent));
@@ -4383,7 +4618,8 @@ export class EmptyPageComponent {
         <button #button>Show Overlay</button>
         <div igxOverlayOutlet #outlet></div>
         `,
-    encapsulation: ViewEncapsulation.ShadowDom
+    encapsulation: ViewEncapsulation.ShadowDom,
+    standalone: true
 })
 export class EmptyPageInShadowDomComponent {
     @ViewChild('button', { static: true }) public buttonElement: ElementRef;
@@ -4403,7 +4639,8 @@ export class EmptyPageInShadowDomComponent {
         padding: 0px;
         margin: 0px;
         border: 0px;
-    }`]
+    }`],
+    standalone: true
 })
 export class DownRightButtonComponent {
     @ViewChild('button', { static: true }) public buttonElement: ElementRef;
@@ -4442,7 +4679,8 @@ export class DownRightButtonComponent {
         width: 100px;
         height: 60px;
         border: 0px;
-    }`]
+    }`],
+    standalone: true
 })
 export class TopLeftOffsetComponent {
 
@@ -4462,7 +4700,8 @@ export class TopLeftOffsetComponent {
     </div>
     <div (click)='divClick($event)'>
         <button class='buttonTwo' (click)='clickTwo()'>Show second Overlay</button>
-    </div>`
+    </div>`,
+    standalone: true
 })
 export class TwoButtonsComponent {
     public settings: OverlaySettings = { modal: false };
@@ -4497,7 +4736,8 @@ export class TwoButtonsComponent {
         width: 100px;
         height: 60px;
         border: 0;
-    }`]
+    }`],
+    standalone: true
 })
 export class WidthTestOverlayComponent {
 
@@ -4516,7 +4756,7 @@ export class WidthTestOverlayComponent {
         this.overlaySettings.closeOnOutsideClick = true;
         this.overlaySettings.modal = false;
 
-        this.overlaySettings.positionStrategy.settings.target = this.buttonElement.nativeElement;
+        this.overlaySettings.target = this.buttonElement.nativeElement;
         this.overlay.show(this.overlay.attach(this.customComponent, this.overlaySettings));
     }
 }
@@ -4535,7 +4775,8 @@ export class WidthTestOverlayComponent {
             <p>AAAAA</p>
             <p>AAAAA</p>
         </div>
-    </div>`
+    </div>`,
+    imports: [NgIf]
 })
 export class ScrollableComponent {
     @ViewChild(IgxToggleDirective, { static: true })
@@ -4566,7 +4807,8 @@ export class ScrollableComponent {
             Show Overlay
         </button>
     </div>
-    `
+    `,
+    standalone: true
 })
 export class FlexContainerComponent {
     @ViewChild('button', { static: true }) public buttonElement: ElementRef;
@@ -4577,35 +4819,4 @@ export class FlexContainerComponent {
     public click() {
         this.overlay.show(this.overlay.attach(SimpleDynamicComponent), this.overlaySettings);
     }
-}
-
-const DYNAMIC_COMPONENTS = [
-    EmptyPageComponent,
-    SimpleRefComponent,
-    EmptyPageInShadowDomComponent,
-    SimpleDynamicComponent,
-    SimpleBigSizeComponent,
-    DownRightButtonComponent,
-    TopLeftOffsetComponent,
-    TwoButtonsComponent,
-    WidthTestOverlayComponent,
-    ScrollableComponent,
-    FlexContainerComponent
-];
-
-const DIRECTIVE_COMPONENTS = [
-    SimpleDynamicWithDirectiveComponent
-];
-
-@NgModule({
-    imports: [BrowserModule],
-    declarations: [DYNAMIC_COMPONENTS],
-    exports: [DYNAMIC_COMPONENTS]
-})
-export class DynamicModule { }
-
-@NgModule({
-    imports: [IgxCalendarModule, IgxAvatarModule, IgxDatePickerModule]
-})
-export class IgxComponentsModule {
 }

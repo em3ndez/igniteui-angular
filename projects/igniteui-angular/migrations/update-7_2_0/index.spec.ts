@@ -1,33 +1,18 @@
 import * as path from 'path';
 
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
 import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
 import { workspaces } from '@angular-devkit/core';
 
 import * as addNormalize from '../../schematics/ng-add/add-normalize';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update 7.2.0', () => {
     let appTree: UnitTestTree;
     const schematicRunner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        version: 1,
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-    };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it(`should replace **ONLY** 'isSelected' and 'isFocused'`, async () => {
@@ -57,8 +42,7 @@ describe('Update 7.2.0', () => {
                 </igx-drop-down-item>
             </igx-drop-down>`);
 
-        const tree = await schematicRunner.runSchematicAsync('migration-08', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-08', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/custom.component.html'))
             .toEqual(
                 `<igx-drop-down #myDropDown>
@@ -91,8 +75,7 @@ describe('Update 7.2.0', () => {
         appTree.create('/testSrc/styles.scss', '');
         appTree.create('package.json', '{}');
         spyOn(addNormalize, 'addResetCss').and.callThrough();
-        const tree = await schematicRunner.runSchematicAsync('migration-08', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-08', {}, appTree);
 
         expect(addNormalize.addResetCss).toHaveBeenCalledWith(
             jasmine.objectContaining<workspaces.WorkspaceDefinition>({

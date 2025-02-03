@@ -1,12 +1,15 @@
 import { Component, ViewChild, ChangeDetectorRef, OnInit, AfterViewInit } from '@angular/core';
-import { IgxGridComponent } from 'igniteui-angular';
+import { AsyncPipe } from '@angular/common';
+
 import { RemoteService } from '../shared/remote.service';
+import { IgxButtonDirective, IgxGridComponent } from 'igniteui-angular';
 
 @Component({
     selector: 'app-grid-remote-virtualization-sample',
-    templateUrl: 'grid-remote-virtualization.sample.html'
+    templateUrl: 'grid-remote-virtualization.sample.html',
+    providers: [RemoteService],
+    imports: [IgxGridComponent, IgxButtonDirective, AsyncPipe]
 })
-
 export class GridVirtualizationSampleComponent implements OnInit, AfterViewInit {
     @ViewChild('grid1', { static: true })
     public grid: IgxGridComponent;
@@ -45,7 +48,6 @@ export class GridVirtualizationSampleComponent implements OnInit, AfterViewInit 
     }
 
     public loadData() {
-        this.grid.shouldGenerate = true;
         this.remoteService.getData(this.grid.virtualizationState, () => {
             this.remoteData = this.remoteService.remoteData;
         });

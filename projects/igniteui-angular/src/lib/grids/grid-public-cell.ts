@@ -1,4 +1,4 @@
-import { CellType, ColumnType, GridType, RowType } from './common/grid.interface';
+import { CellType, ColumnType, GridType, IGridValidationState, RowType, ValidationStatus } from './common/grid.interface';
 import { ISelectionNode } from './common/types';
 import { resolveNestedPath } from '../core/utils';
 
@@ -21,7 +21,7 @@ export class IgxGridCell implements CellType {
     constructor(
         grid: GridType,
         row: number | RowType,
-        column: string | ColumnType) {
+        column: ColumnType) {
         this.grid = grid;
         if (typeof row === 'number') {
             this._rowIndex = row;
@@ -29,11 +29,7 @@ export class IgxGridCell implements CellType {
             this._row = row;
             this._rowIndex = row.index;
         }
-        if (typeof column === 'string') {
-            this._columnField = column;
-        } else {
-            this._column = column;
-        }
+        this._column = column;
     }
 
     /**
@@ -57,7 +53,7 @@ export class IgxGridCell implements CellType {
      * @memberof IgxGridCell
      */
     public get column(): ColumnType {
-        return this._column || this.grid.getColumnByName(this._columnField);
+        return this._column;
     }
 
     /**
@@ -87,6 +83,19 @@ export class IgxGridCell implements CellType {
         if (this.isCellInEditMode()) {
             this.grid.crudService.cell.editValue = value;
         }
+    }
+
+    /**
+     * Gets the validation status and errors, if any.
+     * ```typescript
+     * let validation = this.cell.validation;
+     * let errors = validation.errors;
+     * ```
+     */
+
+    public get validation(): IGridValidationState {
+        const form = this.grid.validation.getFormControl(this.row.key, this.column.field);
+        return { status: form?.status as ValidationStatus || 'VALID', errors: form?.errors } as const;
     }
 
     /**

@@ -1,5 +1,4 @@
-import { Directive, ElementRef, HostBinding, Input, OnDestroy } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Directive, ElementRef, HostBinding, Input, OnDestroy, booleanAttribute } from '@angular/core';
 import { IToggleView } from '../../core/navigation';
 import { IPositionStrategy, OverlaySettings } from '../../services/public_api';
 import { IgxOverlayOutletDirective, IgxToggleDirective } from '../toggle/toggle.directive';
@@ -19,7 +18,7 @@ export abstract class IgxNotificationsDirective extends IgxToggleDirective
      * Sets/gets whether the element will be hidden after the `displayTime` is over.
      * Default value is `true`.
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public autoHide = true;
 
     /**
@@ -43,7 +42,7 @@ export abstract class IgxNotificationsDirective extends IgxToggleDirective
      * Enables/Disables the visibility of the element.
      * If not set, the `isVisible` attribute will have value `false`.
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get isVisible() {
         return !this.collapsed;
     }
@@ -70,7 +69,6 @@ export abstract class IgxNotificationsDirective extends IgxToggleDirective
      * @hidden
      */
     public timeoutId: number;
-    public d$ = new Subject<boolean>();
 
     /**
      * @hidden
@@ -80,7 +78,7 @@ export abstract class IgxNotificationsDirective extends IgxToggleDirective
     /**
      * @hidden
      */
-    public open() {
+    public override open() {
         clearInterval(this.timeoutId);
 
         const overlaySettings: OverlaySettings = {
@@ -103,16 +101,8 @@ export abstract class IgxNotificationsDirective extends IgxToggleDirective
     /**
      * Hides the element.
      */
-    public close() {
+    public override close() {
         clearTimeout(this.timeoutId);
         super.close();
-    }
-
-    /**
-     * @hidden
-     */
-    public ngOnDestroy() {
-        this.d$.next(true);
-        this.d$.complete();
     }
 }

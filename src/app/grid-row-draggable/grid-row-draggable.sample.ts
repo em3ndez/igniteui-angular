@@ -1,7 +1,13 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, HostBinding, ViewChild } from '@angular/core';
+import { AsyncPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import { Observable } from 'rxjs';
-import { DisplayDensity, IgxGridComponent } from 'igniteui-angular';
+
 import { RemoteService } from '../shared/remote.service';
+import { IgxButtonGroupComponent, IgxCellTemplateDirective, IgxColumnComponent, IgxGridComponent, IgxIconComponent, IgxSwitchComponent, IgxRowDragGhostDirective, IgxDragIndicatorIconDirective, IgxDropDirective } from 'igniteui-angular';
+import { IgxRowDragDirective } from 'projects/igniteui-angular/src/lib/grids/row-drag.directive';
+
 
 enum DragIcon {
     DEFAULT = 'drag_indicator',
@@ -12,10 +18,15 @@ enum DragIcon {
 @Component({
     selector: 'app-grid-row-draggable-sample',
     templateUrl: 'grid-row-draggable.sample.html',
-    styleUrls: ['grid-row-draggable.sample.css']
+    styleUrls: ['grid-row-draggable.sample.scss'],
+    providers: [RemoteService],
+    imports: [IgxButtonGroupComponent, IgxSwitchComponent, FormsModule, IgxGridComponent, IgxColumnComponent, IgxCellTemplateDirective, IgxIconComponent, IgxRowDragDirective, IgxRowDragGhostDirective, IgxDropDirective, IgxDragIndicatorIconDirective, AsyncPipe]
 })
 export class GridRowDraggableComponent implements AfterViewInit {
-
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { read: IgxGridComponent, static: true })
     private grid1: IgxGridComponent;
     @ViewChild('grid2', { read: IgxGridComponent, static: true })
@@ -24,16 +35,16 @@ export class GridRowDraggableComponent implements AfterViewInit {
     public remote: Observable<any[]>;
     public newData = [];
     public dragdrop = true;
-    public density: DisplayDensity = 'comfortable';
-    public displayDensities;
+    public size = 'large';
+    public sizes;
 
     constructor(private remoteService: RemoteService, private cdr: ChangeDetectorRef) {
         this.remoteService.urlBuilder = () => this.remoteService.url;
 
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }
+        this.sizes = [
+            { label: 'small', selected: this.size === 'small', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'large', selected: this.size === 'large', togglable: true }
         ];
     }
 
@@ -44,7 +55,7 @@ export class GridRowDraggableComponent implements AfterViewInit {
     }
 
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public handleRowDrag() {

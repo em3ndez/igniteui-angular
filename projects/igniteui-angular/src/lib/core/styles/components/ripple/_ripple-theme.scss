@@ -1,6 +1,6 @@
+@use 'sass:map';
 @use '../../base' as *;
 @use '../../themes/schemas' as *;
-@use 'sass:map';
 
 ////
 /// @group themes
@@ -9,23 +9,15 @@
 /// @author <a href="https://github.com/desig9stein" target="_blank">Marin Popov</a>
 ////
 
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
-///
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} $color [null] - The color of the ripple.
-///
-/// @requires $default-palette
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-///
+/// @requires $light-material-schema
 /// @example scss Change the color
 ///   $my-ripple-theme: igx-ripple-theme($color: yellow);
-///   // Pass the theme to the igx-ripple component mixin
-///   igx-ripple($my-ripple-theme);
+///   // Pass the theme to the css-vars() mixin
+///   @include css-vars($my-ripple-theme);
 @function ripple-theme(
-    $palette: null,
-    $schema: $light-schema,
+    $schema: $light-material-schema,
     $color: null
 ) {
     $name: 'igx-ripple';
@@ -33,32 +25,32 @@
 
     $ripple-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $ripple-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'ripple') {
+        $ripple-schema: map.get($schema, 'ripple');
     } @else {
         $ripple-schema: $schema;
     }
 
-    $theme: apply-palette($ripple-schema, $palette);
+    $theme: digest-schema($ripple-schema);
 
     @return extend($theme, (
         name: $name,
         selector: $selector,
-        palette: $palette,
-        color: $color
+        color: $color,
+        theme: map.get($schema, '_meta', 'theme'),
     ));
 }
 
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires var-get
 @mixin ripple($theme) {
     @include css-vars($theme);
 
     %igx-ripple-display {
         display: block;
         position: absolute;
-        border-radius: 50%;
+        border-radius: border-radius(50%);
         background: var-get($theme, 'color');
         pointer-events: none;
         transform-origin: center;

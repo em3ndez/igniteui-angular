@@ -1,14 +1,8 @@
 @use '../../base' as *;
 @use 'sass:string';
 
-////
-/// @group components
+/// @access private
 /// @author <a href="https://github.com/desig9stein" target="_blank">Marin Popov</a>
-/// @requires {mixin} bem-block
-/// @requires {mixin} bem-elem
-/// @requires {mixin} bem-mod
-////
-
 @mixin component {
     @include b(igx-nav-drawer) {
         $this: bem--selector-to-string(&);
@@ -18,6 +12,14 @@
         );
 
         @extend %navdrawer-display !optional;
+
+        @include m(pinned) {
+            @extend %navdrawer-display-pinned !optional;
+        }
+
+        @include mx(mini, pinned) {
+            @extend %navdrawer-display-mini-pinned !optional;
+        }
 
         // Main aside element
         @include e(aside) {
@@ -35,7 +37,6 @@
                 @extend %aside--collapsed--right !optional;
             }
         }
-
 
         @include e(aside, right) {
             @extend %aside--right !optional;
@@ -91,6 +92,10 @@
 
         @include e(item, header) {
             @extend %item--header !optional;
+        }
+
+        @include e(item, disabled) {
+            @extend %item--disabled !optional;
         }
 
         @include m(disable-animation) {

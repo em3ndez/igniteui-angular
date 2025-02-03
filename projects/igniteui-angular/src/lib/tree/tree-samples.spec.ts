@@ -1,11 +1,13 @@
 import { Component, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { IgxTreeComponent } from './public_api';
+import { IgxTreeComponent, IgxTreeExpandIndicatorDirective, IgxTreeNodeComponent, IgxTreeNodeLinkDirective } from './public_api';
 import { HIERARCHICAL_SAMPLE_DATA } from 'src/app/shared/sample-data';
+import { NgFor, NgIf, NgTemplateOutlet } from '@angular/common';
+import { IgxIconComponent } from '../icon/icon.component';
 
 @Component({
     template: `
     <igx-tree #tree1 class="medium">
-        <igx-tree-node *ngFor="let node of data" [selected]="node.ID === 'ALFKI'" [data]="node">
+        <igx-tree-node *ngFor="let node of data" [data]="node">
             {{ node.CompanyName }}
             <igx-tree-node *ngFor="let child of node.ChildCompanies" [data]="child">
                 {{ child.CompanyName }}
@@ -15,7 +17,8 @@ import { HIERARCHICAL_SAMPLE_DATA } from 'src/app/shared/sample-data';
             </igx-tree-node>
         </igx-tree-node>
     </igx-tree>
-    `
+    `,
+    imports: [IgxTreeComponent, IgxTreeNodeComponent, NgFor]
 })
 export class IgxTreeSimpleComponent {
     @ViewChild(IgxTreeComponent, { static: true }) public tree: IgxTreeComponent;
@@ -35,7 +38,8 @@ export class IgxTreeSimpleComponent {
             </igx-tree-node>
         </igx-tree-node>
     </igx-tree>
-    `
+    `,
+    imports: [IgxTreeComponent, IgxTreeNodeComponent, NgFor]
 })
 export class IgxTreeSelectionSampleComponent {
     @ViewChild(IgxTreeComponent, { static: true }) public tree: IgxTreeComponent;
@@ -91,7 +95,8 @@ export class IgxTreeSelectionSampleComponent {
             <a [igxTreeNodeLink]="node" href="https://infragistics.com">Link to Infragistics</a>
         </ng-template>
     </igx-tree>
-    `
+    `,
+    imports: [IgxTreeComponent, IgxTreeNodeComponent, IgxTreeNodeLinkDirective, NgTemplateOutlet, NgFor, NgIf]
 })
 export class IgxTreeNavigationComponent {
     @ViewChild(IgxTreeComponent, { static: true }) public tree: IgxTreeComponent;
@@ -111,8 +116,12 @@ export class IgxTreeNavigationComponent {
                 </igx-tree-node>
             </igx-tree-node>
         </igx-tree-node>
+        <ng-template igxTreeExpandIndicator let-expanded>
+            <igx-icon>{{ expanded ? "close_fullscreen": "open_in_full"}}</igx-icon>
+        </ng-template>
     </igx-tree>
-    `
+    `,
+    imports: [IgxTreeComponent, IgxTreeNodeComponent, IgxTreeExpandIndicatorDirective, IgxIconComponent, NgFor]
 })
 export class IgxTreeScrollComponent {
     @ViewChild(IgxTreeComponent, { static: true }) public tree: IgxTreeComponent;

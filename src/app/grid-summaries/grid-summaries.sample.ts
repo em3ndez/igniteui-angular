@@ -1,10 +1,27 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, HostBinding, OnInit, ViewChild } from '@angular/core';
+import { NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
     IgxGridComponent,
     IgxNumberSummaryOperand,
     IgxSummaryResult,
     ColumnPinningPosition,
-    IPinningConfig
+    IPinningConfig,
+    IgxButtonGroupComponent,
+    IgxGridToolbarComponent,
+    IgxGridToolbarTitleComponent,
+    IgxGridToolbarActionsComponent,
+    IgxGridToolbarPinningComponent,
+    IgxGridToolbarHidingComponent,
+    IgxGridToolbarAdvancedFilteringComponent,
+    IgxGridToolbarExporterComponent,
+    IgxExcelTextDirective,
+    IgxCSVTextDirective,
+    IgxColumnComponent,
+    IgxCellTemplateDirective,
+    IgxSummaryTemplateDirective,
+    IgxSwitchComponent,
+    IgxPaginatorComponent
 } from 'igniteui-angular';
 
 class MySummary extends IgxNumberSummaryOperand {
@@ -13,7 +30,7 @@ class MySummary extends IgxNumberSummaryOperand {
         super();
     }
 
-    public operate(data: any[], allData = [], fieldName?): IgxSummaryResult[] {
+    public override operate(data: any[], allData = [], fieldName?): IgxSummaryResult[] {
         fieldName = fieldName === 'Sum' ? 'ReorderLevel' : fieldName;
         const result = super.operate(allData.map(r => r[fieldName]));
             result.push({
@@ -28,10 +45,14 @@ class MySummary extends IgxNumberSummaryOperand {
 @Component({
     selector: 'app-grid-summaries-sample',
     styleUrls: ['./grid-summaries.component.scss'],
-    templateUrl: 'grid-summaries.sample.html'
+    templateUrl: 'grid-summaries.sample.html',
+    imports: [IgxButtonGroupComponent, IgxGridComponent, NgIf, IgxGridToolbarComponent, IgxGridToolbarTitleComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarExporterComponent, IgxExcelTextDirective, IgxCSVTextDirective, IgxColumnComponent, IgxCellTemplateDirective, IgxSummaryTemplateDirective, IgxPaginatorComponent, FormsModule, IgxSwitchComponent]
 })
 export class GridSummaryComponent implements OnInit {
-
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { read: IgxGridComponent, static: true })
     private grid1: IgxGridComponent;
 
@@ -52,8 +73,9 @@ export class GridSummaryComponent implements OnInit {
     public columnPinning = false;
     public pinningConfig: IPinningConfig = { columns: ColumnPinningPosition.End };
     public rowSelection = false;
-    public density = 'compact';
-    public displayDensities;
+    public size = 'small';
+    public sizes;
+    public paging = false;
 
     public data = [{
         __metadata: {
@@ -711,14 +733,14 @@ export class GridSummaryComponent implements OnInit {
         }
     }
     public ngOnInit(): void {
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }];
+        this.sizes = [
+            { label: 'small', selected: this.size === 'small', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'large', selected: this.size === 'large', togglable: true }];
         }
 
     public selectDensity(event) {
-         this.density = this.displayDensities[event.index].label;
+         this.size = this.sizes[event.index].label;
     }
 
     public updateData() {

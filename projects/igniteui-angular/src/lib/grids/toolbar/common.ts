@@ -1,16 +1,23 @@
-import { Directive, HostBinding, TemplateRef } from '@angular/core';
+import { Component, Directive, HostBinding, TemplateRef } from '@angular/core';
 import { GridType } from '../common/grid.interface';
 
-
-// eslint-disable-next-line @angular-eslint/directive-selector
-@Directive({ selector: '[excelText],excel-text' })
+@Directive({ 
+    selector: '[excelText],excel-text',
+    standalone: true
+})
 export class IgxExcelTextDirective { }
 
-
-// eslint-disable-next-line @angular-eslint/directive-selector
-@Directive({ selector: '[csvText],csv-text' })
+@Directive({ 
+    selector: '[csvText],csv-text',
+    standalone: true
+})
 export class IgxCSVTextDirective { }
 
+/* blazorElement */
+/* wcElementTag: igc-grid-toolbar-title */
+/* blazorAlternateBaseType: GridToolbarContent */
+/* blazorIndirectRender */
+/* singleInstanceIdentifier */
 /**
  * Provides a way to template the title portion of the toolbar in the grid.
  *
@@ -22,8 +29,11 @@ export class IgxCSVTextDirective { }
  * <igx-grid-toolbar-title>My custom title</igx-grid-toolbar-title>
  * ```
  */
-@Directive({ selector: '[igxGridToolbarTitle],igx-grid-toolbar-title' })
-export class IgxGridToolbarTitleDirective {
+@Component({
+    selector: 'igx-grid-toolbar-title', template: '<ng-content></ng-content>',
+    standalone: true
+})
+export class IgxGridToolbarTitleComponent {
     /**
      * Host `class.igx-grid-toolbar__title` binding.
      *
@@ -34,6 +44,11 @@ export class IgxGridToolbarTitleDirective {
     public cssClass = 'igx-grid-toolbar__title';
 }
 
+/* blazorElement */
+/* blazorIndirectRender */
+/* blazorAlternateBaseType: GridToolbarContent */
+/* wcElementTag: igc-grid-toolbar-actions */
+/* singleInstanceIdentifier */
 /**
  * Provides a way to template the action portion of the toolbar in the grid.
  *
@@ -47,8 +62,11 @@ export class IgxGridToolbarTitleDirective {
  * </igx-grid-toolbar-actions>
  * ```
  */
-@Directive({ selector: '[igxGridToolbarActions],igx-grid-toolbar-actions' })
-export class IgxGridToolbarActionsDirective {
+@Component({
+    selector: 'igx-grid-toolbar-actions', template: '<ng-content></ng-content>',
+    standalone: true
+})
+export class IgxGridToolbarActionsComponent {
     /**
      * Host `class.igx-grid-toolbar__actions` binding.
      *
@@ -63,7 +81,15 @@ export interface IgxGridToolbarTemplateContext {
     $implicit: GridType;
 }
 
-@Directive({ selector: '[igxGridToolbar]'})
+@Directive({
+    selector: '[igxGridToolbar]',
+    standalone: true
+})
 export class IgxGridToolbarDirective {
     constructor(public template: TemplateRef<IgxGridToolbarTemplateContext>) {}
+
+    public static ngTemplateContextGuard(_dir: IgxGridToolbarDirective,
+        ctx: unknown): ctx is IgxGridToolbarTemplateContext {
+        return true
+    }
 }

@@ -3,8 +3,8 @@
         <h4 class="sample-title">Time Picker with Date value binding</h4>
         <p class="sample-description">{{showDate(date)}}</p>
         <div class="preview">
-            <igx-time-picker #tp [value]="date" [minValue]="min" [maxValue]="max" [spinLoop]="spinLoop"
-                [itemsDelta]="itemsDelta" [inputFormat]="format" (valueChange)="valueChanged($event)"
+            <igx-time-picker #tp [value]="date" [minValue]="min" [maxValue]="max" [spinLoop]="spinLoop"  locale="FR"
+                [itemsDelta]="itemsDelta" [inputFormat]="format" displayFormat="longDate" (valueChange)="valueChanged($event)"
                 (validationFailed)="validationFailed($event)">
             </igx-time-picker>
         </div>
@@ -14,7 +14,7 @@
         <p class="sample-description">{{showDate(val)}}</p>
         <div class="preview">
             <igx-time-picker #tp1 [value]="val" [spinLoop]="false" [itemsDelta]="{ hours: 1, minutes: 30, seconds: 20 }"
-                [inputFormat]="'hh:mm tt'" (valueChange)="updateValue($event)"
+                [inputFormat]="'hh:mm a'" (valueChange)="updateValue($event)"
                 (validationFailed)="validationFailed($event)">
             </igx-time-picker>
         </div>
@@ -24,7 +24,7 @@
         <p class="sample-description">{{showDate(date1)}}</p>
         <div class="preview">
             <igx-time-picker #hourModeTimePicker #model="ngModel" [(ngModel)]="date1" [minValue]="min" [maxValue]="max"
-                [inputFormat]="'hh:mm tt'" [displayFormat]="'hh tt'">
+                [inputFormat]="'hh:mm tt'" [displayFormat]="'hh a'">
                 <igx-hint *ngIf="model.errors?.minValue || model.errors?.maxValue">Value is outside the range.
                 </igx-hint>
             </igx-time-picker>
@@ -49,8 +49,8 @@
         <h4 class="sample-title">Templated Action Buttons Time Picker</h4>
         <p class="sample-description">Time picker with custom action button</p>
         <div class="preview">
-            <igx-time-picker #picker [(ngModel)]="date1" [inputFormat]="'hh:mm tt'">
-                <ng-template igxTimePickerActions>
+            <igx-time-picker #picker [(ngModel)]="date1" [inputFormat]="'hh:mm aaaaa'">
+                <ng-template igxPickerActions>
                     <div class="action-buttons">
                         <button igxButton="flat" (click)="selectCurrentTime(picker)">Current Time</button>
                     </div>

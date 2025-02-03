@@ -1,24 +1,23 @@
-import { IgxGridNavigationService } from '../grid-navigation.service';
-import { first } from 'rxjs/operators';
-import { SUPPORTED_KEYS, NAVIGATION_KEYS } from '../../core/utils';
 import { Injectable } from '@angular/core';
+import { first } from 'rxjs/operators';
+import { NAVIGATION_KEYS, SUPPORTED_KEYS } from '../../core/utils';
 import { GridType, IPathSegment, RowType } from '../common/grid.interface';
+import { IActiveNode, IgxGridNavigationService } from '../grid-navigation.service';
 
 @Injectable()
 export class IgxHierarchicalGridNavigationService extends IgxGridNavigationService {
-    public grid: GridType;
-
     protected _pendingNavigation = false;
 
 
-    public dispatchEvent(event: KeyboardEvent) {
+    public override dispatchEvent(event: KeyboardEvent) {
         const key = event.key.toLowerCase();
-        if (!this.activeNode || !(SUPPORTED_KEYS.has(key) || (key === 'tab' && this.grid.crudService.cell)) &&
-            !this.grid.crudService.rowEditingBlocked && !this.grid.crudService.rowInEditMode) {
+        const cellOrRowInEdit = this.grid.crudService.cell || this.grid.crudService.row;
+        if (!this.activeNode || !(SUPPORTED_KEYS.has(key) || (key === 'tab' && cellOrRowInEdit))) {
             return;
         }
 
-        const targetGrid = this.getClosestElemByTag(event.target, 'igx-hierarchical-grid');
+        const targetGrid = this.getClosestElemByTag(event.target, 'igx-hierarchical-grid')
+            || this.getClosestElemByTag(event.target, 'igc-hierarchical-grid');
         if (targetGrid !== this.grid.nativeElement) {
             return;
         }
@@ -33,7 +32,7 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
         super.dispatchEvent(event);
     }
 
-    public navigateInBody(rowIndex, visibleColIndex, cb: (arg: any) => void = null): void {
+    public override navigateInBody(rowIndex, visibleColIndex, cb: (arg: any) => void = null): void {
         const rec = this.grid.dataView[rowIndex];
         if (rec && this.grid.isChildGridRecord(rec)) {
              // target is child grid
@@ -88,7 +87,7 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
         super.navigateInBody(rowIndex, visibleColIndex, cb);
     }
 
-    public shouldPerformVerticalScroll(index, visibleColumnIndex = -1, isNext?) {
+    public override shouldPerformVerticalScroll(index, visibleColumnIndex = -1, isNext?) {
         const targetRec = this.grid.dataView[index];
         if (this.grid.isChildGridRecord(targetRec)) {
             const scrollAmount = this.grid.verticalScrollContainer.getScrollForIndex(index, !isNext);
@@ -100,7 +99,7 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
         }
     }
 
-    public focusTbody(event) {
+    public override focusTbody(event) {
         if (!this.activeNode || this.activeNode.row === null) {
             this.activeNode = {
                 row: 0,
@@ -181,6 +180,55 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
     }
 
     /**
+     * Navigates to the specific child grid based on the array of paths leading to it
+     *
+     * @param pathToChildGrid Array of IPathSegments that describe the path to the child grid
+     * each segment is described by the rowKey of the parent row and the rowIslandKey.
+     */
+    public navigateToChildGrid(pathToChildGrid: IPathSegment[], cb?: () => void) {
+        if (pathToChildGrid.length == 0) {
+            if (cb) {
+                cb();
+            }
+            return;
+        }
+        const pathElem = pathToChildGrid.shift();
+        const rowKey = pathElem.rowKey;
+        const rowIndex = this.grid.gridAPI.get_row_index_in_data(rowKey);
+        if (rowIndex === -1) {
+            if (cb) {
+                cb();
+            }
+            return;
+        }
+        // scroll to row, since it can be out of view
+        this.performVerticalScrollToCell(rowIndex, -1, () => {
+            this.grid.cdr.detectChanges();
+            // next, expand row, if it is collapsed
+            const row = this.grid.getRowByIndex(rowIndex);
+            if (!row.expanded) {
+                row.expanded = true;
+                // update sizes after expand
+                this.grid.verticalScrollContainer.recalcUpdateSizes();
+                this.grid.cdr.detectChanges();
+            }
+
+            const childGrid =  this.grid.gridAPI.getChildGrid([pathElem]);
+            if (!childGrid) {
+                if (cb) {
+                    cb();
+                }
+                return;
+            }
+            const positionInfo = this.getElementPosition(childGrid.nativeElement, false);
+            this.grid.verticalScrollContainer.addScrollTop(positionInfo.offset);
+            this.grid.verticalScrollContainer.chunkLoad.pipe(first()).subscribe(() => {
+                childGrid.navigation.navigateToChildGrid(pathToChildGrid, cb);
+            });
+        });
+    }
+
+    /**
      * Moves navigation to child grid.
      *
      * @param parentRowIndex The parent row index, at which the child grid is rendered.
@@ -193,6 +241,7 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
         const rowId = this.grid.dataView[parentRowIndex].rowID;
         const pathSegment: IPathSegment = {
             rowID: rowId,
+            rowKey: rowId,
             rowIslandKey: ri.key
         };
         const childGrid =  this.grid.gridAPI.getChildGrid([pathSegment]);
@@ -264,22 +313,34 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
             const childLayoutKeys = this.grid.childLayoutKeys;
             const riKey = isNext ? childLayoutKeys[0] : childLayoutKeys[childLayoutKeys.length - 1];
             const pathSegment: IPathSegment = {
-                rowID: row.data.rowID,
+                rowID: row.data.rowID, rowKey: row.data.rowID,
                 rowIslandKey: riKey
             };
             const childGrid =  this.grid.gridAPI.getChildGrid([pathSegment]);
             rowElem = childGrid.tfoot.nativeElement;
         }
+
+        return this.getElementPosition(rowElem, isNext);
+    }
+
+    protected getElementPosition(element: HTMLElement, isNext: boolean) {
+        // Special handling for scenarios where there is css transformations applied that affects scale.
+        // getBoundingClientRect().height returns size after transformations
+        // element.offsetHeight returns size without any transformations
+        // get the ratio to figure out if anything has applied transformations
+        const scaling = element.getBoundingClientRect().height / element.offsetHeight;
+
         const gridBottom = this._getMinBottom(this.grid);
         const diffBottom =
-        rowElem.getBoundingClientRect().bottom - gridBottom;
+        element.getBoundingClientRect().bottom - gridBottom;
         const gridTop = this._getMaxTop(this.grid);
-        const diffTop = rowElem.getBoundingClientRect().bottom -
-        rowElem.offsetHeight - gridTop;
-        const isInView = isNext ? diffBottom <= 0 : diffTop >= 0;
+        const diffTop = element.getBoundingClientRect().bottom -
+        element.getBoundingClientRect().height - gridTop;
+        // Adding Math.Round because Chrome has some inconsistencies when the page is zoomed
+        const isInView = isNext ? Math.round(diffBottom) <= 0 : Math.round(diffTop) >= 0;
         const calcOffset =  isNext ? diffBottom : diffTop;
 
-        return { inView: isInView, offset: calcOffset };
+        return { inView: isInView, offset: calcOffset / scaling};
     }
 
     /**
@@ -301,8 +362,8 @@ export class IgxHierarchicalGridNavigationService extends IgxGridNavigationServi
 
     private clearActivation() {
         // clear if previous activation exists.
-        if (this.activeNode) {
-            this.activeNode.row = null;
+        if (this.activeNode && Object.keys(this.activeNode).length) {
+            this.activeNode = Object.assign({} as IActiveNode);
         }
     }
 

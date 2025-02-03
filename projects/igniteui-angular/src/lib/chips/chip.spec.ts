@@ -1,26 +1,25 @@
-﻿import { Component, ViewChild, ViewChildren, QueryList, ChangeDetectorRef } from '@angular/core';
-import { TestBed, waitForAsync } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
+import { Component, ViewChild, ViewChildren, QueryList, ChangeDetectorRef } from '@angular/core';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { IgxIconModule } from '../icon/public_api';
-import { IgxChipsModule } from './chips.module';
 import { IgxChipComponent } from './chip.component';
 import { IgxChipsAreaComponent } from './chips-area.component';
 import { IgxPrefixDirective } from './../directives/prefix/prefix.directive';
 import { IgxLabelDirective } from './../directives/label/label.directive';
 import { IgxSuffixDirective } from './../directives/suffix/suffix.directive';
-import { DisplayDensity } from '../core/displayDensity';
 import { UIInteractions, wait } from '../test-utils/ui-interactions.spec';
 import { configureTestSuite } from '../test-utils/configure-suite';
 import { ControlsFunction } from '../test-utils/controls-functions.spec';
+import { IgxIconComponent } from '../icon/icon.component';
+import { NgFor } from '@angular/common';
+import { getComponentSize } from '../core/utils';
 
 @Component({
     template: `
         <igx-chips-area #chipsArea>
-            <igx-chip #chipElem *ngFor="let chip of chipList"
+            <igx-chip #chipElem *ngFor="let chip of chipList" class="custom"
             [id]="chip.id" [draggable]="chip.draggable"
             [removable]="chip.removable" [selectable]="chip.selectable"
-            [displayDensity]="chip.density" (remove)="chipRemoved($event)">
+            [style]="'--ig-size: var(' + chip.chipSize + ')'" (remove)="chipRemoved($event)">
                 <span #label [class]="'igx-chip__text'">{{chip.text}}</span>
                 <igx-icon igxPrefix>drag_indicator</igx-icon>
             </igx-chip>
@@ -40,7 +39,8 @@ import { ControlsFunction } from '../test-utils/controls-functions.spec';
                 <span #label [class]="'igx-chip__text'">Tab Chip</span>
             </igx-chip>
         </igx-chips-area>
-    `
+    `,
+    imports: [IgxChipComponent, IgxChipsAreaComponent, IgxIconComponent, IgxPrefixDirective, NgFor]
 })
 class TestChipComponent {
 
@@ -52,9 +52,9 @@ class TestChipComponent {
 
     public chipList = [
         { id: 'Country', text: 'Country', removable: false, selectable: false, draggable: true },
-        { id: 'City', text: 'City', removable: true, selectable: true, draggable: true, density: 'comfortable' },
-        { id: 'Town', text: 'Town', removable: true, selectable: true, draggable: true, density: 'compact' },
-        { id: 'FirstName', text: 'First Name', removable: true, selectable: true, draggable: true, density: 'cosy' }
+        { id: 'City', text: 'City', removable: true, selectable: true, draggable: true, chipSize: '--ig-size-large' },
+        { id: 'Town', text: 'Town', removable: true, selectable: true, draggable: true, chipSize: '--ig-size-small' },
+        { id: 'FirstName', text: 'First Name', removable: true, selectable: true, draggable: true, chipSize: '--ig-size-medium' }
     ];
 
     constructor(public cdr: ChangeDetectorRef) { }
@@ -73,7 +73,8 @@ class TestChipComponent {
                 <span igxSuffix>suf</span>
             </igx-chip>
         </igx-chips-area>
-    `
+    `,
+    imports: [IgxChipsAreaComponent, IgxChipComponent, IgxLabelDirective, IgxSuffixDirective, NgFor]
 })
 class TestChipsLabelAndSuffixComponent {
 
@@ -93,25 +94,16 @@ class TestChipsLabelAndSuffixComponent {
 
 
 describe('IgxChip', () => {
-    const CHIP_TEXT_CLASS = '.igx-chip__text';
-    const CHIP_CLASS = '.igx-chip';
-    const CHIP_COMPACT_CLASS = '.igx-chip--compact';
-    const CHIP_COSY_CLASS = '.igx-chip--cosy';
-    const CHIP_ITEM_CLASS = '.igx-chip__item';
-    const CHIP_GHOST_COMP_CLASS = 'igx-chip__ghost--compact';
+    const CHIP_TEXT_CLASS = 'igx-chip__text';
+    const CHIP_ITEM_CLASS = 'igx-chip__item';
 
-    let fix;
+    let fix: ComponentFixture<TestChipComponent | TestChipsLabelAndSuffixComponent>;
     let chipArea;
 
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                TestChipComponent,
-                TestChipsLabelAndSuffixComponent,
-                IgxLabelDirective
-            ],
-            imports: [FormsModule, IgxIconModule, IgxChipsModule]
+            imports: [TestChipComponent, TestChipsLabelAndSuffixComponent]
         }).compileComponents();
     }));
 
@@ -129,32 +121,41 @@ describe('IgxChip', () => {
         });
 
         it('should render prefix element inside the chip before the content', () => {
-            const chipElems = fix.debugElement.queryAll(By.directive(IgxChipComponent));
+            const igxChip = fix.debugElement.queryAll(By.directive(IgxChipComponent));
+            const igxChipItem = igxChip[1].nativeElement;
 
-            // For this first chip there are 2 elements. The prefix and content span.
-            expect(chipElems[0].nativeElement.children[0].children.length).toEqual(3);
-            expect(chipElems[0].nativeElement.children[0].children[0].offsetWidth).toEqual(0);
-            expect(chipElems[0].nativeElement.children[0].children[1].tagName).toEqual('IGX-ICON');
-            expect(chipElems[0].nativeElement.children[0].children[1].hasAttribute('igxprefix')).toEqual(true);
+            expect(igxChipItem.children[0].children[0].children[0].hasAttribute('igxprefix')).toEqual(true);
         });
 
         it('should render remove button when enabled after the content inside the chip', () => {
-            const chipElems = fix.debugElement.queryAll(By.directive(IgxChipComponent));
-            const chipRemoveButton = ControlsFunction.getChipRemoveButton(chipElems[1].nativeElement);
+            const igxChip = fix.debugElement.queryAll(By.directive(IgxChipComponent));
+            const igxChipItem = igxChip[1].nativeElement;
+            const chipRemoveButton = ControlsFunction.getChipRemoveButton(igxChipItem);
 
-            // For this second chip there are 3 elements. The prefix, content span and the remove button icon .
-            expect(chipElems[1].nativeElement.children[0].children.length).toEqual(4);
+            expect(igxChipItem.children[0].children[2].children[0]).toHaveClass('igx-chip__remove');
             expect(chipRemoveButton).toBeTruthy();
+        });
+
+        it('should change chip variant', () => {
+            const fixture = TestBed.createComponent(IgxChipComponent);
+            const igxChip = fixture.componentInstance;
+
+            igxChip.variant = 'danger';
+
+            fixture.detectChanges();
+
+            expect(igxChip.variant).toMatch('danger');
+            expect(igxChip.nativeElement).toHaveClass('igx-chip--danger');
         });
 
         it('should set text in chips correctly', () => {
             const chipElements = chipArea[0].queryAll(By.directive(IgxChipComponent));
-            const firstChipTextElement = chipElements[0].queryAllNodes(By.css(CHIP_TEXT_CLASS));
+            const firstChipTextElement = chipElements[0].queryAllNodes(By.css(`.${CHIP_TEXT_CLASS}`));
             const firstChipText = firstChipTextElement[0].nativeNode.innerHTML;
 
             expect(firstChipText).toContain('Country');
 
-            const secondChipTextElement = chipElements[1].queryAllNodes(By.css(CHIP_TEXT_CLASS));
+            const secondChipTextElement = chipElements[1].queryAllNodes(By.css(`.${CHIP_TEXT_CLASS}`));
             const secondChipText = secondChipTextElement[0].nativeNode.innerHTML;
 
             expect(secondChipText).toContain('City');
@@ -168,54 +169,12 @@ describe('IgxChip', () => {
             expect(firstChipIconName).toContain('drag_indicator');
         });
 
-        it('should make chip comfortable when density is not set or it is set to comfortable', () => {
-            const components = fix.debugElement.queryAll(By.directive(IgxChipComponent));
-            const firstComponent = components[0];
-            const secondComponent = components[1];
-
-            expect(firstComponent.componentInstance.displayDensity).toEqual(DisplayDensity.comfortable);
-            expect(secondComponent.componentInstance.displayDensity).toEqual(DisplayDensity.comfortable);
-
-            // Assert default css class is applied
-            const comfortableComponents = fix.debugElement.queryAll(By.css(CHIP_CLASS));
-
-            expect(comfortableComponents.length).toEqual(9);
-            expect(comfortableComponents[0].nativeElement).toBe(firstComponent.nativeElement);
-            expect(comfortableComponents[1].nativeElement).toBe(secondComponent.nativeElement);
-        });
-
-        it('should make chip compact when density is set to compact', () => {
-            const components = fix.debugElement.queryAll(By.directive(IgxChipComponent));
-            const thirdComponent = components[2];
-
-            expect(thirdComponent.componentInstance.displayDensity).toEqual(DisplayDensity.compact);
-
-            // Assert compact css class is added
-            const compactComponents = fix.debugElement.queryAll(By.css(CHIP_COMPACT_CLASS));
-
-            expect(compactComponents.length).toEqual(1);
-            expect(compactComponents[0].nativeElement).toBe(thirdComponent.nativeElement);
-        });
-
-        it('should make chip cosy when density is set to cosy', () => {
-            const components = fix.debugElement.queryAll(By.directive(IgxChipComponent));
-            const fourthComponent = components[3];
-
-            expect(fourthComponent.componentInstance.displayDensity).toEqual(DisplayDensity.cosy);
-
-            // Assert cosy css class is added
-            const cosyComponents = fix.debugElement.queryAll(By.css(CHIP_COSY_CLASS));
-
-            expect(cosyComponents.length).toEqual(1);
-            expect(cosyComponents[0].nativeElement).toBe(fourthComponent.nativeElement);
-        });
-
         it('should set correctly color of chip when color is set through code', () => {
             const chipColor = 'rgb(255, 0, 0)';
 
             const components = fix.debugElement.queryAll(By.directive(IgxChipComponent));
             const firstComponent = components[0];
-            const chipAreaElem = firstComponent.queryAll(By.css(CHIP_ITEM_CLASS))[0];
+            const chipAreaElem = firstComponent.queryAll(By.css(`.${CHIP_ITEM_CLASS}`))[0];
 
             firstComponent.componentInstance.color = chipColor;
 
@@ -305,7 +264,7 @@ describe('IgxChip', () => {
             expect(chipComponentsIds).not.toContain('City');
         });
 
-        it('should affect the ghostElement density when chip has it set to compact', () => {
+        it('should affect the ghostElement size when chip has it set to compact', () => {
             const thirdChip = fix.componentInstance.chips.toArray()[2];
             const thirdChipElem = thirdChip.chipArea.nativeElement;
 
@@ -323,7 +282,7 @@ describe('IgxChip', () => {
             UIInteractions.simulatePointerEvent('pointermove', thirdChipElem, startingX + 10, startingY + 10);
             fix.detectChanges();
 
-            expect(thirdChip.dragDirective.ghostElement.classList.contains(CHIP_GHOST_COMP_CLASS)).toBeTruthy();
+            expect(getComponentSize(thirdChip.dragDirective.ghostElement)).toEqual('1');
         });
 
         it('should fire selectedChanging event when selectable is true', () => {
@@ -334,7 +293,7 @@ describe('IgxChip', () => {
             UIInteractions.triggerKeyDownEvtUponElem(' ', secondChipComp.chipArea.nativeElement, true);
             fix.detectChanges();
             expect(secondChipComp.selectedChanging.emit).toHaveBeenCalled();
-            expect(secondChipComp.selectedChanged.emit).not.toHaveBeenCalled();
+            expect(secondChipComp.selectedChanged.emit).toHaveBeenCalled();
             expect(secondChipComp.selectedChanging.emit).not.toHaveBeenCalledWith({
                 originalEvent: null,
                 owner: secondChipComp,

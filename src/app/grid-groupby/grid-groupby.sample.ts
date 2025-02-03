@@ -1,18 +1,19 @@
-/* eslint-disable max-len */
-import { Component, ViewChild, OnInit, Inject } from '@angular/core';
-
-import {
-    IgxGridComponent, SortingDirection, ISortingExpression,
-    DefaultSortingStrategy, DisplayDensity, IDisplayDensityOptions, DisplayDensityToken, GridSummaryPosition, GridSummaryCalculationMode, IRowSelectionEventArgs
-} from 'igniteui-angular';
+import { Component, ViewChild, OnInit, HostBinding } from '@angular/core';
+import { NgFor } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { DefaultSortingStrategy, GridSummaryCalculationMode, GridSummaryPosition, GroupMemberCountSortingStrategy, IRowSelectionEventArgs, ISortingExpression, ISortingOptions, IgxButtonDirective, IgxButtonGroupComponent, IgxColumnComponent, IgxDropDownComponent, IgxDropDownItemComponent, IgxDropDownItemNavigationDirective, IgxGridComponent, IgxSwitchComponent, IgxToggleActionDirective, SortingDirection } from 'igniteui-angular';
 
 @Component({
-    providers: [{ provide: DisplayDensityToken, useValue: { displayDensity: DisplayDensity.compact } }],
     selector: 'app-grid-sample',
-    styleUrls: ['grid-groupby.sample.css'],
-    templateUrl: 'grid-groupby.sample.html'
+    styleUrls: ['grid-groupby.sample.scss'],
+    templateUrl: 'grid-groupby.sample.html',
+    imports: [IgxSwitchComponent, FormsModule, IgxButtonDirective, IgxToggleActionDirective, IgxDropDownItemNavigationDirective, IgxDropDownComponent, NgFor, IgxDropDownItemComponent, IgxButtonGroupComponent, IgxGridComponent, IgxColumnComponent]
 })
 export class GridGroupBySampleComponent implements OnInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { static: true })
     private grid1: IgxGridComponent;
 
@@ -22,15 +23,16 @@ export class GridGroupBySampleComponent implements OnInit {
     public expState = [];
     public columns: Array<any>;
     public groupingExpressions: Array<ISortingExpression>;
-    public perfGrpExpr = [ { fieldName: 'FIELD', dir: SortingDirection.Asc } ];
+    public perfGrpExpr = [{ fieldName: 'FIELD', dir: SortingDirection.Asc }];
     public summaryMode: GridSummaryCalculationMode = GridSummaryCalculationMode.rootLevelOnly;
     public summaryModes = [];
     public selectionModes: any[];
     public position: GridSummaryPosition = GridSummaryPosition.top;
+    public sortingOp: ISortingOptions = { mode: 'multiple' };
 
-    private _density: DisplayDensity = DisplayDensity.cosy;
+    protected size = 'medium';
 
-    constructor(@Inject(DisplayDensityToken) public displayDensityOptions: IDisplayDensityOptions) { }
+    constructor() { }
 
     public ngOnInit(): void {
         for (let i = 0; i < 2500; i++) {
@@ -39,7 +41,7 @@ export class GridGroupBySampleComponent implements OnInit {
             this.data2.push(...Array(10).fill({ STATUS: 'C', FIELD: 'some text' }));
             this.data2.push(...Array(10).fill({ STATUS: 'D', FIELD: 'some text' }));
         }
-        this.data2 = this.data2.map((rec, index) => ({...rec, ID: index}));
+        this.data2 = this.data2.map((rec, index) => ({ ...rec, ID: index }));
         this.columns = [
             { dataType: 'string', field: 'ID', width: 100, hidden: true },
             { dataType: 'string', field: 'CompanyName', width: 300, groupable: true },
@@ -71,7 +73,7 @@ export class GridGroupBySampleComponent implements OnInit {
             { Salary: 800, ID: 'BLAUS', CompanyName: 'Blauer See Delikatessen', ContactName: 'Hanna Moos', ContactTitle: 'Sales Representative', Address: 'Forsterstr. 57', City: 'Mannheim', Region: null, PostalCode: '68306', Country: 'Germany', Phone: '0621-08460', Fax: '0621-08924' },
             { Salary: 900, ID: 'BLONP', CompanyName: 'Blondesddsl père et fils', ContactName: 'Frédérique Citeaux', ContactTitle: 'Marketing Manager', Address: '24, place Kléber', City: 'Strasbourg', Region: null, PostalCode: '67000', Country: 'France', Phone: '88.60.15.31', Fax: '88.60.15.32' },
             { Salary: 9000, ID: 'BOLID', CompanyName: 'Bólido Comidas preparadas', ContactName: 'Martín Sommer', ContactTitle: 'Owner', Address: 'C/ Araquil, 67', City: 'Madrid', Region: null, PostalCode: '28023', Country: 'Spain', Phone: '(91) 555 22 82', Fax: '(91) 555 91 99' },
-            { Salary: 3300, ID: 'BONAP', CompanyName: 'Bon app\s', ContactName: 'Laurence Lebihan', ContactTitle: 'Owner', Address: '12, rue des Bouchers', City: 'Marseille', Region: null, PostalCode: '13008', Country: 'France', Phone: '91.24.45.40', Fax: '91.24.45.41' },
+            { Salary: 3300, ID: 'BONAP', CompanyName: 'Bon app\'s', ContactName: 'Laurence Lebihan', ContactTitle: 'Owner', Address: '12, rue des Bouchers', City: 'Marseille', Region: null, PostalCode: '13008', Country: 'France', Phone: '91.24.45.40', Fax: '91.24.45.41' },
             { Salary: 2500, ID: 'BOTTM', CompanyName: 'Bottom-Dollar Markets', ContactName: 'Elizabeth Lincoln', ContactTitle: 'Accounting Manager', Address: '23 Tsawassen Blvd.', City: 'Tsawassen', Region: 'BC', PostalCode: 'T2F 8M4', Country: 'Canada', Phone: '(604) 555-4729', Fax: '(604) 555-3745' },
             { Salary: 4700, ID: 'BSBEV', CompanyName: 'B\'s Beverages', ContactName: 'Victoria Ashworth', ContactTitle: 'Sales Representative', Address: 'Fauntleroy Circus', City: 'London', Region: null, PostalCode: 'EC2 5NT', Country: 'UK', Phone: '(171) 555-1212', Fax: null },
             { Salary: 4100, ID: 'CACTU', CompanyName: 'Cactus Comidas para llevar', ContactName: 'Patricio Simpson', ContactTitle: 'Sales Agent', Address: 'Cerrito 333', City: 'Buenos Aires', Region: null, PostalCode: '1010', Country: 'Argentina', Phone: '(1) 135-5555', Fax: '(1) 135-4892' },
@@ -92,13 +94,6 @@ export class GridGroupBySampleComponent implements OnInit {
             { Salary: 4900, ID: 'FRANS', CompanyName: 'Franchi S.p.A.', ContactName: 'Paolo Accorti', ContactTitle: 'Sales Representative', Address: 'Via Monte Bianco 34', City: 'Torino', Region: null, PostalCode: '10100', Country: 'Italy', Phone: '011-4988260', Fax: '011-4988261' }
         ];
     }
-    public get density(): DisplayDensity {
-        return this._density;
-    }
-    public set density(value) {
-        this._density = value;
-        this.grid1.cdr.detectChanges();
-    }
 
     public groupBy(name: string) {
         const expressions = this.grid1.groupingExpressions;
@@ -111,6 +106,15 @@ export class GridGroupBySampleComponent implements OnInit {
         this.grid1.groupBy({ fieldName: name, dir: SortingDirection.Asc, ignoreCase: false, strategy: DefaultSortingStrategy.instance() });
     }
 
+    public sortByGroup() {
+        const expressions = this.grid1.groupingExpressions;
+        if (expressions.length) {
+            const fieldName = expressions[0].fieldName;
+            const dir = expressions[0].dir === SortingDirection.Asc ? SortingDirection.Desc : SortingDirection.Asc;
+            this.grid1.groupBy({ fieldName, dir, ignoreCase: false, strategy: GroupMemberCountSortingStrategy.instance() });
+        }
+    }
+
     public toggleGroupedVisibility(event) {
         this.grid1.hideGroupedColumns = !event.checked;
     }
@@ -119,10 +123,10 @@ export class GridGroupBySampleComponent implements OnInit {
         this.position = this.position === GridSummaryPosition.top ? GridSummaryPosition.bottom : GridSummaryPosition.top;
     }
     public toggleDensity() {
-        switch (this.displayDensityOptions.displayDensity) {
-            case DisplayDensity.comfortable: this.displayDensityOptions.displayDensity = DisplayDensity.compact; break;
-            case DisplayDensity.compact: this.displayDensityOptions.displayDensity = DisplayDensity.cosy; break;
-            case DisplayDensity.cosy: this.displayDensityOptions.displayDensity = DisplayDensity.comfortable; break;
+        switch (this.size) {
+            case "large": this.size = "small"; break;
+            case "small": this.size = "medium"; break;
+            case "medium": this.size = "large"; break;
         }
     }
     public onRowSelection(event) {
@@ -137,8 +141,8 @@ export class GridGroupBySampleComponent implements OnInit {
         console.log(JSON.stringify(this.groupingExpressions));
     }
 
-    public onGroupingDoneHandler(event) {
-        console.log('onGroupingDone: ');
+    public groupingDoneHandler(event) {
+        console.log('groupingDone: ');
         console.log(event);
     }
     public getData(item) {

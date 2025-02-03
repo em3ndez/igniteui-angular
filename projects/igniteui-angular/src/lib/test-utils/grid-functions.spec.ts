@@ -1,4 +1,3 @@
-
 import { DebugElement, QueryList } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { ComponentFixture, tick } from '@angular/core/testing';
@@ -23,7 +22,8 @@ import { IgxRowDirective } from '../grids/row.directive';
 import { CellType, GridType, RowType } from '../grids/common/grid.interface';
 import { IgxTreeNodeComponent } from '../tree/tree-node/tree-node.component';
 import { IgxColumnComponent } from '../grids/columns/column.component';
-
+import { IgxPivotGridComponent } from '../grids/pivot-grid/pivot-grid.component';
+import { IgxIconComponent } from '../icon/icon.component';
 
 const SUMMARY_LABEL_CLASS = '.igx-grid-summary__label';
 const SUMMARY_ROW = 'igx-grid-summary-row';
@@ -52,6 +52,7 @@ const ACTIVE_GROUP_ROW_CLASS = 'igx-grid__group-row--active';
 const ACTIVE_HEADER_CLASS = 'igx-grid-th--active';
 const GROUP_ROW_CLASS = 'igx-grid-groupby-row';
 const CELL_SELECTED_CSS_CLASS = 'igx-grid__td--selected';
+const CELL_INVALID_CSS_CLASS = 'igx-grid__td--invalid';
 const CELL_ACTIVE_CSS_CLASS = 'igx-grid__td--active';
 const ROW_DIV_SELECTION_CHECKBOX_CSS_CLASS = 'igx-grid__cbx-selection';
 const ROW_SELECTION_CSS_CLASS = 'igx-grid__tr--selected';
@@ -87,17 +88,19 @@ const GRID_TOOLBAR_TAG = 'igx-grid-toolbar';
 const GRID_TOOLBAR_EXPORT_BUTTON_CLASS = '.igx-grid-toolbar__dropdown#btnExport';
 const GRID_OUTLET_CLASS = 'div.igx-grid__outlet';
 const SORT_INDEX_ATTRIBUTE = 'data-sortIndex';
-export const GRID_SCROLL_CLASS = 'igx-grid__scroll';
-export const GRID_MRL_BLOCK_CLASS = 'igx-grid__mrl-block';
+const RESIZE_LINE_CLASS = '.igx-grid-th__resize-line';
+const RESIZE_AREA_CLASS = '.igx-grid-th__resize-handle';
+const GRID_COL_THEAD_CLASS = '.igx-grid-th';
+const TREE_NODE_TOGGLE = '.igx-tree-node__toggle-button';
+
+export const GRID_SCROLL_CLASS = '.igx-grid__scroll';
+export const GRID_MRL_BLOCK = 'igx-grid__mrl-block';
 export const CELL_PINNED_CLASS = 'igx-grid__td--pinned';
 export const HEADER_PINNED_CLASS = 'igx-grid-th--pinned';
 export const GRID_HEADER_CLASS = '.igx-grid-thead__wrapper';
 export const PINNED_SUMMARY = 'igx-grid-summary--pinned';
 export const PAGER_CLASS = '.igx-page-nav';
-const RESIZE_LINE_CLASS = '.igx-grid-th__resize-line';
-const RESIZE_AREA_CLASS = '.igx-grid-th__resize-handle';
-const GRID_COL_THEAD_CLASS = '.igx-grid-th';
-const TREE_NODE_TOGGLE = '.igx-tree-node__toggle-button';
+export const SAFE_DISPOSE_COMP_ID = 'root';
 
 export class GridFunctions {
 
@@ -138,7 +141,7 @@ export class GridFunctions {
     }
 
     public static getGridScroll(fix): DebugElement {
-        return fix.debugElement.query(By.css(`.${GRID_SCROLL_CLASS}`));
+        return fix.debugElement.query(By.css(GRID_SCROLL_CLASS));
     }
 
     public static getRowDisplayContainer(fix, index: number): DebugElement {
@@ -146,8 +149,8 @@ export class GridFunctions {
         return row.query(By.css(DISPLAY_CONTAINER));
     }
 
-    public static getColGroup(grid: IgxGridComponent, headerName: string): IgxColumnGroupComponent {
-        const colGroups = grid.columnList.filter(c => c.columnGroup && c.header === headerName);
+    public static getColGroup(grid: IgxGridComponent | IgxPivotGridComponent, headerName: string): IgxColumnGroupComponent {
+        const colGroups = grid.columns.filter(c => c.columnGroup && c.header === headerName);
         if (colGroups.length === 0) {
             return null;
         } else if (colGroups.length === 1) {
@@ -228,14 +231,13 @@ export class GridFunctions {
         return element.getBoundingClientRect().top >= gridTop && element.getBoundingClientRect().bottom <= gridBottom;
     }
 
-    public static toggleMasterRowByClick = (fix, row: IgxGridRowComponent, debounceTime) => new Promise<void>(async (resolve) => {
-        const icon = row.element.nativeElement.querySelector('igx-icon');
-        UIInteractions.simulateClickAndSelectEvent(icon.parentElement);
-        await wait(debounceTime);
-        fix.detectChanges();
-
-        resolve();
-    });
+    public static toggleMasterRowByClick =
+        async (fix, row: IgxGridRowComponent, debounceTime) => {
+            const icon = row.element.nativeElement.querySelector('igx-icon');
+            UIInteractions.simulateClickAndSelectEvent(icon.parentElement);
+            await wait(debounceTime);
+            fix.detectChanges();
+        };
 
     public static toggleMasterRow(fix: ComponentFixture<any>, row: IgxRowDirective) {
         const rowDE = fix.debugElement.queryAll(By.directive(IgxRowDirective)).find(el => el.componentInstance === row);
@@ -734,8 +736,8 @@ export class GridFunctions {
 
     public static getApplyButtonExcelStyleFiltering(fix: ComponentFixture<any>, menu = null, grid = 'igx-grid') {
         const excelMenu = menu ? menu : GridFunctions.getExcelStyleFilteringComponent(fix, grid);
-        const raisedButtons = Array.from(excelMenu.querySelectorAll('.igx-button--raised'));
-        const applyButton: any = raisedButtons.find((rb: any) => rb.innerText === 'apply');
+        const containedButtons = Array.from(excelMenu.querySelectorAll('.igx-button--contained'));
+        const applyButton: any = containedButtons.find((rb: any) => rb.innerText.toLowerCase() === 'apply');
         return applyButton;
     }
 
@@ -747,7 +749,7 @@ export class GridFunctions {
     public static clickCancelExcelStyleFiltering(fix: ComponentFixture<any>, menu = null) {
         const excelMenu = menu ? menu : GridFunctions.getExcelStyleFilteringComponent(fix);
         const flatButtons = Array.from(excelMenu.querySelectorAll('.igx-button--flat'));
-        const cancelButton: any = flatButtons.find((rb: any) => rb.innerText === 'cancel');
+        const cancelButton: any = flatButtons.find((rb: any) => rb.innerText.toLowerCase() === 'cancel');
         cancelButton.click();
     }
 
@@ -767,8 +769,8 @@ export class GridFunctions {
 
     public static getApplyExcelStyleCustomFiltering(fix: ComponentFixture<any>): HTMLElement {
         const customFilterMenu = GridFunctions.getExcelStyleCustomFilteringDialog(fix);
-        const raisedButtons = Array.from(customFilterMenu.querySelectorAll('.igx-button--raised'));
-        const applyButton = raisedButtons.find((rb: any) => rb.innerText === 'apply');
+        const containedButtons = Array.from(customFilterMenu.querySelectorAll('.igx-button--contained'));
+        const applyButton = containedButtons.find((rb: any) => rb.innerText.toLowerCase() === 'apply');
         return applyButton as HTMLElement;
     }
 
@@ -780,8 +782,8 @@ export class GridFunctions {
 
     public static clickClearFilterExcelStyleCustomFiltering(fix: ComponentFixture<any>) {
         const customFilterMenu = GridFunctions.getExcelStyleCustomFilteringDialog(fix);
-        const raisedButtons = Array.from(customFilterMenu.querySelectorAll('.igx-button--flat'));
-        const button: any = raisedButtons.find((rb: any) => rb.innerText === 'Clear filter');
+        const containedButtons = Array.from(customFilterMenu.querySelectorAll('.igx-button--flat'));
+        const button: any = containedButtons.find((rb: any) => rb.innerText === 'Clear filter');
         button.click();
         fix.detectChanges();
     }
@@ -801,7 +803,7 @@ export class GridFunctions {
     public static clickCancelExcelStyleCustomFiltering(fix: ComponentFixture<any>) {
         const customFilterMenu = GridFunctions.getExcelStyleCustomFilteringDialog(fix);
         const flatButtons = Array.from(customFilterMenu.querySelectorAll('.igx-button--flat'));
-        const cancelButton: any = flatButtons.find((rb: any) => rb.innerText === 'cancel');
+        const cancelButton: any = flatButtons.find((rb: any) => rb.innerText.toLowerCase() === 'cancel');
         cancelButton.click();
     }
 
@@ -820,12 +822,12 @@ export class GridFunctions {
      * Click the pin/unpin icon in the ESF by specifying whether the icon is in the header
      * or at its default position (depending on the display density).
      */
-    public static clickPinIconInExcelStyleFiltering(fix: ComponentFixture<any>, isIconInHeader: boolean = true) {
+    public static clickPinIconInExcelStyleFiltering(fix: ComponentFixture<any>, isIconInHeader = true) {
         let pinUnpinIcon: any;
         if (isIconInHeader) {
             const headerIcons = GridFunctions.getExcelFilteringHeaderIcons(fix);
-            const headerAreaPinIcon = headerIcons.find((buttonIcon: any) => buttonIcon.innerHTML.indexOf('name="pin-left"') !== -1);
-            const headerAreaUnpinIcon = headerIcons.find((buttonIcon: any) => buttonIcon.innerHTML.indexOf('name="unpin-left"') !== -1);
+            const headerAreaPinIcon = headerIcons.find((buttonIcon: any) => buttonIcon.innerHTML.indexOf('name="pin"') !== -1);
+            const headerAreaUnpinIcon = headerIcons.find((buttonIcon: any) => buttonIcon.innerHTML.indexOf('name="unpin"') !== -1);
             pinUnpinIcon = headerAreaPinIcon ? headerAreaPinIcon : headerAreaUnpinIcon;
         } else {
             const pinContainer = GridFunctions.getExcelFilteringPinContainer(fix);
@@ -839,7 +841,7 @@ export class GridFunctions {
      * Click the hide icon in the ESF by specifying whether the icon is in the header
      * or at its default position (depending on the display density).
      */
-    public static clickHideIconInExcelStyleFiltering(fix: ComponentFixture<any>, isIconInHeader: boolean = true) {
+    public static clickHideIconInExcelStyleFiltering(fix: ComponentFixture<any>, isIconInHeader = true) {
         let hideIcon: any;
         if (isIconInHeader) {
             const headerIcons = GridFunctions.getExcelFilteringHeaderIcons(fix);
@@ -850,58 +852,60 @@ export class GridFunctions {
         hideIcon.click();
     }
 
-    public static getIconFromButton(iconName: string, component: any) {
-        const icons = component.querySelectorAll('igx-icon');
-        return Array.from(icons).find((sortIcon: any) => sortIcon.innerText === iconName);
+    public static getIconFromButton(iconName: string, fixture: ComponentFixture<any>) {
+        const icons = fixture.debugElement.queryAll(By.directive(IgxIconComponent));
+        return icons.find((de: DebugElement) => {
+            return de.componentInstance.name === iconName;
+        });
     }
 
     /**
      * Click the sort ascending button in the ESF.
      */
     public static clickSortAscInExcelStyleFiltering(fix: ComponentFixture<any>) {
-        const sortAscIcon: any = this.getIconFromButton('arrow_upwards', GridFunctions.getExcelFilteringSortComponent(fix));
-        sortAscIcon.click();
+        const sortAscIcon: DebugElement = this.getIconFromButton('sort_asc', fix);
+        sortAscIcon?.nativeElement.click();
     }
 
     /**
      * Click the column selection button in the ESF.
      */
     public static clickColumnSelectionInExcelStyleFiltering(fix: ComponentFixture<any>) {
-        const columnSelectIcon: any = this.getIconFromButton('done', GridFunctions.getExcelFilteringColumnSelectionContainer(fix));
-        columnSelectIcon.click();
+        const columnSelectIcon: any = this.getIconFromButton('selected', fix);
+        columnSelectIcon?.nativeElement.click();
     }
 
     /**
      * Click the sort descending button in the ESF.
      */
     public static clickSortDescInExcelStyleFiltering(fix: ComponentFixture<any>) {
-        const sortDescIcon: any = this.getIconFromButton('arrow_downwards', GridFunctions.getExcelFilteringSortComponent(fix));
-        sortDescIcon.click();
+        const sortDescIcon: any = this.getIconFromButton('sort_desc', fix);
+        sortDescIcon?.nativeElement.click();
     }
 
     /**
      * Click the move left button in the ESF.
      */
     public static clickMoveLeftInExcelStyleFiltering(fix: ComponentFixture<any>) {
-        const moveLeftIcon: any = this.getIconFromButton('arrow_back', GridFunctions.getExcelFilteringMoveComponent(fix));
-        moveLeftIcon.click();
+        const moveLeftIcon: any = this.getIconFromButton('arrow_back', fix);
+        moveLeftIcon?.nativeElement.click();
     }
 
     /**
      * Click the move right button in the ESF.
      */
     public static clickMoveRightInExcelStyleFiltering(fix: ComponentFixture<any>) {
-        const moveRightIcon: any = this.getIconFromButton('arrow_forwards', GridFunctions.getExcelFilteringMoveComponent(fix));
-        moveRightIcon.click();
+        const moveRightIcon: any = this.getIconFromButton('arrow_forward', fix);
+        moveRightIcon?.nativeElement.click();
     }
 
-    public static getExcelFilteringInput(fix: ComponentFixture<any>, expressionIndex: number = 0): HTMLInputElement {
+    public static getExcelFilteringInput(fix: ComponentFixture<any>, expressionIndex = 0): HTMLInputElement {
         const expr = GridFunctions.getExcelCustomFilteringDefaultExpressions(fix)[expressionIndex];
         return expr.querySelectorAll('.igx-input-group__input').item(1) as HTMLInputElement;
     }
 
     public static getExcelFilteringDDInput(fix: ComponentFixture<any>,
-        expressionIndex: number = 0, isDate: boolean = false): HTMLInputElement {
+        expressionIndex = 0, isDate = false): HTMLInputElement {
         const allExpressions = isDate ? GridFunctions.getExcelCustomFilteringDateExpressions(fix) :
             GridFunctions.getExcelCustomFilteringDefaultExpressions(fix);
         return allExpressions[expressionIndex].querySelectorAll('.igx-input-group__input').item(0) as HTMLInputElement;
@@ -1139,7 +1143,7 @@ export class GridFunctions {
     public static getExcelFilteringHeaderIcons(fix: ComponentFixture<any>, menu = null) {
         const excelMenu = menu ? menu : GridFunctions.getExcelStyleFilteringComponent(fix);
         const headerArea = excelMenu.querySelector('.igx-excel-filter__menu-header');
-        return Array.from(headerArea.querySelectorAll('.igx-button--icon'));
+        return Array.from(headerArea.querySelectorAll('.igx-icon-button'));
     }
 
     public static getExcelFilteringPinContainer(fix: ComponentFixture<any>, menu = null): HTMLElement {
@@ -1265,7 +1269,7 @@ export class GridFunctions {
     public static getFilterRowInputCommitIcon(fix) {
         const suffix = GridFunctions.getFilterRowSuffix(fix);
         const commitIcon: any = Array.from(suffix.queryAll(By.css('igx-icon')))
-            .find((icon: any) => icon.nativeElement.innerText === 'done');
+            .find((icon: any) => icon.nativeElement.innerText === 'check');
         return commitIcon;
     }
 
@@ -1315,7 +1319,7 @@ export class GridFunctions {
     /**
      * (Double)Click the underlying chip of the expression that is located on the provided 'path'.
      */
-    public static clickAdvancedFilteringTreeExpressionChip(fix: ComponentFixture<any>, path: number[], dblClick: boolean = false) {
+    public static clickAdvancedFilteringTreeExpressionChip(fix: ComponentFixture<any>, path: number[], dblClick = false) {
         const chip = GridFunctions.getAdvancedFilteringTreeExpressionChip(fix, path);
         if (dblClick) {
             chip.dispatchEvent(new MouseEvent('dblclick'));
@@ -1378,7 +1382,7 @@ export class GridFunctions {
      * Click the value input for the expression that is currently in edit mode.
      * (NOTE: The value input could be either an input group or a date picker.)
      */
-    public static clickAdvancedFilteringValueInput(fix: ComponentFixture<any>, dateType: boolean = false) {
+    public static clickAdvancedFilteringValueInput(fix: ComponentFixture<any>, dateType = false) {
         // Could be either an input group or a date picker.
         const valueInput = GridFunctions.getAdvancedFilteringValueInput(fix, dateType);
         valueInput.click();
@@ -1434,25 +1438,25 @@ export class GridFunctions {
 
     public static getAdvancedFilteringHeader(fix: ComponentFixture<any>) {
         const advFilterDialog = GridFunctions.getAdvancedFilteringComponent(fix);
-        const header = advFilterDialog.querySelector('.igx-advanced-filter__header');
+        const header = advFilterDialog.querySelector('.igx-query-builder__header');
         return header;
     }
 
     public static getAdvancedFilteringHeaderText(fix: ComponentFixture<any>) {
         const header = GridFunctions.getAdvancedFilteringHeader(fix);
-        const title = header.querySelector('h4');
+        const title = header.querySelector('.igx-query-builder__header > div');
         return title.innerText;
     }
 
     public static getAdvancedFilteringHeaderLegendItemAnd(fix: ComponentFixture<any>) {
         const header = GridFunctions.getAdvancedFilteringHeader(fix);
-        const andLegendItem = header.querySelector('.igx-filter-legend__item--and');
+        const andLegendItem = header.querySelector('.igx-builder-legend__item--and');
         return andLegendItem;
     }
 
     public static getAdvancedFilteringHeaderLegendItemOr(fix: ComponentFixture<any>) {
         const header = GridFunctions.getAdvancedFilteringHeader(fix);
-        const orLegendItem = header.querySelector('.igx-filter-legend__item--or');
+        const orLegendItem = header.querySelector('.igx-builder-legend__item--or');
         return orLegendItem;
     }
 
@@ -1467,7 +1471,7 @@ export class GridFunctions {
      */
     public static getAdvancedFilteringExpressionsContainer(fix: ComponentFixture<any>) {
         const advFilterDialog = GridFunctions.getAdvancedFilteringComponent(fix);
-        const exprContainer = advFilterDialog.querySelector('.igx-advanced-filter__main');
+        const exprContainer = advFilterDialog.querySelector('.igx-query-builder__main');
         return exprContainer;
     }
 
@@ -1484,7 +1488,7 @@ export class GridFunctions {
      * Get all child groups of the given 'group' by specifying whether to include its direct child groups only
      * or all of its child groups in the hierarchy. (NOTE: Expressions do not have children!)
      */
-    public static getAdvancedFilteringTreeChildGroups(group: HTMLElement, directChildrenOnly: boolean = true) {
+    public static getAdvancedFilteringTreeChildGroups(group: HTMLElement, directChildrenOnly = true) {
         const pattern = directChildrenOnly ? ':scope > .igx-filter-tree' : '.igx-filter-tree';
         const childrenContainer = group.querySelector('.igx-filter-tree__expression');
         const childGroups = GridFunctions.sortNativeElementsVertically(Array.from(childrenContainer.querySelectorAll(pattern)));
@@ -1495,7 +1499,7 @@ export class GridFunctions {
      * Get all child expressions of the given 'group' by specifying whether to include its direct child expressions only
      * or all of its child expressions in the hierarchy.
      */
-    public static getAdvancedFilteringTreeChildExpressions(group: HTMLElement, directChildrenOnly: boolean = true) {
+    public static getAdvancedFilteringTreeChildExpressions(group: HTMLElement, directChildrenOnly = true) {
         const pattern = directChildrenOnly ? ':scope > .igx-filter-tree__expression-item' : '.igx-filter-tree__expression-item';
         const childrenContainer = group.querySelector('.igx-filter-tree__expression');
         const childExpressions = GridFunctions.sortNativeElementsVertically(Array.from(childrenContainer.querySelectorAll(pattern)));
@@ -1506,7 +1510,7 @@ export class GridFunctions {
      * Get all child groups and expressions of the given 'group' by specifying whether to include its
      * direct child groups and expressions only or all of its child groups and expressions in the hierarchy.
      */
-    public static getAdvancedFilteringTreeChildItems(group: HTMLElement, directChildrenOnly: boolean = true) {
+    public static getAdvancedFilteringTreeChildItems(group: HTMLElement, directChildrenOnly = true) {
         const childGroups = Array.from(GridFunctions.getAdvancedFilteringTreeChildGroups(group, directChildrenOnly));
         const childExpressions = Array.from(GridFunctions.getAdvancedFilteringTreeChildExpressions(group, directChildrenOnly));
         return GridFunctions.sortNativeElementsVertically(childGroups.concat(childExpressions));
@@ -1703,7 +1707,7 @@ export class GridFunctions {
         return columnSelect;
     }
 
-    public static getAdvancedFilteringValueInput(fix: ComponentFixture<any>, dateType: boolean = false) {
+    public static getAdvancedFilteringValueInput(fix: ComponentFixture<any>, dateType = false) {
         const editModeContainer = GridFunctions.getAdvancedFilteringEditModeContainer(fix);
         const input = dateType ?
             editModeContainer.querySelector('igx-date-picker').querySelector('input') :
@@ -1712,18 +1716,22 @@ export class GridFunctions {
     }
 
     public static getAdvancedFilteringExpressionCommitButton(fix: ComponentFixture<any>) {
-        const editModeContainer = GridFunctions.getAdvancedFilteringEditModeContainer(fix);
-        const actionButtonsContainer = editModeContainer.querySelector('.igx-filter-tree__inputs-actions');
-        const actionButtons = Array.from(actionButtonsContainer.querySelectorAll('button'));
-        const commitButton: any = actionButtons.find((b: any) => b.innerText === 'check');
+        const actionButtons = fix.debugElement.queryAll(By.css('.igx-filter-tree__inputs-actions > button'));
+        const commitButton = actionButtons.find((el: DebugElement) => {
+            const icon = el.query(By.directive(IgxIconComponent)).componentInstance;
+            return icon.name === 'confirm';
+        }).nativeElement;
+
         return commitButton;
     }
 
     public static getAdvancedFilteringExpressionCloseButton(fix: ComponentFixture<any>) {
-        const editModeContainer = GridFunctions.getAdvancedFilteringEditModeContainer(fix);
-        const actionButtonsContainer = editModeContainer.querySelector('.igx-filter-tree__inputs-actions');
-        const actionButtons = Array.from(actionButtonsContainer.querySelectorAll('button'));
-        const closeButton: any = actionButtons.find((b: any) => b.innerText === 'close');
+        const actionButtons = fix.debugElement.queryAll(By.css('.igx-filter-tree__inputs-actions > button'));
+        const closeButton = actionButtons.find((el: DebugElement) => {
+            const icon = el.query(By.directive(IgxIconComponent)).componentInstance;
+            return icon.name === 'close';
+        }).nativeElement;
+
         return closeButton;
     }
 
@@ -1734,7 +1742,7 @@ export class GridFunctions {
         if (!advFilteringDialog) {
             advFilteringDialog = fix.nativeElement.querySelector('igx-advanced-filtering-dialog');
         }
-        const outlet = advFilteringDialog.querySelector('.igx-advanced-filter__outlet');
+        const outlet = advFilteringDialog.querySelector('.igx-query-builder__outlet');
         return outlet;
     }
 
@@ -1874,10 +1882,10 @@ export class GridFunctions {
         UIInteractions.simulateClickEvent(select);
     }
 
-    public static verifyGroupIsExpanded(fixture, group, collapsible = true, isExpanded = true,
-        indicatorText = ['expand_more', 'chevron_right']) {
+    public static verifyGroupIsExpanded(fixture, group, collapsible = true, isExpanded = true, indicatorText = ['expand_more', 'chevron_right']) {
         const groupHeader = GridFunctions.getColumnGroupHeaderCell(group.header, fixture);
         expect(group.collapsible).toEqual(collapsible);
+
         if (collapsible === false) {
             expect(GridFunctions.getColGroupExpandIndicator(groupHeader)).toBeNull();
         } else {
@@ -2020,15 +2028,15 @@ export class GridFunctions {
     public static verifyDOMMatchesLayoutSettings(grid: GridType, row: RowType, colSettings) {
         const firstRowCells = (row.cells as QueryList<CellType>).toArray();
         const rowElem = row.nativeElement;
-        const mrlBlocks = rowElem.querySelectorAll('.igx-grid__mrl-block');
+        const mrlBlocks = rowElem.querySelectorAll(`.${GRID_MRL_BLOCK}`);
 
         colSettings.forEach((groupSetting, index) => {
             // check group has rendered block
             const groupBlock = mrlBlocks[index] as any;
             const cellsFromBlock = firstRowCells.filter((cell) => cell.nativeElement.parentNode === groupBlock);
             expect(groupBlock).not.toBeNull();
-            groupSetting.columns.forEach((col, colIndex) => {
-                const cell = cellsFromBlock[colIndex] as any;
+            groupSetting.columns.forEach((col) => {
+                const cell = cellsFromBlock.find(x => x.column.field == col.field) as any;
                 const cellElem = cell.nativeElement;
                 // check correct attributes are applied
                 expect(parseInt(cellElem.style['gridRowStart'], 10)).toBe(parseInt(col.rowStart, 10));
@@ -2046,7 +2054,7 @@ export class GridFunctions {
                     }
                 }
                 const expectedWidth = Math.max(parseFloat(cell.column.calcWidth) * cell.column.gridColumnSpan, sum);
-                expect(cellElem.clientWidth - expectedWidth).toBeLessThan(1);
+                expect(cellElem.getBoundingClientRect().width - expectedWidth).toBeLessThan(1);
                 // check height
                 const expectedHeight = cell.grid.rowHeight * cell.gridRowSpan;
                 expect(cellElem.offsetHeight).toBe(expectedHeight);
@@ -2074,6 +2082,11 @@ export class GridFunctions {
 
     public static getResizer(fix): DebugElement {
         return fix.debugElement.query(By.css(RESIZE_LINE_CLASS));
+    }
+
+    public static verifyCellValid(cell: IgxGridCellComponent, valid = true) {
+        expect(cell.isInvalid).toEqual(!valid);
+        expect(cell.nativeElement.classList.contains(CELL_INVALID_CSS_CLASS)).not.toEqual(valid);
     }
 }
 export class GridSummaryFunctions {
@@ -2174,7 +2187,7 @@ export class GridSummaryFunctions {
         });
     }
 
-    public static verifySummaryCellActive(fix, row, cellIndex, active: boolean = true) {
+    public static verifySummaryCellActive(fix, row, cellIndex, active = true) {
         const summaryRow = typeof row === 'number' ?
             GridSummaryFunctions.getSummaryRowByDataRowIndex(fix, row) : row;
         const summ = GridSummaryFunctions.getSummaryCellByVisibleIndex(summaryRow, cellIndex);
@@ -2192,7 +2205,7 @@ export class GridSummaryFunctions {
 }
 export class GridSelectionFunctions {
     public static selectCellsRange =
-        (fix, startCell, endCell, ctrl = false, shift = false) => new Promise<void>(async resolve => {
+        async (fix, startCell, endCell, ctrl = false, shift = false)  => {
             UIInteractions.simulatePointerOverElementEvent('pointerdown', startCell.nativeElement, shift, ctrl);
             fix.detectChanges();
             await wait();
@@ -2202,8 +2215,7 @@ export class GridSelectionFunctions {
             UIInteractions.simulatePointerOverElementEvent('pointerup', endCell.nativeElement, shift, ctrl);
             await wait();
             fix.detectChanges();
-            resolve();
-        });
+        };
 
     public static selectCellsRangeNoWait(fix, startCell, endCell, ctrl = false, shift = false) {
         UIInteractions.simulatePointerOverElementEvent('pointerdown', startCell.nativeElement, shift, ctrl);
@@ -2215,7 +2227,7 @@ export class GridSelectionFunctions {
     }
 
     public static selectCellsRangeWithShiftKey =
-        (fix, startCell, endCell) => new Promise<void>(async resolve => {
+        async (fix, startCell, endCell) => {
             UIInteractions.simulateClickAndSelectEvent(startCell);
             await wait();
             fix.detectChanges();
@@ -2223,9 +2235,7 @@ export class GridSelectionFunctions {
             UIInteractions.simulateClickAndSelectEvent(endCell, true);
             await wait();
             fix.detectChanges();
-            resolve();
-            resolve();
-        });
+        };
 
     public static selectCellsRangeWithShiftKeyNoWait(fix, startCell, endCell) {
         UIInteractions.simulateClickAndSelectEvent(startCell);
@@ -2242,7 +2252,7 @@ export class GridSelectionFunctions {
         const endCol = startColumnIndex < endColumnIndex ? endColumnIndex : startColumnIndex;
         for (let i = startCol; i <= endCol; i++) {
             for (let j = startRow; j <= endRow; j++) {
-                const cell = grid.gridAPI.get_cell_by_index(j, grid.columnList.find(col => col.visibleIndex === i).field);
+                const cell = grid.gridAPI.get_cell_by_index(j, grid.columns.find(col => col.visibleIndex === i).field);
                 if (cell) {
                     GridSelectionFunctions.verifyCellSelected(cell, selected);
                 }

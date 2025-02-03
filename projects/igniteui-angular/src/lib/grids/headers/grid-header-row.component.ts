@@ -4,30 +4,25 @@ import {
     Component,
     DoCheck,
     ElementRef,
-    HostBinding,
     Input,
     QueryList,
     TemplateRef,
     ViewChild,
-    ViewChildren
+    ViewChildren,
+    booleanAttribute
 } from '@angular/core';
-import { DisplayDensity } from '../../core/displayDensity';
 import { flatten } from '../../core/utils';
 import { IgxGridForOfDirective } from '../../directives/for-of/for_of.directive';
-import { ColumnType, GridType } from '../common/grid.interface';
+import { ColumnType, GridType, IgxHeadSelectorTemplateContext } from '../common/grid.interface';
 import { IgxGridFilteringCellComponent } from '../filtering/base/grid-filtering-cell.component';
 import { IgxGridFilteringRowComponent } from '../filtering/base/grid-filtering-row.component';
 import { IgxGridHeaderGroupComponent } from './grid-header-group.component';
 import { IgxGridHeaderComponent } from './grid-header.component';
-
-export interface IgxGridRowSelectorsTemplateContext {
-    $implicit: {
-        selectedCount: number;
-        totalCount: number;
-        selectAll?: () => void;
-        deselectAll?: () => void;
-    };
-}
+import { IgxHeaderGroupWidthPipe, IgxHeaderGroupStylePipe } from './pipes';
+import { IgxGridTopLevelColumns } from '../common/pipes';
+import { IgxCheckboxComponent } from '../../checkbox/checkbox.component';
+import { IgxColumnMovingDropDirective } from '../moving/moving.drop.directive';
+import { NgIf, NgTemplateOutlet, NgClass, NgFor, NgStyle } from '@angular/common';
 
 /**
  *
@@ -40,7 +35,8 @@ export interface IgxGridRowSelectorsTemplateContext {
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-grid-header-row',
-    templateUrl: './grid-header-row.component.html'
+    templateUrl: './grid-header-row.component.html',
+    imports: [NgIf, IgxColumnMovingDropDirective, NgTemplateOutlet, NgClass, NgFor, IgxGridHeaderGroupComponent, NgStyle, IgxGridForOfDirective, IgxGridFilteringRowComponent, IgxCheckboxComponent, IgxGridTopLevelColumns, IgxHeaderGroupWidthPipe, IgxHeaderGroupStylePipe]
 })
 export class IgxGridHeaderRowComponent implements DoCheck {
 
@@ -59,37 +55,16 @@ export class IgxGridHeaderRowComponent implements DoCheck {
     @Input()
     public activeDescendant: string;
 
-    @Input()
+    @Input({ transform: booleanAttribute })
     public hasMRL: boolean;
 
     @Input()
     public width: number;
 
-    @Input()
-    public density: DisplayDensity;
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('class.igx-grid-thead--cosy')
-    public get cosyStyle() {
-        return this.density === 'cosy';
-    }
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('class.igx-grid-thead--compact')
-    public get compactStyle() {
-        return this.density === 'compact';
-    }
-
     /**
      * Header groups inside the header row.
      *
-     * @remark
+     * @remarks
      * Note: These are only the top level header groups in case there are multi-column headers
      * or a specific column layout. If you want to get the flattened collection use the `groups`
      * property below.
@@ -120,7 +95,7 @@ export class IgxGridHeaderRowComponent implements DoCheck {
 
     /** The virtualized part of the header row containing the unpinned header groups. */
     @ViewChild('headerVirtualContainer', { read: IgxGridForOfDirective, static: true })
-    public headerContainer: IgxGridForOfDirective<IgxGridHeaderGroupComponent>;
+    public headerContainer: IgxGridForOfDirective<ColumnType, ColumnType[]>;
 
     public get headerForOf() {
         return this.headerContainer;
@@ -136,7 +111,7 @@ export class IgxGridHeaderRowComponent implements DoCheck {
     public headerGroupContainer: ElementRef<HTMLElement>;
 
     @ViewChild('headSelectorBaseTemplate')
-    public headSelectorBaseTemplate: TemplateRef<IgxGridRowSelectorsTemplateContext>;
+    public headSelectorBaseTemplate: TemplateRef<IgxHeadSelectorTemplateContext>;
 
     @ViewChild(IgxGridFilteringRowComponent)
     public filterRow: IgxGridFilteringRowComponent;
@@ -172,13 +147,13 @@ export class IgxGridHeaderRowComponent implements DoCheck {
         return `igx-grid__header-indentation igx-grid__row-indentation--level-${this.grid.groupingExpressions.length}`;
     }
 
-    public get rowSelectorsContext(): IgxGridRowSelectorsTemplateContext {
+    public get rowSelectorsContext(): IgxHeadSelectorTemplateContext {
         const ctx = {
             $implicit: {
                 selectedCount: this.grid.selectionService.filteredSelectedRowIds.length as number,
                 totalCount: this.grid.totalRowsCountAfterFilter as number
             }
-        } as IgxGridRowSelectorsTemplateContext;
+        } as IgxHeadSelectorTemplateContext;
 
         if (this.isHierarchicalGrid) {
             ctx.$implicit.selectAll = () => this.grid.selectAllRows();
@@ -203,6 +178,13 @@ export class IgxGridHeaderRowComponent implements DoCheck {
      */
     public ngDoCheck() {
         this.cdr.markForCheck();
+    }
+
+    /**
+     * @hidden @internal
+     */
+    public scroll(event: Event) {
+        this.grid.preventHeaderScroll(event);
     }
 
     public headerRowSelection(event: MouseEvent) {

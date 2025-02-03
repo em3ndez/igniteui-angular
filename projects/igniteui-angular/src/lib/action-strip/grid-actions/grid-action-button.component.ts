@@ -1,14 +1,24 @@
-import { Component, Input, TemplateRef, ViewChild, Output, EventEmitter, ElementRef } from '@angular/core';
+import { Component, Input, TemplateRef, ViewChild, Output, EventEmitter, ElementRef, booleanAttribute } from '@angular/core';
+import { IgxIconComponent } from '../../icon/icon.component';
+import { IgxRippleDirective } from '../../directives/ripple/ripple.directive';
+import { NgIf } from '@angular/common';
+import { IgxIconButtonDirective } from '../../directives/button/icon-button.directive';
+
+/* blazorElement */
+/* wcElementTag: igc-grid-action-button */
+/* blazorIndirectRender */
 @Component({
     selector: 'igx-grid-action-button',
-    templateUrl: 'grid-action-button.component.html'
+    templateUrl: 'grid-action-button.component.html',
+    imports: [NgIf, IgxRippleDirective, IgxIconComponent, IgxIconButtonDirective]
 })
-
 export class IgxGridActionButtonComponent {
 
+    /* blazorSuppress */
     @ViewChild('container')
     public container: ElementRef;
 
+    /* blazorSuppress */
     /**
      * Event emitted when action button is clicked.
      *
@@ -32,7 +42,7 @@ export class IgxGridActionButtonComponent {
     /**
      * Whether button action is rendered in menu and should container text label.
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public asMenuItem = false;
 
     /**
@@ -69,7 +79,7 @@ export class IgxGridActionButtonComponent {
      * @internal
      */
     public handleClick(event) {
-       this.actionClick.emit(event);
+        this.actionClick.emit(event);
     }
 
     /**

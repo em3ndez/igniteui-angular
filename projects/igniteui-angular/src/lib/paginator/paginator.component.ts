@@ -1,25 +1,22 @@
-import {
-    ChangeDetectorRef,
-    Component,
-    ContentChild,
-    Directive,
-    ElementRef,
-    EventEmitter,
-    Host,
-    HostBinding,
-    Inject,
-    Input,
-    Optional,
-    Output,
-} from '@angular/core';
-import { CurrentResourceStrings } from '../core/i18n/resources';
-import { IDisplayDensityOptions, DisplayDensityToken, DisplayDensityBase, DisplayDensity } from '../core/displayDensity';
+import { ChangeDetectorRef, Component, ContentChild, Directive, ElementRef, EventEmitter, Host, HostBinding, Input, Output, forwardRef } from '@angular/core';
 import { IPageCancellableEventArgs, IPageEventArgs } from './paginator-interfaces';
-import { IPaginatorResourceStrings } from '../core/i18n/paginator-resources';
+import { IPaginatorResourceStrings, PaginatorResourceStringsEN } from '../core/i18n/paginator-resources';
 import { OverlaySettings } from '../services/overlay/utilities';
+import { IgxSelectItemComponent } from '../select/select-item.component';
+import { FormsModule } from '@angular/forms';
+import { IgxSelectComponent } from '../select/select.component';
+import { IgxIconComponent } from '../icon/icon.component';
+import { IgxRippleDirective } from '../directives/ripple/ripple.directive';
+import { NgIf, NgFor } from '@angular/common';
+import { getCurrentResourceStrings } from '../core/i18n/resources';
+import { IgxIconButtonDirective } from '../directives/button/icon-button.directive';
+import { IgxPaginatorToken } from './token';
 
-@Directive({ selector: '[igxPaginatorContent],igx-paginator-content' })
-export class IgxPaginatorTemplateDirective {
+@Directive({
+    selector: '[igxPaginatorContent],igx-paginator-content',
+    standalone: true
+})
+export class IgxPaginatorContentDirective {
     /**
      * @internal
      * @hidden
@@ -27,18 +24,37 @@ export class IgxPaginatorTemplateDirective {
     @HostBinding('class.igx-paginator-content')
     public cssClass = 'igx-paginator-content';
 }
+
+/* blazorElement */
+/* mustUseNGParentAnchor */
+/* wcElementTag: igc-paginator */
+/* blazorIndirectRender */
+/* singleInstanceIdentifier */
+/* contentParent: GridBaseDirective */
+/* contentParent: RowIsland */
+/* contentParent: HierarchicalGrid */
+/* jsonAPIManageCollectionInMarkup */
+/**
+ * Paginator component description
+ * @igxParent IgxGridComponent, IgxTreeGridComponent, IgxHierarchicalGridComponent, IgxPivotGridComponent, *
+ */
 @Component({
     selector: 'igx-paginator',
     templateUrl: 'paginator.component.html',
+    imports: [NgIf, forwardRef(() => IgxPageSizeSelectorComponent), forwardRef(() => IgxPageNavigationComponent)],
+    providers: [
+        { provide: IgxPaginatorToken, useExisting: IgxPaginatorComponent }
+    ]
 })
-export class IgxPaginatorComponent extends DisplayDensityBase {
+// switch IgxPaginatorToken to extends once density is dropped
+export class IgxPaginatorComponent implements IgxPaginatorToken {
 
     /**
      * @hidden
      * @internal
      */
-    @ContentChild(IgxPaginatorTemplateDirective)
-    public customContent: IgxPaginatorTemplateDirective;
+    @ContentChild(IgxPaginatorContentDirective)
+    public customContent: IgxPaginatorContentDirective;
 
     /**
      * Emitted when `perPage` property value of the paginator is changed.
@@ -107,31 +123,16 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
     protected _selectOptions = [5, 10, 15, 25, 50, 100, 500];
     protected _perPage = 15;
 
-    private _resourceStrings = CurrentResourceStrings.PaginatorResStrings;
+    private _resourceStrings = getCurrentResourceStrings(PaginatorResourceStringsEN);
     private _overlaySettings: OverlaySettings = {};
     private defaultSelectValues = [5, 10, 15, 25, 50, 100, 500];
 
-    /**
-     * Sets the class of the IgxPaginatorComponent based
-     * on the provided displayDensity.
-     */
-    @HostBinding('class.igx-paginator--cosy')
-    public get classCosy(): boolean {
-        return this.displayDensity === DisplayDensity.cosy;
-    }
-
-    @HostBinding('class.igx-paginator--compact')
-    public get classCompact(): boolean {
-        return this.displayDensity === DisplayDensity.compact;
-    }
-
+    /** @hidden @internal */
     @HostBinding('class.igx-paginator')
-    public get classComfortable(): boolean {
-        return this.displayDensity === DisplayDensity.comfortable;
-    }
+    public cssClass = 'igx-paginator';
 
     /**
-     * An @Input property, sets current page of the `IgxPaginatorComponent`.
+     * Gets/Sets the current page of the paginator.
      * The default is 0.
      * ```typescript
      * let page = this.paginator.page;
@@ -162,7 +163,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
     }
 
     /**
-     * An @Input property, sets number of visible items per page in the `IgxPaginatorComponent`.
+     * Gets/Sets the number of visible items per page in the paginator.
      * The default is 15.
      * ```typescript
      * let itemsPerPage = this.paginator.perPage;
@@ -189,7 +190,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
     }
 
     /**
-     * An @Input property that sets the total records.
+     * Sets the total records.
      * ```typescript
      * let totalRecords = this.paginator.totalRecords;
      * ```
@@ -211,7 +212,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
     }
 
     /**
-     * An @Input property that sets custom options in the select of the paginator
+     * Sets custom options in the select of the paginator
      * ```typescript
      * let options = this.paginator.selectOptions;
      * ```
@@ -229,7 +230,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
     }
 
     /**
-     * An @Input property that sets custom OverlaySettings.
+     * Sets custom OverlaySettings.
      * ```html
      * <igx-paginator [overlaySettings] = "customOverlaySettings"></igx-paginator>
      * ```
@@ -243,6 +244,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
         this._overlaySettings = Object.assign({}, this._overlaySettings, value);
     }
 
+    /* mustSetInCodePlatforms: WebComponents;Blazor;React */
     /**
      * An accessor that sets the resource strings.
      * By default it uses EN resources.
@@ -259,10 +261,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
         return this._resourceStrings;
     }
 
-    constructor(@Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions: IDisplayDensityOptions,
-        private elementRef: ElementRef, private cdr: ChangeDetectorRef) {
-        super(_displayDensityOptions);
-    }
+    constructor(private elementRef: ElementRef, private cdr: ChangeDetectorRef) { }
 
     /**
      * Returns if the current page is the last page.
@@ -287,6 +286,8 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
 
     /**
      * Returns if the first pager buttons should be disabled
+     * @hidden
+     * @deprecated in version 18.1.0. Use the `isFirstPage` property instead.
      */
     public get isFirstPageDisabled(): boolean {
         return this.isFirstPage;
@@ -294,6 +295,8 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
 
     /**
      * Returns if the last pager buttons should be disabled
+     * @hidden
+     * @deprecated in version 18.1.0. Use the `isLastPage` property instead.
      */
     public get isLastPageDisabled(): boolean {
         return this.isLastPage;
@@ -303,17 +306,6 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
         return this.elementRef.nativeElement;
     }
 
-    /**
-     * Sets DisplayDensity for the <select> inside the paginator
-     *
-     * @hidden
-     */
-    public get paginatorSelectDisplayDensity(): DisplayDensity {
-        if (this.displayDensity === DisplayDensity.comfortable) {
-            return DisplayDensity.cosy;
-        }
-        return DisplayDensity.compact;
-    }
     /**
      * Goes to the next page of the `IgxPaginatorComponent`, if the paginator is not already at the last page.
      * ```typescript
@@ -365,6 +357,7 @@ export class IgxPaginatorComponent extends DisplayDensityBase {
 @Component({
     selector: 'igx-page-size',
     templateUrl: 'page-size-selector.component.html',
+    imports: [IgxSelectComponent, FormsModule, NgFor, IgxSelectItemComponent]
 })
 export class IgxPageSizeSelectorComponent {
     /**
@@ -381,6 +374,7 @@ export class IgxPageSizeSelectorComponent {
 @Component({
     selector: 'igx-page-nav',
     templateUrl: 'pager.component.html',
+    imports: [IgxRippleDirective, IgxIconComponent, IgxIconButtonDirective]
 })
 export class IgxPageNavigationComponent {
     /**
@@ -391,11 +385,13 @@ export class IgxPageNavigationComponent {
     public cssClass = 'igx-page-nav';
 
     /**
-     * An @Input property that sets the `role` attribute of the element.
+     * Sets the `role` attribute of the element.
      */
     @HostBinding('attr.role')
     @Input()
     public role = 'navigation';
 
-    constructor(@Host() public paginator: IgxPaginatorComponent) { }
+    constructor(
+        @Host()
+        public paginator: IgxPaginatorComponent) { }
 }

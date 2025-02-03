@@ -1,39 +1,27 @@
-import { AnimationBuilder, AnimationReferenceMetadata } from '@angular/animations';
+import { AnimationReferenceMetadata } from '@angular/animations';
 import { DOCUMENT } from '@angular/common';
 import {
     ApplicationRef,
-    ComponentFactory,
-    ComponentFactoryResolver,
     ComponentRef,
+    createComponent,
     ElementRef,
     EventEmitter,
     Inject,
     Injectable,
     Injector,
-    NgModuleRef,
-    NgZone, OnDestroy, Type
+    NgZone,
+    OnDestroy,
+    Type,
+    ViewContainerRef
 } from '@angular/core';
 import { fromEvent, Subject, Subscription } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
-import {
-    fadeIn,
-    fadeOut,
-    IAnimationParams,
-    scaleInHorLeft,
-    scaleInHorRight,
-    scaleInVerBottom,
-    scaleInVerTop,
-    scaleOutHorLeft,
-    scaleOutHorRight,
-    scaleOutVerBottom,
-    scaleOutVerTop,
-    slideInBottom,
-    slideInTop,
-    slideOutBottom,
-    slideOutTop
-} from '../../animations/main';
+
+import { fadeIn, fadeOut, IAnimationParams, scaleInHorLeft, scaleInHorRight, scaleInVerBottom, scaleInVerTop, scaleOutHorLeft, scaleOutHorRight, scaleOutVerBottom, scaleOutVerTop, slideInBottom, slideInTop, slideOutBottom, slideOutTop } from 'igniteui-angular/animations';
 import { PlatformUtil } from '../../core/utils';
 import { IgxOverlayOutletDirective } from '../../directives/toggle/toggle.directive';
+import { IgxAngularAnimationService } from '../animation/angular-animation-service';
+import { AnimationService } from '../animation/animation';
 import { AutoPositionStrategy } from './position/auto-position-strategy';
 import { ConnectedPositioningStrategy } from './position/connected-positioning-strategy';
 import { ContainerPositionStrategy } from './position/container-position-strategy';
@@ -44,9 +32,11 @@ import { NoOpScrollStrategy } from './scroll/NoOpScrollStrategy';
 import {
     AbsolutePosition,
     HorizontalAlignment,
+    OffsetMode,
     OverlayAnimationEventArgs,
     OverlayCancelableEventArgs,
     OverlayClosingEventArgs,
+    OverlayCreateSettings,
     OverlayEventArgs,
     OverlayInfo,
     OverlaySettings,
@@ -104,6 +94,16 @@ export class IgxOverlayService implements OnDestroy {
     public closed = new EventEmitter<OverlayEventArgs>();
 
     /**
+     * Emitted before the content is appended to the overlay.
+     * ```typescript
+     * contentAppending(event: OverlayEventArgs){
+     *     const contentAppending = event;
+     * }
+     * ```
+     */
+    public contentAppending = new EventEmitter<OverlayEventArgs>();
+
+    /**
      * Emitted after the content is appended to the overlay, and before animations are started.
      * ```typescript
      * contentAppended(event: OverlayEventArgs){
@@ -142,13 +142,11 @@ export class IgxOverlayService implements OnDestroy {
     };
 
     constructor(
-        private _factoryResolver: ComponentFactoryResolver,
         private _appRef: ApplicationRef,
-        private _injector: Injector,
-        private builder: AnimationBuilder,
         @Inject(DOCUMENT) private document: any,
         private _zone: NgZone,
-        protected platformUtil: PlatformUtil) {
+        protected platformUtil: PlatformUtil,
+        @Inject(IgxAngularAnimationService) private animationService: AnimationService) {
         this._document = this.document;
     }
 
@@ -302,24 +300,35 @@ export class IgxOverlayService implements OnDestroy {
      * Generates Id. Provide this Id when call `show(id)` method
      *
      * @param component ElementRef to show in overlay
-     * @param settings Display settings for the overlay, such as positioning and scroll/close behavior.
+     * @param settings (optional): Display settings for the overlay, such as positioning and scroll/close behavior.
      * @returns Id of the created overlay. Valid until `detach` is called.
      */
     public attach(element: ElementRef, settings?: OverlaySettings): string;
     /**
      * Generates Id. Provide this Id when call `show(id)` method
      *
+     * Note created instance is in root scope, prefer the `viewContainerRef` overload when local injection context is needed.
+     *
      * @param component Component Type to show in overlay
-     * @param settings Display settings for the overlay, such as positioning and scroll/close behavior.
-     * @param moduleRef Optional reference to an object containing Injector and ComponentFactoryResolver
-     * that can resolve the component's factory
+     * @param settings (optional): Create settings for the overlay, such as positioning and scroll/close behavior.
+     * Includes also an optional `Injector` to add to the created dynamic component's injectors.
      * @returns Id of the created overlay. Valid until `detach` is called.
      */
-    public attach(component: Type<any>, settings?: OverlaySettings,
-        moduleRef?: Pick<NgModuleRef<any>, 'injector' | 'componentFactoryResolver'>): string;
-    public attach(component: ElementRef | Type<any>, settings?: OverlaySettings,
-        moduleRef?: Pick<NgModuleRef<any>, 'injector' | 'componentFactoryResolver'>): string {
-        const info: OverlayInfo = this.getOverlayInfo(component, moduleRef);
+    public attach(component: Type<any>, settings?: OverlayCreateSettings): string;
+    // TODO: change third parameter to OverlayCreateSettings and allow passing of Injector and so on.
+    /**
+     * Generates an Id. Provide this Id when calling the `show(id)` method
+     *
+     * @param component Component Type to show in overlay
+     * @param viewContainerRef Reference to the container where created component's host view will be inserted
+     * @param settings (optional): Display settings for the overlay, such as positioning and scroll/close behavior.
+     */
+    public attach(component: Type<any>, viewContainerRef: ViewContainerRef, settings?: OverlaySettings): string;
+    public attach(
+        componentOrElement: ElementRef | Type<any>,
+        viewContainerRefOrSettings?: ViewContainerRef | OverlayCreateSettings,
+        settings?: OverlaySettings): string {
+        const info: OverlayInfo = this.getOverlayInfo(componentOrElement, viewContainerRefOrSettings, settings);
 
         if (!info) {
             console.warn('Overlay was not able to attach provided component!');
@@ -328,18 +337,23 @@ export class IgxOverlayService implements OnDestroy {
 
         info.id = (this._componentId++).toString();
         info.visible = false;
-        settings = Object.assign({}, this._defaultSettings, settings);
-        info.settings = settings;
+        // Emit the contentAppending event before appending the content
+        const eventArgs = { id: info.id, elementRef: info.elementRef, componentRef: info.componentRef, settings: info.settings };
+        this.contentAppending.emit(eventArgs);
+        // Append the content to the overlay
+        info.settings = eventArgs.settings;
         this._overlayInfos.push(info);
         info.hook = this.placeElementHook(info.elementRef.nativeElement);
         const elementRect = info.elementRef.nativeElement.getBoundingClientRect();
         info.initialSize = { width: elementRect.width, height: elementRect.height };
+        // Get the size before moving the container into the overlay so that it does not forget about inherited styles.
+        this.getComponentSize(info);
         this.moveElementToOverlay(info);
+        // Update the container size after moving if there is size.
+        if (info.size) {
+            info.elementRef.nativeElement.parentElement.style.setProperty('--ig-size', info.size);
+        }
         this.contentAppended.emit({ id: info.id, componentRef: info.componentRef });
-        // TODO: why we had this check?
-        // if (this._overlayInfos.indexOf(info) === -1) {
-        //     this._overlayInfos.push(info);
-        // }
         info.settings.scrollStrategy.initialize(this._document, this, info.id);
         info.settings.scrollStrategy.attach();
         this.addOutsideClickListener(info);
@@ -396,24 +410,27 @@ export class IgxOverlayService implements OnDestroy {
             console.warn('igxOverlay.show was called with wrong id: ', id);
             return;
         }
-
         const eventArgs: OverlayCancelableEventArgs = { id, componentRef: info.componentRef, cancel: false };
         this.opening.emit(eventArgs);
         if (eventArgs.cancel) {
             return;
         }
         if (settings) {
-            // TODO: update attach
+            settings.positionStrategy ??= info.settings.positionStrategy;
+            settings.scrollStrategy ??= info.settings.scrollStrategy;
+            info.settings = { ...info.settings, ...settings };
         }
         this.updateSize(info);
         info.settings.positionStrategy.position(
             info.elementRef.nativeElement.parentElement,
             { width: info.initialSize.width, height: info.initialSize.height },
-            document,
+            this._document,
             true,
             info.settings.target);
+        this.addModalClasses(info);
         if (info.settings.positionStrategy.settings.openAnimation) {
-            this.buildAnimationPlayers(info);
+            // TODO: should we build players again. This was already done in attach!!!
+            // this.buildAnimationPlayers(info);
             this.playOpenAnimation(info);
         } else {
             //  to eliminate flickering show the element just before opened fires
@@ -456,7 +473,7 @@ export class IgxOverlayService implements OnDestroy {
     public reposition(id: string) {
         const overlayInfo = this.getOverlayById(id);
         if (!overlayInfo || !overlayInfo.settings) {
-            console.error('Wrong id provided in overlay.reposition method. Id: ' + id);
+            console.warn('Wrong id provided in overlay.reposition method. Id: ', id);
             return;
         }
         if (!overlayInfo.visible) {
@@ -476,24 +493,34 @@ export class IgxOverlayService implements OnDestroy {
     }
 
     /**
-     * Offsets the content along the corresponding axis by the provided amount
+     * Offsets the content along the corresponding axis by the provided amount with optional offsetMode that determines whether to add (by default) or set the offset values
      *
      * @param id Id to offset overlay for
      * @param deltaX Amount of offset in horizontal direction
      * @param deltaY Amount of offset in vertical direction
+     * @param offsetMode Determines whether to add (by default) or set the offset values with OffsetMode.Add and OffsetMode.Set
      * ```typescript
-     * this.overlay.setOffset(id, deltaX, deltaY);
+     * this.overlay.setOffset(id, deltaX, deltaY, offsetMode);
      * ```
      */
-    public setOffset(id: string, deltaX: number, deltaY: number) {
+    public setOffset(id: string, deltaX: number, deltaY: number, offsetMode?: OffsetMode) {
         const info: OverlayInfo = this.getOverlayById(id);
 
         if (!info) {
             return;
         }
 
-        info.transformX += deltaX;
-        info.transformY += deltaY;
+        switch (offsetMode) {
+            case OffsetMode.Set:
+                info.transformX = deltaX;
+                info.transformY = deltaY;
+                break;
+            case OffsetMode.Add:
+            default:
+                info.transformX += deltaX;
+                info.transformY += deltaY;
+                break;
+        }
 
         const transformX = info.transformX;
         const transformY = info.transformY;
@@ -520,7 +547,6 @@ export class IgxOverlayService implements OnDestroy {
         if (!id) {
             return null;
         }
-
         const info = this._overlayInfos.find(e => e.id === id);
         return info;
     }
@@ -536,6 +562,7 @@ export class IgxOverlayService implements OnDestroy {
         if (eventArgs.cancel) {
             return;
         }
+        this.removeModalClasses(info);
         if (info.settings.positionStrategy.settings.closeAnimation) {
             this.playCloseAnimation(info, event);
         } else {
@@ -543,22 +570,40 @@ export class IgxOverlayService implements OnDestroy {
         }
     }
 
-    private getOverlayInfo(component: any, moduleRef?: Pick<NgModuleRef<any>, 'injector' | 'componentFactoryResolver'>): OverlayInfo {
+    /**
+     * Creates overlayInfo. Sets the info's `elementRef`, `componentRef`and `settings`. Also
+     * initialize info's `ngZone`, `transformX` and `transformY`.
+     * @param component ElementRef or Type. If type is provided dynamic component will be created
+     * @param viewContainerRefOrSettings (optional): If ElementRef is provided for `component` this
+     * parameter is OverlaySettings. Otherwise it could be ViewContainerRef or OverlayCreateSettings and will be
+     * used when dynamic component is created.
+     * @param settings (optional): OverlaySettings when `ViewContainerRef` is provided.
+     * @returns OverlayInfo
+     */
+    private getOverlayInfo(
+        component: ElementRef | Type<any>,
+        viewContainerRefOrSettings?: ViewContainerRef | OverlayCreateSettings,
+        settings?: OverlaySettings): OverlayInfo | null {
         const info: OverlayInfo = { ngZone: this._zone, transformX: 0, transformY: 0 };
+        let overlaySettings = settings;
         if (component instanceof ElementRef) {
             info.elementRef = component;
+            overlaySettings = viewContainerRefOrSettings as OverlaySettings;
         } else {
-            let dynamicFactory: ComponentFactory<any>;
-            const factoryResolver = moduleRef ? moduleRef.componentFactoryResolver : this._factoryResolver;
-            try {
-                dynamicFactory = factoryResolver.resolveComponentFactory(component);
-            } catch (error) {
-                console.error(error);
-                return null;
+            let dynamicComponent: ComponentRef<any>;
+            if (viewContainerRefOrSettings instanceof ViewContainerRef) {
+                const viewContainerRef = viewContainerRefOrSettings as ViewContainerRef;
+                dynamicComponent = viewContainerRef.createComponent(component);
+            } else {
+                const environmentInjector = this._appRef.injector;
+                const createSettings = viewContainerRefOrSettings as OverlayCreateSettings | undefined;
+                let elementInjector: Injector;
+                if (createSettings) {
+                    ({ injector: elementInjector, ...overlaySettings } = createSettings);
+                }
+                dynamicComponent = createComponent(component, { environmentInjector, elementInjector });
+                this._appRef.attachView(dynamicComponent.hostView);
             }
-
-            const injector = moduleRef ? moduleRef.injector : this._injector;
-            const dynamicComponent: ComponentRef<any> = dynamicFactory.create(injector);
             if (dynamicComponent.onDestroy) {
                 dynamicComponent.onDestroy(() => {
                     if (!info.detached && this._overlayInfos.indexOf(info) !== -1) {
@@ -566,14 +611,13 @@ export class IgxOverlayService implements OnDestroy {
                     }
                 })
             }
-            this._appRef.attachView(dynamicComponent.hostView);
 
             // If the element is newly created from a Component, it is wrapped in 'ng-component' tag - we do not want that.
             const element = dynamicComponent.location.nativeElement;
             info.elementRef = { nativeElement: element };
             info.componentRef = dynamicComponent;
         }
-
+        info.settings = Object.assign({}, this._defaultSettings, overlaySettings);
         return info;
     }
 
@@ -581,7 +625,6 @@ export class IgxOverlayService implements OnDestroy {
         if (!element.parentElement) {
             return null;
         }
-
         const hook = this._document.createElement('div');
         hook.style.display = 'none';
         element.parentElement.insertBefore(hook, element);
@@ -611,14 +654,12 @@ export class IgxOverlayService implements OnDestroy {
         } else {
             content.classList.add('igx-overlay__content');
         }
-
         content.addEventListener('scroll', (ev: Event) => {
             ev.stopPropagation();
         });
 
         //  hide element to eliminate flickering. Show the element exactly before animation starts
         wrapperElement.style.visibility = 'hidden';
-
         wrapperElement.appendChild(content);
         return content;
     }
@@ -632,7 +673,6 @@ export class IgxOverlayService implements OnDestroy {
             this._overlayElement.classList.add('igx-overlay');
             this._document.body.appendChild(this._overlayElement);
         }
-
         return this._overlayElement;
     }
 
@@ -700,11 +740,9 @@ export class IgxOverlayService implements OnDestroy {
         info.openAnimationDetaching = true;
         info.openAnimationPlayer?.destroy();
         delete info.openAnimationPlayer;
-        delete info.openAnimationInnerPlayer;
         info.closeAnimationDetaching = true;
         info.closeAnimationPlayer?.destroy();
         delete info.closeAnimationPlayer;
-        delete info.closeAnimationInnerPlayer;
         delete info.ngZone;
         delete info.wrapperElement;
         info = null;
@@ -712,59 +750,36 @@ export class IgxOverlayService implements OnDestroy {
 
     private playOpenAnimation(info: OverlayInfo) {
         //  if there is opening animation already started do nothing
-        if (info.openAnimationPlayer == null || info.openAnimationPlayer.hasStarted()) {
+        if (info.openAnimationPlayer?.hasStarted()) {
             return;
         }
-
-        //  if there is closing animation already started start open animation from where close one has reached
-        //  and reset close animation
         if (info.closeAnimationPlayer?.hasStarted()) {
-            //  getPosition() returns what part of the animation is passed, e.g. 0.5 if half the animation
-            //  is done, 0.75 if 3/4 of the animation is done. As we need to start next animation from where
-            //  the previous has finished we need the amount up to 1, therefore we are subtracting what
-            //  getPosition() returns from one
-            const position = 1 - info.closeAnimationInnerPlayer.getPosition();
+            const position = info.closeAnimationPlayer.position;
             info.closeAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it her via internal field
-            (info.closeAnimationPlayer as any)._started = false;
             info.openAnimationPlayer.init();
-            info.openAnimationPlayer.setPosition(position);
+            info.openAnimationPlayer.position = 1 - position;
         }
-
         this.animationStarting.emit({ id: info.id, animationPlayer: info.openAnimationPlayer, animationType: 'open' });
 
         //  to eliminate flickering show the element just before animation start
         info.wrapperElement.style.visibility = '';
         info.visible = true;
-        this.addModalClasses(info);
         info.openAnimationPlayer.play();
     }
 
     private playCloseAnimation(info: OverlayInfo, event?: Event) {
         //  if there is closing animation already started do nothing
-        if (info.closeAnimationPlayer == null || info.closeAnimationPlayer.hasStarted()) {
+        if (info.closeAnimationPlayer?.hasStarted()) {
             return;
         }
-
-        //  if there is opening animation already started start close animation from where open one has reached
-        //  and remove open animation
         if (info.openAnimationPlayer?.hasStarted()) {
-            //  getPosition() returns what part of the animation is passed, e.g. 0.5 if half the animation
-            //  is done, 0.75 if 3/4 of the animation is done. As we need to start next animation from where
-            //  the previous has finished we need the amount up to 1, therefore we are subtracting what
-            //  getPosition() returns from one
-            //  TODO: This assumes opening and closing animations are mirrored.
-            const position = 1 - info.openAnimationInnerPlayer.getPosition();
+            const position = info.openAnimationPlayer.position;
             info.openAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it her via internal field
-            (info.openAnimationPlayer as any)._started = false;
             info.closeAnimationPlayer.init();
-            info.closeAnimationPlayer.setPosition(position);
+            info.closeAnimationPlayer.position = 1 - position;
         }
-
         this.animationStarting.emit({ id: info.id, animationPlayer: info.closeAnimationPlayer, animationType: 'close' });
         info.event = event;
-        this.removeModalClasses(info);
         info.closeAnimationPlayer.play();
     }
 
@@ -808,7 +823,7 @@ export class IgxOverlayService implements OnDestroy {
                 if (isInsideClick) {
                     return;
                     //  if the click is outside click, but close animation has started do nothing
-                } else if (!(info.closeAnimationPlayer && info.closeAnimationPlayer.hasStarted())) {
+                } else if (!(info.closeAnimationPlayer?.hasStarted())) {
                     this._hide(info.id, ev);
                 }
             }
@@ -825,8 +840,7 @@ export class IgxOverlayService implements OnDestroy {
                 //  if all overlays minus closing overlays equals one add the handler
                 this._overlayInfos.filter(x => x.settings.closeOnOutsideClick && !x.settings.modal).length -
                 this._overlayInfos.filter(x => x.settings.closeOnOutsideClick && !x.settings.modal &&
-                    x.closeAnimationPlayer &&
-                    x.closeAnimationPlayer.hasStarted()).length === 1) {
+                    x.closeAnimationPlayer?.hasStarted()).length === 1) {
 
                 // click event is not fired on iOS. To make element "clickable" we are
                 // setting the cursor to pointer
@@ -835,7 +849,6 @@ export class IgxOverlayService implements OnDestroy {
                     this._document.body.style.cursor = 'pointer';
                     this._cursorStyleIsSet = true;
                 }
-
                 this._document.addEventListener('click', this.documentClicked, true);
             }
         }
@@ -849,7 +862,6 @@ export class IgxOverlayService implements OnDestroy {
                     shouldRemoveClickEventListener = false;
                 }
             });
-
             if (shouldRemoveClickEventListener) {
                 if (this._cursorStyleIsSet) {
                     this._document.body.style.cursor = this._cursorOriginalValue;
@@ -864,7 +876,7 @@ export class IgxOverlayService implements OnDestroy {
     private addResizeHandler() {
         const closingOverlaysCount =
             this._overlayInfos
-                .filter(o => o.closeAnimationPlayer && o.closeAnimationPlayer.hasStarted())
+                .filter(o => o.closeAnimationPlayer?.hasStarted())
                 .length;
         if (this._overlayInfos.length - closingOverlaysCount === 1) {
             this._document.defaultView.addEventListener('resize', this.repositionAll);
@@ -874,7 +886,7 @@ export class IgxOverlayService implements OnDestroy {
     private removeResizeHandler() {
         const closingOverlaysCount =
             this._overlayInfos
-                .filter(o => o.closeAnimationPlayer && o.closeAnimationPlayer.hasStarted())
+                .filter(o => o.closeAnimationPlayer?.hasStarted())
                 .length;
         if (this._overlayInfos.length - closingOverlaysCount === 1) {
             this._document.defaultView.removeEventListener('resize', this.repositionAll);
@@ -927,28 +939,18 @@ export class IgxOverlayService implements OnDestroy {
 
     private buildAnimationPlayers(info: OverlayInfo) {
         if (info.settings.positionStrategy.settings.openAnimation) {
-            const animationBuilder = this.builder.build(info.settings.positionStrategy.settings.openAnimation);
-            info.openAnimationPlayer = animationBuilder.create(info.elementRef.nativeElement);
-
-            //  AnimationPlayer.getPosition returns always 0. To workaround this we are getting inner WebAnimationPlayer
-            //  and then getting the positions from it.
-            //  This is logged in Angular here - https://github.com/angular/angular/issues/18891
-            //  As soon as this is resolved we can remove this hack
-            const innerRenderer = (info.openAnimationPlayer as any)._renderer;
-            info.openAnimationInnerPlayer = innerRenderer.engine.players[innerRenderer.engine.players.length - 1];
-            info.openAnimationPlayer.onDone(() => this.openAnimationDone(info));
+            info.openAnimationPlayer = this.animationService
+                .buildAnimation(info.settings.positionStrategy.settings.openAnimation, info.elementRef.nativeElement);
+            info.openAnimationPlayer.animationEnd
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(() => this.openAnimationDone(info));
         }
         if (info.settings.positionStrategy.settings.closeAnimation) {
-            const animationBuilder = this.builder.build(info.settings.positionStrategy.settings.closeAnimation);
-            info.closeAnimationPlayer = animationBuilder.create(info.elementRef.nativeElement);
-
-            //  AnimationPlayer.getPosition returns always 0. To workaround this we are getting inner WebAnimationPlayer
-            //  and then getting the positions from it.
-            //  This is logged in Angular here - https://github.com/angular/angular/issues/18891
-            //  As soon as this is resolved we can remove this hack
-            const innerRenderer = (info.closeAnimationPlayer as any)._renderer;
-            info.closeAnimationInnerPlayer = innerRenderer.engine.players[innerRenderer.engine.players.length - 1];
-            info.closeAnimationPlayer.onDone(() => this.closeAnimationDone(info));
+            info.closeAnimationPlayer = this.animationService
+                .buildAnimation(info.settings.positionStrategy.settings.closeAnimation, info.elementRef.nativeElement);
+            info.closeAnimationPlayer.animationEnd
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(() => this.closeAnimationDone(info));
         }
     }
 
@@ -958,46 +960,39 @@ export class IgxOverlayService implements OnDestroy {
         }
         if (info.openAnimationPlayer) {
             info.openAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it here via internal field
-            (info.openAnimationPlayer as any)._started = false;
-            // when animation finish angular deletes all onDone handlers so we need to add it again :(
-            info.openAnimationPlayer.onDone(() => this.openAnimationDone(info));
         }
-        if (info.closeAnimationPlayer && info.closeAnimationPlayer.hasStarted()) {
+        if (info.closeAnimationPlayer?.hasStarted()) {
             info.closeAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it here via internal field
-            (info.closeAnimationPlayer as any)._started = false;
         }
     }
 
     private closeAnimationDone(info: OverlayInfo) {
         if (info.closeAnimationPlayer) {
             info.closeAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it here via internal field
-            (info.closeAnimationPlayer as any)._started = false;
-            // when animation finish angular deletes all onDone handlers so we need to add it again :(
-            info.closeAnimationPlayer.onDone(() => this.closeAnimationDone(info));
         }
-
-        if (info.openAnimationPlayer && info.openAnimationPlayer.hasStarted()) {
+        if (info.openAnimationPlayer?.hasStarted()) {
             info.openAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it here via internal field
-            (info.openAnimationPlayer as any)._started = false;
         }
         this.closeDone(info);
     }
 
     private finishAnimations(info: OverlayInfo) {
-        // TODO: should we emit here opened or closed events
-        if (info.openAnimationPlayer && info.openAnimationPlayer.hasStarted()) {
-            info.openAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it here via internal field
-            (info.openAnimationPlayer as any)._started = false;
+        // // TODO: should we emit here opened or closed events
+        if (info.openAnimationPlayer?.hasStarted()) {
+            info.openAnimationPlayer.finish();
         }
-        if (info.closeAnimationPlayer && info.closeAnimationPlayer.hasStarted()) {
-            info.closeAnimationPlayer.reset();
-            // calling reset does not change hasStarted to false. This is why we are doing it here via internal field
-            (info.closeAnimationPlayer as any)._started = false;
+        if (info.closeAnimationPlayer?.hasStarted()) {
+            info.closeAnimationPlayer.finish();
+        }
+    }
+
+    private getComponentSize(info: OverlayInfo) {
+        if (info.elementRef?.nativeElement instanceof Element) {
+            const styles = this._document.defaultView.getComputedStyle(info.elementRef.nativeElement);
+            const componentSize = styles.getPropertyValue('--component-size');
+            const globalSize = styles.getPropertyValue('--ig-size');
+            const size = componentSize || globalSize;
+            info.size = size;
         }
     }
 }

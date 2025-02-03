@@ -1,10 +1,12 @@
-import { Directive, Input, ElementRef, NgZone, OnInit, NgModule, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Directive, Input, ElementRef, NgZone, OnInit, OnDestroy } from '@angular/core';
 
 /**
  * @hidden
  */
-@Directive({ selector: '[igxScrollInertia]' })
+@Directive({
+    selector: '[igxScrollInertia]',
+    standalone: true
+})
 export class IgxScrollInertiaDirective implements OnInit, OnDestroy {
 
     @Input()
@@ -67,10 +69,10 @@ export class IgxScrollInertiaDirective implements OnInit, OnDestroy {
                 return;
             }
             const targetElem = this.parentElement;
-            targetElem.addEventListener('wheel', this.onWheel.bind(this));
-            targetElem.addEventListener('touchstart', this.onTouchStart.bind(this));
-            targetElem.addEventListener('touchmove', this.onTouchMove.bind(this));
-            targetElem.addEventListener('touchend', this.onTouchEnd.bind(this));
+            targetElem.addEventListener('wheel', this.onWheel.bind(this), { passive: false });
+            targetElem.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+            targetElem.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+            targetElem.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: false });
         });
     }
 
@@ -454,12 +456,5 @@ export class IgxScrollInertiaDirective implements OnInit, OnDestroy {
 /**
  * @hidden
  */
-@NgModule({
-    declarations: [IgxScrollInertiaDirective],
-    exports: [IgxScrollInertiaDirective],
-    imports: [CommonModule]
-})
 
-export class IgxScrollInertiaModule {
-}
 

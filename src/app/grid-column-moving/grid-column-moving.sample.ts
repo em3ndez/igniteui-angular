@@ -1,15 +1,23 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
-import { DisplayDensity, IgxGridComponent } from 'igniteui-angular';
+import { Component, ViewChild, OnInit, HostBinding } from '@angular/core';
+import { NgFor, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import { SAMPLE_DATA } from '../shared/sample-data';
+
+import { IgxButtonDirective, IgxButtonGroupComponent, IgxCellHeaderTemplateDirective, IgxCellTemplateDirective, IgxCollapsibleIndicatorTemplateDirective, IgxColumnComponent, IgxColumnGroupComponent, IgxGridComponent, IgxGridToolbarActionsComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarComponent, IgxGridToolbarHidingComponent, IgxGridToolbarPinningComponent, IgxIconComponent, IgxInputDirective, IgxInputGroupComponent, IgxLabelDirective, IgxPaginatorComponent } from 'igniteui-angular';
 
 @Component({
     providers: [],
     selector: 'app-grid-column-moving-sample',
-    styleUrls: ['grid-column-moving.sample.css'],
-    templateUrl: 'grid-column-moving.sample.html'
+    styleUrls: ['grid-column-moving.sample.scss'],
+    templateUrl: 'grid-column-moving.sample.html',
+    imports: [IgxButtonDirective, IgxInputGroupComponent, FormsModule, IgxInputDirective, IgxLabelDirective, IgxButtonGroupComponent, IgxGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, NgFor, IgxColumnComponent, IgxCellTemplateDirective, NgIf, IgxPaginatorComponent, IgxColumnGroupComponent, IgxCellHeaderTemplateDirective, IgxCollapsibleIndicatorTemplateDirective, IgxIconComponent]
 })
-
 export class GridColumnMovingSampleComponent implements OnInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { static: true }) public grid1: IgxGridComponent;
     @ViewChild('grid', { static: true }) public gridMCH: IgxGridComponent;
 
@@ -17,13 +25,13 @@ export class GridColumnMovingSampleComponent implements OnInit {
     public columns: Array<any>;
     public newIndex = 0;
     public gridMCHNewIndex = 0;
-    public density: DisplayDensity = 'comfortable';
-    public displayDensities;
+    public size = 'large';
+    public sizes;
     public pagingEnabled = true;
+    public show = true;
 
     public mchData = [
-        /* eslint-disable max-len */
-        { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative', Address: 'Obere Str. 57', City: 'Berlin', Region: null, PostalCode: '12209', Country: 'Germany', Phone: '030-0074321', Fax: '030-0076545' },
+        { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative', Address: 'Obere Str. 57', City: 'Berlin', Region: null, PostalCode: '12209', Country: 'Germany', Phone: '030-0074321', Fax: '030-0076545', records: [{}] },
         { ID: 'ANATR', CompanyName: 'Ana Trujillo Emparedados y helados', ContactName: 'Ana Trujillo', ContactTitle: 'Owner', Address: 'Avda. de la Constitución 2222', City: 'México D.F.', Region: null, PostalCode: '05021', Country: 'Mexico', Phone: '(5) 555-4729', Fax: '(5) 555-3745' },
         { ID: 'ANTON', CompanyName: 'Antonio Moreno Taquería', ContactName: 'Antonio Moreno', ContactTitle: 'Owner', Address: 'Mataderos 2312', City: 'México D.F.', Region: null, PostalCode: '05023', Country: 'Mexico', Phone: '(5) 555-3932', Fax: null },
         { ID: 'AROUT', CompanyName: 'Around the Horn', ContactName: 'Thomas Hardy', ContactTitle: 'Sales Representative', Address: '120 Hanover Sq.', City: 'London', Region: null, PostalCode: 'WA1 1DP', Country: 'UK', Phone: '(171) 555-7788', Fax: '(171) 555-6750' },
@@ -57,17 +65,17 @@ export class GridColumnMovingSampleComponent implements OnInit {
     }
 
     public ngOnInit(): void {
-        this.displayDensities = [
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'compact', selected: this.density === 'compact', togglable: true }
+        this.sizes = [
+            { label: 'large', selected: this.size === 'large', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'small', selected: this.size === 'small', togglable: true }
         ];
 
         this.data = SAMPLE_DATA;
 
         this.columns = [
             { field: 'ID', width: 150, resizable: true, sortable: false, filterable: true, groupable: true,
-                summary: true, type: 'string', pinned: false },
+                summary: true, type: 'string', pinned: false, hidden: true },
             { field: 'CompanyName', width: 150, resizable: true, sortable: true, filterable: true, groupable: true,
                 summary: true, type: 'string'},
             { field: 'ContactName', width: 150, resizable: true, sortable: true, filterable: true, groupable: true,
@@ -89,14 +97,19 @@ export class GridColumnMovingSampleComponent implements OnInit {
             { field: 'Employees', width: 150, resizable: true, sortable: true, filterable: true, groupable: true,
                 summary: false, type: 'number' },
             { field: 'DateCreated', width: 150, resizable: true, pinned: true, sortable: true, filterable: true, groupable: true,
-                summary: true, type: 'time' },
+                summary: true, type: 'time', hidden: true },
             { field: 'Contract', width: 150, resizable: true, sortable: true, filterable: true, groupable: true,
                 summary: true, type: 'boolean' }
         ];
     }
 
+    public reverseColumn() {
+        this.columns.reverse();
+        this.grid1.cdr.detectChanges();
+    }
+
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public moveColumn() {

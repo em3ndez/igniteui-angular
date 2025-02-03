@@ -1,6 +1,5 @@
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { TestBed, ComponentFixture, fakeAsync } from '@angular/core/testing';
-import { IgxGridModule } from './grid.module';
 import { IgxGridComponent } from './grid.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { IgxStringFilteringOperand } from '../../data-operations/filtering-condition';
@@ -8,13 +7,11 @@ import { cloneArray, resolveNestedPath } from '../../core/utils';
 import { Component, DebugElement, ViewChild } from '@angular/core';
 import { UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { GridFunctions } from '../../test-utils/grid-functions.spec';
-import { IgxComboComponent, IgxComboModule } from '../../combo/public_api';
-import { IgxFocusModule } from '../../directives/focus/focus.directive';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { IgxToggleModule } from '../../directives/toggle/toggle.directive';
-import { IgxInputGroupModule } from '../../input-group/public_api';
-import { IGridEditEventArgs } from '../common/events';
+import { IgxComboComponent } from '../../combo/public_api';
 import { SortingDirection } from '../../data-operations/sorting-strategy';
+import { IGridEditEventArgs, IgxColumnComponent } from '../public_api';
+import { IgxCellEditorTemplateDirective, IgxCellTemplateDirective } from '../columns/templates.directive';
+import { FormsModule } from '@angular/forms';
 
 const first = <T>(array: T[]): T => array[0];
 
@@ -128,7 +125,8 @@ const DATA2 = [
 ];
 
 @Component({
-    template: `<igx-grid></igx-grid>`
+    template: `<igx-grid></igx-grid>`,
+    imports: [IgxGridComponent]
 })
 class NestedPropertiesGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent })
@@ -145,7 +143,8 @@ class NestedPropertiesGridComponent {
         <igx-column field='user.address.zip' header='ZIP' editable='true' dataType='number'></igx-column>
         <igx-column field='user.address.country' header='Country' editable='true' dataType='string'></igx-column>
         <igx-column field='active' header='Active' editable='true' dataType='boolean'></igx-column>
-    </igx-grid>`
+    </igx-grid>`,
+    imports: [IgxGridComponent, IgxColumnComponent]
 })
 class NestedPropertiesGrid2Component {
     @ViewChild('grid', { static: true, read: IgxGridComponent })
@@ -153,10 +152,10 @@ class NestedPropertiesGrid2Component {
 }
 
 @Component({
-    template: `<igx-grid #grid [autoGenerate]='false'>
+    template: `<igx-grid #grid [autoGenerate]="false">
         <igx-column field='id' header='ID' dataType='number'></igx-column>
-        <igx-column field='productName' header='Product Name' editable='true' dataType='string'></igx-column>
-        <igx-column field='locations' header='Available At' [editable]='true' width='220px'>
+        <igx-column field='productName' header='Product Name' [editable]="true" dataType='string'></igx-column>
+        <igx-column field='locations' header='Available At' [editable]="true" width='220px'>
             <ng-template igxCell let-cell='cell'>
                 {{ parseArray(cell.value) }}
             </ng-template>
@@ -164,7 +163,8 @@ class NestedPropertiesGrid2Component {
                 <igx-combo type='line' [(ngModel)]='cell.editValue' [data]='locations' [displayKey]="'shop'" width='220px'></igx-combo>
             </ng-template>
         </igx-column>
-    </igx-grid>`
+    </igx-grid>`,
+    imports: [IgxGridComponent, IgxColumnComponent, IgxCellTemplateDirective, IgxCellEditorTemplateDirective, IgxComboComponent, FormsModule]
 })
 class NestedPropertyGridComponent {
     @ViewChild('grid', { static: true, read: IgxGridComponent })
@@ -203,15 +203,13 @@ describe('Grid - nested data source properties #grid', () => {
 
         const setupData = (data: Array<any>) => {
             grid.autoGenerate = true;
-            grid.shouldGenerate = true;
             grid.data = data;
             fixture.detectChanges();
         };
 
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [NestedPropertiesGridComponent],
-                imports: [IgxGridModule, NoopAnimationsModule]
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, NestedPropertiesGridComponent]
             });
         }));
 
@@ -342,18 +340,17 @@ describe('Grid nested data advanced editing #grid', () => {
     };
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [NestedPropertiesGrid2Component],
-            imports: [IgxGridModule, NoopAnimationsModule]
+        return TestBed.configureTestingModule({
+            imports: [NoopAnimationsModule, NestedPropertiesGrid2Component]
         });
     }));
 
-    beforeEach(fakeAsync(() => {
+    beforeEach(() => {
         fixture = TestBed.createComponent(NestedPropertiesGrid2Component);
         fixture.detectChanges();
         grid = fixture.componentInstance.grid;
         gridContent = GridFunctions.getGridContent(fixture);
-    }));
+    });
 
     it('canceling the row editing should revert the uncommitted cell values', () => {
         const copiedData = cloneArray(DATA, true);
@@ -501,10 +498,8 @@ describe('Edit cell with data of type Array #grid', () => {
     };
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [NestedPropertyGridComponent],
-            imports: [IgxGridModule, IgxComboModule, FormsModule, IgxToggleModule,
-                ReactiveFormsModule, IgxFocusModule, IgxInputGroupModule, NoopAnimationsModule]
+        return TestBed.configureTestingModule({
+            imports: [NoopAnimationsModule, NestedPropertyGridComponent]
         });
     }));
 
@@ -532,14 +527,17 @@ describe('Edit cell with data of type Array #grid', () => {
         await fixture.whenStable();
 
         const cellArgs: IGridEditEventArgs = {
+            primaryKey: cell.row.key,
             rowID: cell.row.key,
+            rowKey: cell.row.key,
             cellID: cell.id,
             rowData: initialRowData,
             oldValue: initialRowData.locations,
             cancel: false,
             column: cell.column,
             owner: grid,
-            event: jasmine.anything() as any
+            event: jasmine.anything() as any,
+            valid: true
         };
 
         expect(grid.cellEditEnter.emit).toHaveBeenCalledTimes(1);
@@ -594,14 +592,17 @@ describe('Edit cell with data of type Array #grid', () => {
         await fixture.whenStable();
 
         const cellArgs: IGridEditEventArgs = {
+            primaryKey: cell.row.key,
             rowID: cell.row.key,
+            rowKey: cell.row.key,
             cellID: cell.id,
             rowData: initialRowData,
             oldValue: initialRowData.locations,
             cancel: false,
             column: cell.column,
             owner: grid,
-            event: jasmine.anything() as any
+            event: jasmine.anything() as any,
+            valid: true
         };
 
         expect(grid.cellEditEnter.emit).toHaveBeenCalledTimes(1);
@@ -662,13 +663,16 @@ describe('Edit cell with data of type Array #grid', () => {
 
         // TODO ROW addRow
         const rowArgs: IGridEditEventArgs = {
+            primaryKey: row.key,
             rowID: row.key,
+            rowKey: cell.row.key,
             rowData: initialRowData,
             oldValue: row.data,
             owner: grid,
             isAddRow: row.addRowUI,
             cancel: false,
-            event: jasmine.anything() as any
+            event: jasmine.anything() as any,
+            valid: true
         };
 
         expect(grid.rowEditEnter.emit).toHaveBeenCalledTimes(1);
@@ -725,13 +729,16 @@ describe('Edit cell with data of type Array #grid', () => {
 
         // TODO ROW addRow
         const rowArgs: IGridEditEventArgs = {
+            primaryKey: row.key,
             rowID: row.key,
+            rowKey: cell.row.key,
             rowData: initialRowData,
             oldValue: row.data,
             owner: grid,
             isAddRow: row.addRowUI,
             cancel: false,
-            event: jasmine.anything() as any
+            event: jasmine.anything() as any,
+            valid: true
         };
 
         expect(grid.rowEditEnter.emit).toHaveBeenCalledTimes(1);
@@ -765,7 +772,6 @@ describe('Edit cell with data of type Array #grid', () => {
 
         delete rowArgs.cancel;
         rowArgs.rowData = initialRowData;
-
         expect(grid.rowEditDone.emit).toHaveBeenCalledTimes(1);
         expect(grid.rowEditDone.emit).toHaveBeenCalledWith(rowArgs);
 

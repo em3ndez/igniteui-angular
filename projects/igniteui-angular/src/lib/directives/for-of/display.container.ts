@@ -16,7 +16,8 @@ import { IgxScrollInertiaDirective } from '../scroll-inertia/scroll_inertia.dire
             [IgxScrollInertiaScrollContainer]="scrollContainer"
             [IgxScrollInertiaDirection]="scrollDirection">
         </ng-template>
-    `
+    `,
+    imports: [IgxScrollInertiaDirective]
 })
 export class DisplayContainerComponent {
     @ViewChild('display_container', { read: ViewContainerRef, static: true })

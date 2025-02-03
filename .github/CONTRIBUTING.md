@@ -12,7 +12,7 @@ In order to perform all the necessary checks before pulling your changes in, you
     npm install
     npm test
 
-[Naming Convention](../../../wiki/General-Naming-Guidelines-for-Ignite-UI-for-Angular)  
+[General Naming and Coding Guidelines](../../../wiki/General-Naming-and-Coding-Guidelines-for-Ignite-UI-for-Angular)  
 [CSS Naming Convention](../css-naming-convention.md)  
 
 # Workflow
@@ -21,15 +21,16 @@ When working on an issue for the Ignite UI for Angular repository, you need to b
 ## Development - applicable to issues
 
 ### Statuses
-1. `status: in-review` this is the initial status of an issue. If the label is not placed, go ahead and place it.
-2. `status: in-development` this is the status once you start working on an issue. Assign the issue to yourself if it hasn't been assigned already and remove the previous status and assign it an in development status.
-3. `status: by-design` this is the status of an issue that has been reviewed and has been determined that the current design of the feature is such that the issue describes the correct behavior as incorrect. Remove other statuses and place this status if you've reviewed the issue.
-4. `status: third-party-issue` this is the status of an issue that has been reviewed, has been determined to be an issue, but the root case is not in the Ignite UI for Angular code. Example would be browser specific bugs caused by the particular browser's rendering or JavaScript engines, or an issue with the Angular framework. Remove other statuses and place only this one if you're the one performing the investigation.
-5. `status: not-to-fix` this is the status of issues that derive from our code, but have been decided to leave as is. This is done when fixes require general design and/or architecture changes and are very risky.
-6. `status: already-fixed` this status indicates that the issue is already fixed in the source code. When setting this status assign the person that logged the issue so that he can verify the issue is fixed in the respective development branch. Remove other statuses and place this status if you've reviewed the issue.
-7. `status: cannot-reproduce` this status indicates that you cannot reproduce the issue in the source code. A reason may be because the issue is already fixed. When setting this status assign the person that logged the issue so that he can respond with more details on how to reproduce it.
-8. `status: not a bug` this is the status of an issue that you reviewed and concluded that it's not a bug. You should comment explaining the reasons why you think the issue is not a bug.
-9. `status: resolved` this is the status of an issue that has been fixed and there are active pull requests related to it.
+1. `status: new` this is the initial status of an issue. This label is placed automatically.
+2. `status: in-review` this is the status once someone picks up the issue and starts looking at it. Change the status to in-review when you pick it up.
+3. `status: in-development` this is the status once you start working on an issue. Assign the issue to yourself if it hasn't been assigned already and remove the previous status and assign it an in development status.
+4. `status: by-design` this is the status of an issue that has been reviewed and has been determined that the current design of the feature is such that the issue describes the correct behavior as incorrect. Remove other statuses and place this status if you've reviewed the issue.
+5. `status: third-party-issue` this is the status of an issue that has been reviewed, has been determined to be an issue, but the root case is not in the Ignite UI for Angular code. Example would be browser specific bugs caused by the particular browser's rendering or JavaScript engines, or an issue with the Angular framework. Remove other statuses and place only this one if you're the one performing the investigation.
+6. `status: not-to-fix` this is the status of issues that derive from our code, but have been decided to leave as is. This is done when fixes require general design and/or architecture changes and are very risky.
+7. `status: already-fixed` this status indicates that the issue is already fixed in the source code. When setting this status assign the person that logged the issue so that he can verify the issue is fixed in the respective development branch. Remove other statuses and place this status if you've reviewed the issue.
+8. `status: cannot-reproduce` this status indicates that you cannot reproduce the issue in the source code. A reason may be because the issue is already fixed. When setting this status assign the person that logged the issue so that he can respond with more details on how to reproduce it.
+9. `status: not a bug` this is the status of an issue that you reviewed and concluded that it's not a bug. You should comment explaining the reasons why you think the issue is not a bug.
+10. `status: resolved` this is the status of an issue that has been fixed and there are active pull requests related to it.
 
 Example status workflows:
 
@@ -43,7 +44,8 @@ Example status workflows:
 
 ### Versioning
 
-When creating an issue assign a `version:` label. Add `version:` labels for each version for which the issue is applicable.
+When creating an issue assign a `version:` label. Add `version:` labels for each version for which the issue is applicable.  
+When creating a PR assign a `version:` label for the corresponding version branch the PR is targeting.
 
 ### Severity
 
@@ -74,12 +76,18 @@ Example status workflows:
 
 `status: awaiting-test` => `status: in-test` => `status: not-fixed` => `status: in-development` => `status: awaiting-test`
 
+## Accessibility (a11y)
+Accessibility is an integral part of any UI component. We as a team are committed to deliver fully-accessible UI components. Every developer should take into account the following standards and should implement and test for compliance with them:  
+ * Section 508 compliance.  
+ * WCAG (preferably AAA compliance, AA compliance where AAA is unachivable because of the type of UI component)  
+ * WAI-ARIA  
+ * Full keyboard navigation  
 
 ## Localization - applicable to issues and pull requests
 1. `status: pending-localization` this status tells that there are changes in the localization strings that need to be translated. When you make such changes, put this status badge without removing the other applicable ones and assign a person to do the translations.
 2. `status: localized` this status is for issues that were with a pending translation status and have already been localized. Place this status label once these translation changes have been included in the current pull request, or the changes are already pulled with a different pull request.
 
-## Localization - applicable to components' string resources
+## Localization (i18n) - applicable to components' string resources
 There are several ways to localize components' string resources:
 
 1. Using custom resource strings:
@@ -89,8 +97,11 @@ There are several ways to localize components' string resources:
 
 2. Using npm package:
 We've created new repository which will hold the resource strings for languages different than English:
-https://github.com/IgniteUI/igniteui-angular-i18n
-A npm package should be published each time we release new version of IgniteUI for Angular. Its version should correspond to the version of the igniteui-angular npm package.
+https://github.com/IgniteUI/igniteui-angular-i18n 
+
+**NOTE** The localization repo has been moved to live inside the `igniteui-angular` repository under `./projects/igniteui-angular-i18n`  
+
+A npm package should be published each time we release new version of Ignite UI for Angular. Its version should correspond to the version of the igniteui-angular npm package.
 One could localize an application by importing the corresponding localized resource strings from the localization package (`igniteui-angular-i18n`) and use the methods described in the previous bullet to localize the whole application or part of it.
 Example:
 Inside app.module you can perform:
@@ -98,7 +109,7 @@ _import { IgxResouceStringsJA } from ‘igniteui-angular-i18n’;_
 And then:
 _Changei18n(IgxResouceStringsJA);_
 
-###Resource strings keys naming convention
+### Resource strings keys naming convention
 Each key in the `IResourceStrings` (and `IGridResourceStrings`, `ITimePickerResourceStrings`, etc.) is prefixed with components' selector and followed by the resource string key. Having components' selectors as prefixes allows us to have same resource strings keys for more than one component.
 Example: _igx_grid_groupByArea_message_.
 
@@ -122,11 +133,9 @@ When fixing a bug you need to follow these guidelines:
 1. Leave a comment above your change in the format `<initials> <date> <Issue Number|Issue Link> <Comment for the change>`
    * e.g. `K.D. June 28th, 2016 #1234 Adding this comment as an example`
    * e.g. `K.D. June 28th, 2016 https://github.com/IgniteUI/ignite-ui/issues/1234 Adding this comment as an example`
-2. Write unit tests that cover your change. The test should fail prior to your change and pass after it
-3. Run JSHint, JSCS, Unit tests and make sure they all pass
-4. Pull request your changes and reference the issue. Use the following title/description format.
-   * Title: `<Issue Number> <Change Title>` Description: `closes <Issue Number> <Longer Description>`
-   * e.g. Title: `#123 Changing foo to bar` Description: `closes #123`
+2. Write unit tests that cover your change. The test should fail prior to your change and pass after it. Make sure that it really fails when it should!
+3. Run lint and tests and make sure they all pass
+4. Pull request your changes and reference the issue. Use the enforced commit message format with applicable type, scope, etc.
 5. Don't forget to make the necessary status updates, as described in the workflow section.
 
 When bug fixes are applicable to multiple branches, there will be additional steps between 3 and 4. So if let’s say we have a 5.2.x, 5.3.x, and a master branch the process will look like this:
@@ -143,15 +152,16 @@ When bug fixes are applicable to multiple branches, there will be additional ste
 # New feature development
 In order to contribute code to a new feature, you need to follow these guidelines.
 
-1. Work on implementation in your fork
-2. Follow a test-driven development process (TDD) to ensure full code coverage, or make sure that you include unit tests that cover all of the newly added code
+1. Work on implementation in your fork/branch.
+2. Follow a test-driven development process (TDD) to ensure full code coverage.
 3. Document all newly added public methods, inputs, outputs and properties.
-4. Make sure all static code analysis and tests pass before opening a pull request
-5. Reference the issue you've been working on in your commit message and pull request title/description.
-6. Don't forget to make the necessary status updates, as described in the workflow section.
+4. Make sure all static code analysis and tests pass before opening a pull request.
+5. Test the component with screen reader and browser tools for accessibility compliance.
+6. Reference the issue you've been working on in your commit message and pull request title/description.
+7. Don't forget to make the necessary status updates, as described in the workflow section.
 
 # Breaking changes and migrations
-If the bug fix or new feature development requires changes to released public API or behavior in a way that'll njo longer be compatible with an existing user code base:
+If the bug fix or new feature development requires changes to released public API or behavior in a way that'll no longer be compatible with an existing user code base:
 
 1. Describe in the appropriate section in the [CHANGELOG.md](https://github.com/IgniteUI/igniteui-angular/blob/master/CHANGELOG.md)
 2. Add a `BREAKING CHANGE:` section to the commit message body or footer. See https://www.conventionalcommits.org
@@ -168,29 +178,31 @@ if (isDevMode()) {
 `
 Write migrations.
 
-## Deprecating methods
-When a method is deprecated a few steps have to be done:
-1. Add the `@deprecated` tag at the begging of the method description followed by the version in which the method has been deprecated and what can be used instead. Example:
-```ts
-/**
- * @deprecated in version 12.1.0. Use 'data' instead
- *
- * The data record that populates the row
- */
-public getRowData(): any {
-    return this.data;
-}
-```
-2. Ensure that the deprecated method is no longer used in IgniteUI for Angular codebase, samples and documentation snippets.
-3. Write migrations.
+## Deprecating members
+When a property or method is deprecated a few steps have to be done:
+1. Add the `@deprecated` tag after the member description (since it's a block tag), followed by the version in which the member has been deprecated and what can be used instead. Example:
+    ```ts
+    /**
+     * Enables selecting multiple buttons.
+     *
+     * @deprecated in version 16.1.0. Use the `selectionMode` property instead.
+     */
+    @Input()
+    public get multiSelection() { /* ... */ }
+    public set multiSelection(value: boolean) { /* ... */ }
 
-## Deprecating class properties
-When a class property is deprecated a few steps have to be done:
-1. Add the `@deprecated` tag at the begging of the property description followed by the version in which the property has been deprecated and what can be used instead.
-2. Ensure that the deprecated property is no longer used in IgniteUI for Angular codebase, samples and documentation snippets.
+    /**
+     * The data record that populates the row
+     *
+     * @deprecated in version 12.1.0. Use the `data` property instead.
+     */
+    public getRowData(): any {
+        return this.data;
+    }
+    ```
+    Note: Use full specific version followed by full stop and if possible keep the alternative use short and in the same line.
+2. Ensure that the deprecated member is no longer used in Ignite UI for Angular codebase, samples and documentation snippets.
 3. Write migrations.
-
-NOTE: TypeScript disallows adding descriptions to both the get and set accessor for a single member. Instead, the description for the member must be applied to the first accessor specified in document order. Having this in mind the `@deprecated` tag is applied only once.
 
 # Testing a PR
 In order to test a pull request that is awaiting test, perform the following actions.

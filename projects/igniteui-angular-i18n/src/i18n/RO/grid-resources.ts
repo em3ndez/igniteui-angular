@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsRO_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Romanian resource strings for IgxGrid
+ */
+export const GridResourceStringsRO = {
     igx_grid_groupByArea_message: 'Trageți un antet de coloană și plasați-l aici pentru a grupa după coloana respectivă.',
     igx_grid_groupByArea_select_message: 'Selectați toate rândurile din grup cu numele câmpului {0} și valoarea {1}.',
     igx_grid_groupByArea_deselect_message: 'Deselectați toate rândurile din grup cu numele câmpului {0} și valoarea {1}.',
@@ -89,7 +92,8 @@ const GridResourceStringsRO_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Filtru boolean',
     igx_grid_excel_currency_filter: 'Filtru valutar',
     igx_grid_excel_custom_filter: 'Filtru customizat...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Nicio potrivire',
+    igx_grid_excel_matches_count: '{0} potriviri',
     igx_grid_advanced_filter_title: 'Filtrare avansată',
     igx_grid_advanced_filter_and_group: '"Și" Grup',
     igx_grid_advanced_filter_or_group: '"Sau" grup',
@@ -112,6 +116,7 @@ const GridResourceStringsRO_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Anulați fixarea tuturor',
     igx_grid_row_edit_btn_done: 'Terminat',
     igx_grid_row_edit_btn_cancel: 'Anulați',
+    igx_grid_row_edit_text: 'Aveți {0} modificări în acest rând și {1} coloane ascunse',
     igx_grid_toolbar_actions_filter_prompt: 'Filtrează lista coloanelor ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Deschideți meniul derulant de fixare a coloanei',
     igx_grid_toolbar_hiding_button_tooltip: 'Deschideți meniul derulant de ascundere a coloanei',
@@ -134,33 +139,35 @@ const GridResourceStringsRO_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Anulați fixarea',
     igx_grid_actions_jumpUp_label: 'Sari sus',
     igx_grid_actions_jumpDown_label: 'Sari jos',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
-    igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Romanian resource strings for IgxGrid
- */
-export const GridResourceStringsRO = GridResourceStringsRO_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_date_dimension_total: 'Toate Perioadele',
+    igx_grid_pivot_aggregate_count: 'Numără',
+    igx_grid_pivot_aggregate_min: 'Maxim',
+    igx_grid_pivot_aggregate_max: 'Minim',
+    igx_grid_pivot_aggregate_sum: 'Sumă',
+    igx_grid_pivot_aggregate_avg: 'Toate Perioadele',
+    igx_grid_pivot_aggregate_date_latest: 'Ultima dată',
+    igx_grid_pivot_aggregate_date_earliest: 'Prima dată',
+    igx_grid_pivot_aggregate_time_latest: 'Ultima ora',
+    igx_grid_pivot_aggregate_time_earliest: 'Prima ora',
+    igx_grid_pivot_empty_row_drop_area: 'Aruncaţi câmpurile de rând aici.',
+    igx_grid_pivot_empty_column_drop_area: 'Aruncaţi câmpurile de coloană aici.',
+    igx_grid_pivot_empty_filter_drop_area: 'Aruncaţi câmpurile de filtrare aici.',
+    igx_grid_pivot_empty_value_drop_area: 'Aruncaţi câmpurile de valoare aici.',
+    igx_grid_pivot_row_drop_chip: 'Aruncaţi aici pentru a utiliza ca rând',
+    igx_grid_pivot_column_drop_chip: 'Aruncaţi aici pentru a utiliza ca coloană',
+    igx_grid_pivot_filter_drop_chip: 'Aruncaţi aici pentru a utiliza ca filtru',
+    igx_grid_pivot_value_drop_chip: 'Aruncaţi aici pentru a utiliza ca valoare',
+    igx_grid_pivot_selector_filters: 'Filtre',
+    igx_grid_pivot_selector_rows: 'Rânduri',
+    igx_grid_pivot_selector_columns: 'Coloane',
+    igx_grid_pivot_selector_values: 'Valori',
+    igx_grid_pivot_selector_panel_empty: 'Glisați aici elementele',
+    igx_grid_pivot_empty_message: 'Grila pivot nu are dimensiuni și valori.',
+    igx_grid_required_validation_error: 'Acest câmp este obligatoriu',
+    igx_grid_min_validation_error: 'Trebuie introdusă o valoare de cel puțin {0}',
+    igx_grid_max_validation_error: 'Trebuie introdusă o valoare de maximum {0}',
+    igx_grid_min_length_validation_error: 'Intrarea trebuie să aibă cel puțin {0} caractere',
+    igx_grid_max_length_validation_error: 'Intrarea nu trebuie să aibă mai mult de {0} caractere',
+    igx_grid_email_validation_error: 'Ar trebui introdusă o adresă de e-mail validă',
+    igx_grid_pattern_validation_error: 'Intrarea nu se potrivește cu modelul cerut'
+} satisfies MakeRequired<IGridResourceStrings>;

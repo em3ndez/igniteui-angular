@@ -1,182 +1,49 @@
 <div class="columns-container">
-    <article class="column">
-        <h4 class="sample-title">Flat Buttons</h4>
-        <div class="buttons-sample">
-            <div class="button-sample">
-                <button igxButton="flat" igxRipple>Flat</button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <span type="button" igxButton="flat" igxRipple="white">Red Sox</span>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <input type="button" igxButton="flat" igxRipple="white" value="Input" />
-            </div>
-            <div class="button-sample">
-                <button igxButton="flat" disabled>native disabled</button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="flat" [disabled]="true">Red Sox</button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <input type="button" igxButton="flat" [disabled]="true" value="Input" />
-            </div>
-        </div>
+    <article class="title">
+        <h4 class="sample-title">Angular Button</h4>
+        <h4 class="sample-title">WC Button</h4>
     </article>
 
-    <article class="column">
-        <h4 class="sample-title">Raised Buttons</h4>
-        <div class="buttons-sample">
-            <div class="button-sample">
-                <button igxButton="raised" igxRipple>Raised</button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="raised" igxRipple="white">Red Sox</button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <input type="submit" igxButton="raised" igxRipple="white" value="Input" />
-            </div>
-            <div class="button-sample">
-                <button igxButton="raised" [disabled]="true">Raised</button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="raised" [disabled]="true">Red Sox</button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <input type="button" igxButton="raised" [disabled]="true" value="Input"/>
-            </div>
+    <div class="buttons-sample" [igSize]="properties.size">
+        <div class="button-sample">
+            <button
+                [igxButton]="properties.variant"
+                [disabled]="properties.disabled"
+            >
+                @if(hasPrefix) {
+                <igx-icon>face</igx-icon>
+                }
+                    <span>Button</span>
+                @if(hasSuffix) {
+                <igx-icon>face</igx-icon>
+                }
+            </button>
         </div>
-    </article>
+        <div class="button-sample">
+            <igc-button
+                [variant]="properties.variant"
+                [disabled]="properties.disabled"
+            >
+                @if(hasPrefix) {
+                <igc-icon slot="prefix" name="face"></igc-icon>
+                }
+                    Button
+                @if(hasSuffix) {
+                <igc-icon slot="suffix" name="face"></igc-icon>
+                }
+            </igc-button>
+        </div>
+    </div>
 
-    <article class="column">
-        <h4 class="sample-title">Outlined Buttons</h4>
-        <div class="buttons-sample">
-            <div class="button-sample">
-                <button igxButton="outlined" igxRipple>Outlined</button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="outlined" igxRipple="white">Red Sox</button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <button igxButton="outlined" igxRipple="white">Celtics</button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="outlined" [disabled]="true">Outlined</button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="outlined" [disabled]="true">Red Sox</button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <button igxButton="outlined" [disabled]="true">Celtics</button>
-            </div>
-        </div>
-    </article>
+    <ng-template #customControls>
+        <div class="custom-controls">
+            <igx-switch id="addPrefix" [(ngModel)]="hasPrefix">
+                <label for="addPrefix">Add prefix</label>
+            </igx-switch>
 
-    <article class="column">
-        <h4 class="sample-title">Floating Action Buttons</h4>
-        <div class="buttons-sample">
-            <div class="button-sample">
-                <button igxRipple igxButton="fab">
-                    <igx-icon>favorite</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="fab" igxRipple="white">
-                    <igx-icon>edit</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <button igxButton="fab" igxRipple="white">
-                    <igx-icon>add</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="fab" igxRipple="white" [disabled]="true">
-                    <igx-icon>favorite</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="fab" [disabled]="true">
-                    <igx-icon>edit</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <button igxButton="fab" [disabled]="true">
-                    <igx-icon>add</igx-icon>
-                </button>
-            </div>
+            <igx-switch id="addSuffix" [(ngModel)]="hasSuffix">
+                <label for="addSuffix">Add suffix</label>
+            </igx-switch>
         </div>
-    </article>
-
-    <article class="column">
-        <h4 class="sample-title">Icon Buttons</h4>
-        <div class="buttons-sample">
-            <div class="button-sample">
-                <button igxButton="icon" igxRipple [igxRippleCentered]="true">
-                    <igx-icon>search</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="icon" igxRipple="white" [igxRippleCentered]="true">
-                    <igx-icon>favorite</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <button igxButton="icon" igxRipple="white" [igxRippleCentered]="true">
-                    <igx-icon>more_vert</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="icon" igxRipple [igxRippleCentered]="true" [disabled]="true">
-                    <igx-icon>search</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample red-sox-button">
-                <button igxButton="icon" igxRipple="white" [igxRippleCentered]="true" [disabled]="true">
-                    <igx-icon>favorite</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample smoky-black-button">
-                <button igxButton="icon" igxRipple="white" [igxRippleCentered]="true" [disabled]="true">
-                    <igx-icon>more_vert</igx-icon>
-                </button>
-            </div>
-        </div>
-    </article>
-</div>
-<div class="columns-container display-density">
-    <article class="column">
-        <h4 class="sample-title">Buttons based on Display Density</h4>
-        <div class="density-chooser">
-            <igx-buttongroup [values]="displayDensities" (selected)="selectDensity($event)"></igx-buttongroup>
-        </div>
-        <div class="buttons-sample">
-            <div class="button-sample">
-                <button igxButton="flat" igxRipple [displayDensity]="density">Flat</button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="outlined" igxRipple [displayDensity]="density">Outlined</button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="outlined" igxRipple [displayDensity]="density">
-                    <span>Outlined</span>
-                    <igx-icon>face</igx-icon>
-                </button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="raised" igxRipple [displayDensity]="density">Raised</button>
-            </div>
-            <div class="button-sample">
-                <button igxButton="raised" igxRipple [displayDensity]="density">
-                    <igx-icon>face</igx-icon>
-                    <span>Raised</span>
-                </button>
-            </div>
-            <div class="button-sample">
-                <button igxRipple igxButton="fab" [displayDensity]="density">
-                    <span>FAB</span>
-                    <igx-icon>face</igx-icon>
-                </button>
-            </div>
-        </div>
-    </article>
+    </ng-template>
 </div>

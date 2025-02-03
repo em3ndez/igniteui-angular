@@ -1,30 +1,30 @@
-import { AnimationBuilder, AnimationReferenceMetadata, useAnimation } from '@angular/animations';
-import { CommonModule } from '@angular/common';
+import { AnimationReferenceMetadata, useAnimation } from '@angular/animations';
+import { NgIf, NgTemplateOutlet, NgFor } from '@angular/common';
 import {
-    Component, HostBinding, OnDestroy, OnInit,
-    Input, Output, EventEmitter, ContentChildren, QueryList, ElementRef,
-    NgModule, OnChanges, SimpleChanges, TemplateRef, ContentChild, AfterContentInit, ChangeDetectorRef
+    AfterContentInit, ChangeDetectorRef, Component, ContentChild, ContentChildren,
+    ElementRef, EventEmitter, HostBinding, Inject, Input, OnChanges, OnDestroy,
+    OnInit, Output, QueryList, SimpleChanges, TemplateRef, booleanAttribute
 } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { growVerIn, growVerOut } from '../animations/grow';
-import { fadeIn } from '../animations/main';
-import { HorizontalAnimationType, IgxCarouselComponentBase } from '../carousel/carousel-base';
-import { IgxRippleModule } from '../directives/ripple/ripple.directive';
+import { IgxCarouselComponentBase } from '../carousel/carousel-base';
+
 import { ToggleAnimationSettings } from '../expansion-panel/toggle-animation-component';
+import { IgxAngularAnimationService } from '../services/animation/angular-animation-service';
+import { AnimationService } from '../services/animation/animation';
+import { IgxStepComponent } from './step/step.component';
 import {
-    IgxStepper, IgxStepperTitlePosition, IgxStepperOrientation,
-    IgxStepType, IGX_STEPPER_COMPONENT, IStepChangedEventArgs, IStepChangingEventArgs, VerticalAnimationType
+    IgxStepper, IgxStepperOrientation, IgxStepperTitlePosition, IgxStepType,
+    IGX_STEPPER_COMPONENT, IStepChangedEventArgs, IStepChangingEventArgs, VerticalAnimationType,
+    HorizontalAnimationType
 } from './stepper.common';
 import {
     IgxStepActiveIndicatorDirective,
     IgxStepCompletedIndicatorDirective,
-    IgxStepContentDirective,
-    IgxStepIndicatorDirective, IgxStepInvalidIndicatorDirective,
-    IgxStepSubTitleDirective, IgxStepTitleDirective
+    IgxStepInvalidIndicatorDirective
 } from './stepper.directive';
-import { IgxStepComponent } from './step/step.component';
 import { IgxStepperService } from './stepper.service';
+import { fadeIn, growVerIn, growVerOut } from 'igniteui-angular/animations';
 
 
 // TODO: common interface between IgxCarouselComponentBase and ToggleAnimationPlayer?
@@ -72,7 +72,8 @@ import { IgxStepperService } from './stepper.service';
     providers: [
         IgxStepperService,
         { provide: IGX_STEPPER_COMPONENT, useExisting: IgxStepperComponent },
-    ]
+    ],
+    imports: [NgIf, NgTemplateOutlet, NgFor]
 })
 export class IgxStepperComponent extends IgxCarouselComponentBase implements IgxStepper, OnChanges, OnInit, AfterContentInit, OnDestroy {
 
@@ -162,7 +163,7 @@ export class IgxStepperComponent extends IgxCarouselComponentBase implements Igx
      * <igx-stepper [linear]="true"></igx-stepper>
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get linear(): boolean {
         return this._linear;
     }
@@ -224,7 +225,7 @@ export class IgxStepperComponent extends IgxCarouselComponentBase implements Igx
      * this.stepper.contentTop = true;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public contentTop = false;
 
     /**
@@ -324,7 +325,7 @@ export class IgxStepperComponent extends IgxCarouselComponentBase implements Igx
     };
     /** @hidden @internal */
     public _defaultTitlePosition: IgxStepperTitlePosition = IgxStepperTitlePosition.Bottom;
-    private destroy$ = new Subject();
+    private destroy$ = new Subject<void>();
     private _orientation: IgxStepperOrientation = IgxStepperOrientation.Horizontal;
     private _verticalAnimationType: VerticalAnimationType = VerticalAnimationType.Grow;
     private _linear = false;
@@ -332,10 +333,10 @@ export class IgxStepperComponent extends IgxCarouselComponentBase implements Igx
 
     constructor(
         cdr: ChangeDetectorRef,
-        private animBuilder: AnimationBuilder,
+        @Inject(IgxAngularAnimationService) animationService: AnimationService,
         private stepperService: IgxStepperService,
         private element: ElementRef<HTMLElement>) {
-        super(animBuilder, cdr);
+        super(animationService, cdr);
         this.stepperService.stepper = this;
     }
 
@@ -374,6 +375,10 @@ export class IgxStepperComponent extends IgxCarouselComponentBase implements Igx
         });
         if (!activeStep) {
             this.activateFirstStep(true);
+        }
+
+        if (this.linear) {
+            this.stepperService.calculateLinearDisabledSteps();
         }
 
         this.handleStepChanges();
@@ -533,33 +538,3 @@ export class IgxStepperComponent extends IgxCarouselComponentBase implements Igx
         }
     }
 }
-
-@NgModule({
-    imports: [
-        CommonModule,
-        IgxRippleModule
-    ],
-    declarations: [
-        IgxStepComponent,
-        IgxStepperComponent,
-        IgxStepTitleDirective,
-        IgxStepSubTitleDirective,
-        IgxStepIndicatorDirective,
-        IgxStepContentDirective,
-        IgxStepActiveIndicatorDirective,
-        IgxStepCompletedIndicatorDirective,
-        IgxStepInvalidIndicatorDirective,
-    ],
-    exports: [
-        IgxStepComponent,
-        IgxStepperComponent,
-        IgxStepTitleDirective,
-        IgxStepSubTitleDirective,
-        IgxStepIndicatorDirective,
-        IgxStepContentDirective,
-        IgxStepActiveIndicatorDirective,
-        IgxStepCompletedIndicatorDirective,
-        IgxStepInvalidIndicatorDirective,
-    ]
-})
-export class IgxStepperModule { }

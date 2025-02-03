@@ -1,9 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { IgxGridComponent, GridSelectionMode } from 'igniteui-angular';
+import { NgFor } from '@angular/common';
+import { GridSelectionMode, IgxColumnComponent, IgxGridComponent, IgxGridToolbarActionsComponent, IgxGridToolbarComponent, IgxGridToolbarHidingComponent, IgxGridToolbarPinningComponent } from 'igniteui-angular';
+
 
 @Component({
     selector: 'app-grid-performance-sample',
-    templateUrl: 'grid-performance.sample.html'
+    templateUrl: 'grid-performance.sample.html',
+    styleUrls: ['grid-performance.sample.scss'],
+    imports: [IgxGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, NgFor, IgxColumnComponent]
 })
 
 export class GridPerformanceSampleComponent implements OnInit {
@@ -16,7 +20,7 @@ export class GridPerformanceSampleComponent implements OnInit {
     public selectionMode;
 
     public ngOnInit() {
-        this.selectionMode = GridSelectionMode.none;
+        this.selectionMode = GridSelectionMode.multiple;
         const cols = [];
         cols.push({
             field: 'ID',

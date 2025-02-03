@@ -6,7 +6,8 @@ import {
     HostListener,
     Input,
     Renderer2,
-    ViewChild
+    ViewChild,
+    booleanAttribute
 } from '@angular/core';
 
 import {
@@ -16,6 +17,8 @@ import {
 } from './list.common';
 
 import { HammerGesturesManager } from '../core/touch';
+import { rem } from '../core/utils';
+import { NgIf, NgTemplateOutlet } from '@angular/common';
 
 /**
  * The Ignite UI List Item component is a container intended for row items in the Ignite UI for Angular List component.
@@ -35,7 +38,8 @@ import { HammerGesturesManager } from '../core/touch';
     providers: [HammerGesturesManager],
     selector: 'igx-list-item',
     templateUrl: 'list-item.component.html',
-    changeDetection: ChangeDetectionStrategy.OnPush
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [NgIf, NgTemplateOutlet]
 })
 export class IgxListItemComponent implements IListChild {
     /**
@@ -67,7 +71,7 @@ export class IgxListItemComponent implements IListChild {
      *
      * @memberof IgxListItemComponent
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public isHeader: boolean;
 
     /**
@@ -82,7 +86,7 @@ export class IgxListItemComponent implements IListChild {
      *
      * @memberof IgxListItemComponent
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public hidden = false;
 
     /**
@@ -127,6 +131,8 @@ export class IgxListItemComponent implements IListChild {
      * @hidden
      */
     private lastPanDir = IgxListPanState.NONE;
+
+    private _role: string = '';
 
     /**
      * Gets the `panState` of a `list item`.
@@ -241,6 +247,16 @@ export class IgxListItemComponent implements IListChild {
         return this.width;
     }
 
+    /** @hidden @internal */
+    public get offsetWidthInRem() {
+        return rem(this.element.offsetWidth);
+    }
+
+    /** @hidden @internal */
+    public get offsetHeightInRem() {
+        return rem(this.element.offsetHeight);
+    }
+
     constructor(
         public list: IgxListBaseDirective,
         private elementRef: ElementRef,
@@ -248,7 +264,7 @@ export class IgxListItemComponent implements IListChild {
     }
 
     /**
-     * Gets the `role` attribute of the `list item`.
+     * Gets/Sets the `role` attribute of the `list item`.
      * ```typescript
      * let itemRole =  this.listItem.role;
      * ```
@@ -256,8 +272,13 @@ export class IgxListItemComponent implements IListChild {
      * @memberof IgxListItemComponent
      */
     @HostBinding('attr.role')
+    @Input()
     public get role() {
-        return this.isHeader ? 'separator' : 'listitem';
+        return this._role ? this._role : this.isHeader ? 'separator' : 'listitem';
+    }
+
+    public set role(val: string) {
+        this._role = val;
     }
 
     /**
@@ -329,7 +350,7 @@ export class IgxListItemComponent implements IListChild {
     @HostListener('pancancel')
     public panCancel() {
         this.resetPanPosition();
-        this.list.endPan.emit({item: this, direction: this.lastPanDir, keepItem: false});
+        this.list.endPan.emit({ item: this, direction: this.lastPanDir, keepItem: false });
     }
 
     /**
@@ -376,7 +397,7 @@ export class IgxListItemComponent implements IListChild {
         const dir = relativeOffset > 0 ? IgxListPanState.RIGHT : IgxListPanState.LEFT;
         this.lastPanDir = dir;
 
-        const args = { item: this, direction: dir, keepItem: false};
+        const args = { item: this, direction: dir, keepItem: false };
         this.list.endPan.emit(args);
 
         const oldPanState = this._panState;
