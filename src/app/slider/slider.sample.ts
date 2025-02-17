@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { IgxSliderType, ISliderValueChangeEventArgs, IRangeSliderValue, TickLabelsOrientation, TicksOrientation } from 'igniteui-angular';
+import { FormsModule } from '@angular/forms';
+import { IgxSliderType, ISliderValueChangeEventArgs, IRangeSliderValue, TickLabelsOrientation, TicksOrientation, IgxButtonDirective, IgxSliderComponent, IgxTickLabelTemplateDirective } from 'igniteui-angular';
 
 class Task {
     public title: string;
@@ -14,22 +15,20 @@ class Task {
 @Component({
     selector: 'app-slider-sample',
     styleUrls: ['slider.sample.scss'],
-    templateUrl: 'slider.sample.html'
+    templateUrl: 'slider.sample.html',
+    imports: [IgxSliderComponent, FormsModule, IgxTickLabelTemplateDirective, IgxButtonDirective]
 })
 export class SliderSampleComponent {
     public labelOrientaion: TickLabelsOrientation = TickLabelsOrientation.Horizontal;
     public ticksOrientation: TicksOrientation = TicksOrientation.Bottom;
     public primaryTickLabels = true;
     public secondaryTickLabels = true;
-    public sliderType: IgxSliderType = IgxSliderType.RANGE;
+    public sliderType: IgxSliderType = IgxSliderType.SLIDER;
     public labelsDates = new Array<Date>();
     public task: Task = new Task('Implement new app', 30);
     public labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    public rangeValue = {
-        lower: 34,
-        upper: 67
-    };
+    public rangeValue = 34;
 
     public rangeLabel = {
         lower: 2,
@@ -62,7 +61,7 @@ export class SliderSampleComponent {
     }
 
     public changeLabels() {
-        this.labels = new Array('08:00', '12:00', '16:00', '20:00', '00:00');
+        this.labels = ['08:00', '12:00', '16:00', '20:00', '00:00'];
     }
 
     public changeLabelOrientation() {

@@ -1,16 +1,15 @@
-import { IgxGridModule, IgxGridComponent } from './public_api';
+import { IgxGridComponent } from './public_api';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { TestBed, fakeAsync } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { DebugElement } from '@angular/core';
 import { GridFunctions, GridSummaryFunctions } from '../../test-utils/grid-functions.spec';
 import {
-    IgxAddRowComponent, IgxGridRowEditingTransactionComponent
+    IgxAddRowComponent, IgxGridRowEditingDefinedColumnsComponent, IgxGridRowEditingTransactionComponent
 } from '../../test-utils/grid-samples.spec';
 
 import { By } from '@angular/platform-browser';
 import { IgxActionStripComponent } from '../../action-strip/action-strip.component';
-import { IgxActionStripModule } from '../../action-strip/action-strip.module';
 import { DefaultGridMasterDetailComponent } from './grid.master-detail.spec';
 import { ColumnLayoutTestComponent } from './grid.multi-row-layout.spec';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
@@ -40,28 +39,26 @@ describe('IgxGrid - Row Adding #grid', () => {
           animationElem.dispatchEvent(endEvent);
     };
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                IgxAddRowComponent,
-                ColumnLayoutTestComponent,
-                DefaultGridMasterDetailComponent,
-                IgxGridRowEditingTransactionComponent
-            ],
+        return TestBed.configureTestingModule({
             imports: [
                 NoopAnimationsModule,
-                IgxActionStripModule,
-                IgxGridModule]
+                IgxAddRowComponent,
+                IgxGridRowEditingTransactionComponent,
+                IgxGridRowEditingDefinedColumnsComponent,
+                ColumnLayoutTestComponent,
+                DefaultGridMasterDetailComponent
+            ]
         });
     }));
 
     describe('General tests', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
             actionStrip = fixture.componentInstance.actionStrip;
-        }));
+        });
 
         it('Should be able to enter add row mode on action strip click', () => {
             const row = grid.rowList.first;
@@ -95,7 +92,7 @@ describe('IgxGrid - Row Adding #grid', () => {
             expect(addRow.addRowUI).toBeTrue();
         });
 
-        xit('Should display the banner above the row if there is no room underneath it', () => {
+        it('Should display the banner above the row if there is no room underneath it', () => {
             fixture.componentInstance.paging = true;
             fixture.detectChanges();
             grid.notifyChanges(true);
@@ -337,16 +334,16 @@ describe('IgxGrid - Row Adding #grid', () => {
     describe('Add row events tests:', () => {
         const $destroyer = new Subject<boolean>();
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
-        afterEach(fakeAsync(() => {
+        afterEach(() => {
             $destroyer.next(true);
-        }));
+        });
 
         it('Should emit all events in the correct order', () => {
             spyOn(grid.rowEditEnter, 'emit').and.callThrough();
@@ -481,6 +478,28 @@ describe('IgxGrid - Row Adding #grid', () => {
             expect(grid.gridAPI.get_row_by_index(1).addRowUI).toBeTrue();
         });
 
+        it(`Should emit 'rowEditEnter' only once while adding a new row`, () => {
+            spyOn(grid.rowEditEnter, 'emit').and.callThrough();
+            const row = grid.gridAPI.get_row_by_index(0);
+            row.beginAddRow();
+            fixture.detectChanges();
+
+            endTransition();
+
+            const newRow = grid.gridAPI.get_row_by_index(1);
+            expect(newRow.addRowUI).toBeTrue();
+
+            let targetCell = grid.gridAPI.get_cell_by_index(1, 'ContactName') as any;
+            UIInteractions.simulateClickAndSelectEvent(targetCell);
+            fixture.detectChanges();
+
+            targetCell = grid.gridAPI.get_cell_by_index(1, 'CompanyName') as any;
+            UIInteractions.simulateClickAndSelectEvent(targetCell);
+            fixture.detectChanges();
+
+            expect(grid.rowEditEnter.emit).toHaveBeenCalledTimes(1);
+        });
+
         it('Should scroll and start adding a row as the first one when using the public API method', async () => {
             await wait(DEBOUNCETIME);
             fixture.detectChanges();
@@ -512,13 +531,13 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Exit add row mode tests', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
             actionStrip = fixture.componentInstance.actionStrip;
-        }));
+        });
 
         it('Should exit add row mode and commit on clicking DONE button in the overlay', () => {
             const dataLength = grid.data.length;
@@ -638,18 +657,18 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Paging tests', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
        it('Should preserve the changes after page navigation', () => {
             const dataLength = grid.data.length;
             fixture.componentInstance.paging = true;
             fixture.detectChanges();
-            grid.perPage = 5;
+            grid.paginator.perPage = 5;
             fixture.detectChanges();
 
             const row = grid.rowList.first;
@@ -666,7 +685,7 @@ describe('IgxGrid - Row Adding #grid', () => {
             const dataLength = grid.data.length;
             fixture.componentInstance.paging = true;
             fixture.detectChanges();
-            grid.perPage = 5;
+            grid.paginator.perPage = 5;
             fixture.detectChanges();
 
             const row = grid.rowList.first;
@@ -686,13 +705,13 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Filtering tests', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
             actionStrip = fixture.componentInstance.actionStrip;
-        }));
+        });
 
         it('Should exit add row mode on filter applied and discard', () => {
             spyOn(grid.gridAPI.crudService, 'endEdit').and.callThrough();
@@ -758,13 +777,13 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Sorting tests', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
             actionStrip = fixture.componentInstance.actionStrip;
-        }));
+        });
 
         it('Should exit add row mode and discard on sorting', () => {
             spyOn(grid.gridAPI.crudService, 'endEdit').and.callThrough();
@@ -811,12 +830,12 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Master detail view', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(DefaultGridMasterDetailComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
        it('Should collapse expanded detail view before spawning add row UI', () => {
             grid.rowEditable = true;
@@ -834,11 +853,11 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - MRL tests', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(ColumnLayoutTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('Should render adding row with correct multi row layout', () => {
             grid.rowEditable = true;
@@ -856,12 +875,12 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Group by', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
         it(`Should show the action strip "Show" button if added row is in collapsed group
             4and on click should expand the group and scroll to the correct added row`, () => {
@@ -902,12 +921,12 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Summaries', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
         it('Should update summaries after adding new row', () => {
             grid.getColumnByName('ID').hasSummary = true;
@@ -929,14 +948,14 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Column manipulations', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxAddRowComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
-        it('Should exit add row mode when moving a column', () => {
+        it('Should exit add row mode when moving a column', fakeAsync(() => {
             spyOn(grid.gridAPI.crudService, 'endEdit').and.callThrough();
             const dataLength = grid.data.length;
             const row = grid.rowList.first;
@@ -949,12 +968,13 @@ describe('IgxGrid - Row Adding #grid', () => {
             expect(grid.rowEditingOverlay.collapsed).toEqual(false);
 
             grid.moveColumn(grid.columnList.get(1), grid.columnList.get(2));
+            tick();
             fixture.detectChanges();
 
             expect(grid.gridAPI.crudService.endEdit).toHaveBeenCalled();
             expect(grid.data.length).toBe(dataLength);
             expect(grid.rowEditingOverlay.collapsed).toEqual(true);
-        });
+        }));
 
         it('Should exit add row mode when pinning/unpinning a column', () => {
             spyOn(grid.gridAPI.crudService, 'endEdit').and.callThrough();
@@ -1039,12 +1059,12 @@ describe('IgxGrid - Row Adding #grid', () => {
     });
 
     describe('Row Adding - Transactions', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxGridRowEditingTransactionComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fixture);
-        }));
+        });
 
         it('Should create ADD transaction when adding a new row', () => {
             const row = grid.rowList.first;
@@ -1080,6 +1100,23 @@ describe('IgxGrid - Row Adding #grid', () => {
             expect(states.length).toEqual(1);
             expect(states[0].type).toEqual(TransactionType.ADD);
             expect(states[0].newValue['ProductName']).toEqual('aaa');
+        });
+
+        it('Should display number of defined columns for rowChangesCount', () => {
+            fixture = TestBed.createComponent(IgxGridRowEditingDefinedColumnsComponent);
+            fixture.detectChanges();
+            grid = fixture.componentInstance.grid;
+
+            const row = grid.rowList.first;
+            row.beginAddRow();
+            fixture.detectChanges();
+            endTransition();
+
+            const cellElem = grid.gridAPI.get_cell_by_index(10, 'ProductName');
+            UIInteractions.simulateDoubleClickAndSelectEvent(cellElem);
+            fixture.detectChanges();
+
+            expect(grid.rowChangesCount).toEqual(3);
         });
     });
 });

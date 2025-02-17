@@ -1,16 +1,21 @@
 import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
-import { RemoteService } from 'src/app/shared/remote.service';
+import { AsyncPipe } from '@angular/common';
+
 import { Observable } from 'rxjs';
-import { IForOfState, IgxDropDownComponent, IgxToastComponent, IgxForOfDirective, DisplayDensity, VerticalAlignment } from 'igniteui-angular';
+
+import { RemoteService } from 'src/app/shared/remote.service';
+import { IForOfState, IgxButtonDirective, IgxDropDownComponent, IgxDropDownItemComponent, IgxDropDownItemNavigationDirective, IgxForOfDirective, IgxToastComponent, IgxToggleActionDirective, VerticalAlignment } from 'igniteui-angular';
 
 interface DataItem {
   name: string;
   id: number;
 }
 @Component({
-  selector: 'app-drop-down-virtual',
-  templateUrl: './drop-down-virtual.component.html',
-  styleUrls: ['./drop-down-virtual.component.scss']
+    selector: 'app-drop-down-virtual',
+    templateUrl: './drop-down-virtual.component.html',
+    styleUrls: ['./drop-down-virtual.component.scss'],
+    providers: [RemoteService],
+    imports: [IgxButtonDirective, IgxToggleActionDirective, IgxDropDownItemNavigationDirective, IgxDropDownComponent, IgxForOfDirective, IgxDropDownItemComponent, IgxToastComponent, AsyncPipe]
 })
 export class DropDownVirtualComponent implements OnInit, AfterViewInit {
   @ViewChild('loadingToast', { read: IgxToastComponent, static: true })
@@ -26,18 +31,13 @@ export class DropDownVirtualComponent implements OnInit, AfterViewInit {
   public startIndex = 0;
   public itemHeight = 40;
   public itemsMaxHeight = 320;
-  public density: DisplayDensity = 'comfortable';
-  public displayDensities = [
-    { label: 'comfortable', selected: this.density === 'comfortable', togglable: true },
-    { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-    { label: 'compact', selected: this.density === 'compact', togglable: true }
-  ];
 
   constructor(protected remoteService: RemoteService, protected cdr: ChangeDetectorRef) {
     this.remoteService.urlBuilder = (state) => {
       const chunkSize = state.chunkSize || Math.floor(this.itemsMaxHeight / this.itemHeight) + 1;
       return `${this.remoteService.url}?$count=true&$skip=${state.startIndex}&$top=${chunkSize}`;
     };
+    // eslint-disable-next-line prefer-spread
     this.localItems = Array.apply(null, { length: 2000 }).map((e, i) => ({
       name: `Item ${i + 1}`,
       id: i

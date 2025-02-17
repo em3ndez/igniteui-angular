@@ -1,5 +1,5 @@
 <igx-expansion-panel #expansionPanel [animationSettings]="animationSettings" (contentCollapsed)="onExpansionPanelClose()" (contentExpanded)="onExpansionPanelOpen()"
-    [collapsed]="collapsed" aria-live="polite" [attr.aria-hidden]="collapsed">
+    [collapsed]="collapsed" role="status" aria-live="polite" [attr.aria-hidden]="collapsed">
     <igx-expansion-panel-body>
         <div class="igx-banner">
             <div class="igx-banner__message">
@@ -11,16 +11,14 @@
                 </span>
             </div>
             <div class="igx-banner__actions">
-                <div class="igx-banner__row">
-                    <ng-container *ngIf="useDefaultTemplate">
-                        <button igxButton="flat" igxRipple (click)="close()">
-                            Dismiss
-                        </button>
-                    </ng-container>
-                    <ng-container *ngIf="!useDefaultTemplate">
-                        <ng-content select="igx-banner-actions"></ng-content>
-                    </ng-container>
-                </div>
+                <ng-container *ngIf="useDefaultTemplate">
+                    <button type="button" igxButton="flat" igxRipple (click)="close()">
+                        {{ resourceStrings.igx_banner_button_dismiss }}
+                    </button>
+                </ng-container>
+                <ng-container *ngIf="!useDefaultTemplate">
+                    <ng-content select="igx-banner-actions"></ng-content>
+                </ng-container>
             </div>
         </div>
     </igx-expansion-panel-body>

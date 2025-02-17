@@ -1,70 +1,48 @@
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { DOCUMENT, NgIf, NgTemplateOutlet, NgClass, NgSwitch, NgSwitchCase, NgSwitchDefault } from '@angular/common';
 import {
-    AfterViewChecked,
+    ChangeDetectorRef,
     Component,
     ContentChild,
     ContentChildren,
+    DestroyRef,
     ElementRef,
     HostBinding,
-    HostListener,
-    Input,
-    NgModule,
-    QueryList,
-    Inject,
-    Optional,
-    OnDestroy,
-    ChangeDetectorRef,
+    HostListener, Inject, Input,
+    Optional, QueryList, booleanAttribute,
+    inject
 } from '@angular/core';
+import { IInputResourceStrings, InputResourceStringsEN } from '../core/i18n/input-resources';
+import { PlatformUtil, getComponentTheme } from '../core/utils';
+import { IgxButtonDirective } from '../directives/button/button.directive';
 import { IgxHintDirective } from '../directives/hint/hint.directive';
 import {
     IgxInputDirective,
-    IgxInputState,
+    IgxInputState
 } from '../directives/input/input.directive';
-import { IgxLabelDirective } from '../directives/label/label.directive';
-import { IgxButtonModule } from '../directives/button/button.directive';
-import { IgxIconModule } from '../icon/public_api';
-import { IgxPrefixModule } from '../directives/prefix/prefix.directive';
-import { IgxSuffixModule } from '../directives/suffix/suffix.directive';
-import {
-    DisplayDensity,
-    IDisplayDensityOptions,
-    DisplayDensityToken,
-    DisplayDensityBase
-} from '../core/displayDensity';
+import { IgxPrefixDirective } from '../directives/prefix/prefix.directive';
+import { IgxSuffixDirective } from '../directives/suffix/suffix.directive';
+
 import { IgxInputGroupBase } from './input-group.common';
 import { IgxInputGroupType, IGX_INPUT_GROUP_TYPE } from './inputGroupType';
-import { IInputResourceStrings } from '../core/i18n/input-resources';
-import { CurrentResourceStrings } from '../core/i18n/resources';
-
-import { mkenum, PlatformUtil } from '../core/utils';
-import { Subject, Subscription } from 'rxjs';
-
-const IgxInputGroupTheme = mkenum({
-    Material: 'material',
-    Fluent: 'fluent',
-    Bootstrap: 'bootstrap',
-    IndigoDesign: 'indigo-design'
-});
-
-/**
- * Determines the Input Group theme.
- */
-export type IgxInputGroupTheme = (typeof IgxInputGroupTheme)[keyof typeof IgxInputGroupTheme];
+import { IgxIconComponent } from '../icon/icon.component';
+import { getCurrentResourceStrings } from '../core/i18n/resources';
+import { IgxTheme, THEME_TOKEN, ThemeToken } from '../services/theme/theme.token';
 
 @Component({
     selector: 'igx-input-group',
     templateUrl: 'input-group.component.html',
     providers: [{ provide: IgxInputGroupBase, useExisting: IgxInputGroupComponent }],
+    imports: [NgIf, NgTemplateOutlet, IgxPrefixDirective, IgxButtonDirective, NgClass, IgxSuffixDirective, IgxIconComponent, NgSwitch, NgSwitchCase, NgSwitchDefault]
 })
-export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInputGroupBase, AfterViewChecked, OnDestroy {
+export class IgxInputGroupComponent implements IgxInputGroupBase {
     /**
      * Sets the resource strings.
      * By default it uses EN resources.
      */
-   @Input()
-   public set resourceStrings(value: IInputResourceStrings) {
-       this._resourceStrings = Object.assign({}, this._resourceStrings, value);
-   }
+    @Input()
+    public set resourceStrings(value: IInputResourceStrings) {
+        this._resourceStrings = Object.assign({}, this._resourceStrings, value);
+    }
 
     /**
      * Returns the resource strings.
@@ -120,7 +98,7 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
      * <igx-input-group [suppressInputAutofocus]="true"></igx-input-group>
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public suppressInputAutofocus = false;
 
     /** @hidden */
@@ -131,16 +109,21 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
     @ContentChildren(IgxHintDirective, { read: IgxHintDirective })
     protected hints: QueryList<IgxHintDirective>;
 
+    @ContentChildren(IgxPrefixDirective, { read: IgxPrefixDirective, descendants: true })
+    protected _prefixes: QueryList<IgxPrefixDirective>;
+
+    @ContentChildren(IgxSuffixDirective, { read: IgxSuffixDirective, descendants: true })
+    protected _suffixes: QueryList<IgxSuffixDirective>;
+
     /** @hidden */
     @ContentChild(IgxInputDirective, { read: IgxInputDirective, static: true })
     protected input: IgxInputDirective;
 
+    private _destroyRef = inject(DestroyRef);
     private _type: IgxInputGroupType = null;
     private _filled = false;
-    private _theme: IgxInputGroupTheme;
-    private _theme$ = new Subject();
-    private _subscription: Subscription;
-    private _resourceStrings = CurrentResourceStrings.InputResStrings;
+    private _theme: IgxTheme;
+    private _resourceStrings = getCurrentResourceStrings(InputResourceStringsEN);
 
     /** @hidden */
     @HostBinding('class.igx-input-group--valid')
@@ -161,31 +144,19 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
     }
 
     /** @hidden */
-    @HostBinding('class.igx-input-group--cosy')
-    public get isDisplayDensityCosy() {
-        return this.displayDensity === DisplayDensity.cosy;
-    }
-
-    /** @hidden */
-    @HostBinding('class.igx-input-group--comfortable')
-    public get isDisplayDensityComfortable() {
-        return this.displayDensity === DisplayDensity.comfortable;
-    }
-
-    /** @hidden */
-    @HostBinding('class.igx-input-group--compact')
-    public get isDisplayDensityCompact() {
-        return this.displayDensity === DisplayDensity.compact;
+    @HostBinding('class.igx-input-group--textarea-group')
+    public get textAreaClass(): boolean {
+        return this.input.isTextArea;
     }
 
     /**
-     * An @Input property that sets how the input will be styled.
+     * Sets how the input will be styled.
      * Allowed values of type IgxInputGroupType.
      * ```html
      * <igx-input-group [type]="'search'">
      * ```
      */
-    @Input('type')
+    @Input()
     public set type(value: IgxInputGroupType) {
         this._type = value;
     }
@@ -216,7 +187,7 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
      * }
      */
     @Input()
-    public set theme(value: IgxInputGroupTheme) {
+    public set theme(value: IgxTheme) {
         this._theme = value;
     }
 
@@ -230,29 +201,30 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
      *  let inputTheme = this.inputGroup.theme;
      * }
      */
-    public get theme(): IgxInputGroupTheme {
+    public get theme(): IgxTheme {
         return this._theme;
     }
 
     constructor(
         public element: ElementRef<HTMLElement>,
         @Optional()
-        @Inject(DisplayDensityToken)
-        _displayDensityOptions: IDisplayDensityOptions,
-        @Optional()
         @Inject(IGX_INPUT_GROUP_TYPE)
         private _inputGroupType: IgxInputGroupType,
         @Inject(DOCUMENT)
         private document: any,
         private platform: PlatformUtil,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        @Inject(THEME_TOKEN)
+        private themeToken: ThemeToken
     ) {
-        super(_displayDensityOptions);
-
-        this._subscription = this._theme$.asObservable().subscribe(value => {
-            this._theme = value as IgxInputGroupTheme;
-            this.cdr.detectChanges();
+        this._theme = this.themeToken.theme;
+        const themeChange = this.themeToken.onChange((theme) => {
+            if (this._theme !== theme) {
+                this._theme = theme;
+                this.cdr.detectChanges();
+            }
         });
+        this._destroyRef.onDestroy(() => themeChange.unsubscribe());
     }
 
     /** @hidden */
@@ -292,6 +264,28 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
      */
     public get hasHints() {
         return this.hints.length > 0;
+    }
+
+    /** @hidden @internal */
+    @HostBinding('class.igx-input-group--prefixed')
+    public get hasPrefixes() {
+        return this._prefixes.length > 0 || this.isFileType;
+    }
+
+    /** @hidden @internal */
+    public set prefixes(items: QueryList<IgxPrefixDirective>) {
+        this._prefixes = items;
+    }
+
+    /** @hidden @internal */
+    @HostBinding('class.igx-input-group--suffixed')
+    public get hasSuffixes() {
+        return this._suffixes.length > 0 || this.isFileType && this.isFilled;
+    }
+
+    /** @hidden @internal */
+    public set suffixes(items: QueryList<IgxPrefixDirective>) {
+        this._suffixes = items;
     }
 
     /**
@@ -418,7 +412,7 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
      */
     @HostBinding('class.igx-input-group--indigo')
     public get isTypeIndigo() {
-        return this._theme === 'indigo-design';
+        return this._theme === 'indigo';
     }
 
     /**
@@ -433,7 +427,9 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
      */
     @HostBinding('class.igx-input-group--search')
     public get isTypeSearch() {
-        return this.type === 'search';
+        if(!this.isFileType && !this.input.isTextArea) {
+            return this.type === 'search';
+        }
     }
 
     /** @hidden */
@@ -446,47 +442,19 @@ export class IgxInputGroupComponent extends DisplayDensityBase implements IgxInp
         this._filled = val;
     }
 
-    /** @hidden @internal */
-    public ngAfterViewChecked() {
-        if (!this._theme) {
-            const cssProp = this.document.defaultView
-                .getComputedStyle(this.element.nativeElement)
-                .getPropertyValue('--theme')
-                .trim();
+    private setComponentTheme() {
+        if (!this.themeToken.preferToken) {
+            const theme = getComponentTheme(this.element.nativeElement);
 
-            if(cssProp !== '') {
-                Promise.resolve().then(() => {
-                    this._theme$.next(cssProp);
-                });
+            if (theme && theme !== this._theme) {
+                this.theme = theme;
+                this.cdr.markForCheck();
             }
         }
     }
 
     /** @hidden @internal */
-    public ngOnDestroy() {
-        this._subscription.unsubscribe();
+    public ngAfterContentChecked() {
+        this.setComponentTheme();
     }
 }
-
-/** @hidden */
-@NgModule({
-    declarations: [
-        IgxInputGroupComponent,
-        IgxHintDirective,
-        IgxInputDirective,
-        IgxLabelDirective,
-    ],
-    exports: [
-        IgxInputGroupComponent,
-        IgxHintDirective,
-        IgxInputDirective,
-        IgxLabelDirective,
-        IgxPrefixModule,
-        IgxSuffixModule,
-        IgxButtonModule,
-        IgxIconModule
-    ],
-    imports: [CommonModule, IgxPrefixModule, IgxSuffixModule, IgxButtonModule, IgxIconModule],
-})
-
-export class IgxInputGroupModule {}

@@ -59,7 +59,7 @@
 
         <div class="toggles-container">
             <div class="toggle-group" *ngFor="let col of grid1.columns">
-                <h4>{{ col.field }}</h4>
+                <h4 class="sample-title">{{ col.field }}</h4>
                 <div class="switch-group">
                     <igx-switch [(ngModel)]="col.filterable">Filtering</igx-switch>
                 </div>
@@ -95,7 +95,7 @@
                     </igx-column-actions>
                 </div>
                 <div class="toggle-group" *ngFor="let col of grid2.columns">
-                    <h4>{{ col.field }}</h4>
+                    <h4 h4 class="sample-title">{{ col.field }}</h4>
                     <div class="switch-group">
                         <igx-switch [(ngModel)]="col.filterable">Filtering</igx-switch>
                     </div>
@@ -117,11 +117,11 @@
 
         <div class="paging-config">
             <div class="switch-group">
-                <igx-switch [checked]="grid2.paging" (change)="grid2.paging = $event.switch.checked">Enable Paging</igx-switch>
+                <igx-switch [(ngModel)]="gridPaging">Enable Paging</igx-switch>
             </div>
             <div class="igx-form-group">
                 <igx-input-group>
-                <input min="1" type="number" igxInput [ngModel]="grid2.perPage" (ngModelChange)="onPerPage($event)">
+                <input min="1" type="number" igxInput [(ngModel)]="perPage">
                 <label igxLabel>Records shown</label>
                 </igx-input-group>
             </div>
@@ -150,11 +150,11 @@
                 <ng-template igxHeader let-column="column">
                     <p style="color: crimson">{{column.field}}</p>
                 </ng-template>
-                <ng-template igxCell let-item="item" let-ri="rowIndex" let-column="column">
-                    <igx-checkbox [checked]="item" (change)="grid2.updateCell($event.checkbox.checked, ri, column?.field)"></igx-checkbox>
+                <ng-template igxCell let-value let-cell="cell">
+                    <igx-checkbox [checked]="value" (change)="grid2.updateCell($event.checked, cell.row.key, cell.column.field)"></igx-checkbox>
                 </ng-template>
             </igx-column>
-            <igx-paginator [perPage]="10"></igx-paginator>
+            <igx-paginator *ngIf="gridPaging" [(perPage)]="perPage"></igx-paginator>
         </igx-grid>
 
     </article>
@@ -170,10 +170,10 @@
                 <option value="TAB">TAB</option>
             </select>
             <br>
-            <button igxButton="flat" (click)="exportData()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C">Export Data</button>
-            <button igxButton="flat" (click)="exportRaw()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C">Export Raw Grid Data</button>
-            <button igxButton="flat" (click)="export()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C">Export Grid</button>
-            <button igxButton="flat" (click)="exportFilteredGrid()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C">Export Cheese Products Report</button>
+            <button igxButton="flat" (click)="exportData()" igxRipple="#FBB13C">Export Data</button>
+            <button igxButton="flat" (click)="exportRaw()" igxRipple="#FBB13C">Export Raw Grid Data</button>
+            <button igxButton="flat" (click)="export()" igxRipple="#FBB13C">Export Grid</button>
+            <button igxButton="flat" (click)="exportFilteredGrid()" igxRipple="#FBB13C">Export Cheese Products Report</button>
             <br>
             <input class="igx-form-group__input--search" #searchInput type="text" placeholder="Search Grid" (input)="onSearchChange(searchInput.value)" (keydown)="onSearch($event)" />
         </div>
@@ -185,23 +185,22 @@
                 </igx-column-actions>
             </div>
         </div>
-        <igx-grid #grid3 displayDensity="compact" [data]="remote | async" (pagingDone)="process()" (sortingDone)="process()" [primaryKey]="'ProductID'" [rowSelection]="selectionMode">
+        <igx-grid #grid3 class="grid-size" [data]="remote | async" (pagingDone)="process()" (sortingDone)="process()" [primaryKey]="'ProductID'" [rowSelection]="selectionMode">
             <igx-column [sortable]="true" [field]="'ProductID'" ></igx-column>
             <igx-column [editable]="true" [field]="'ProductName'"></igx-column>
             <igx-column [sortable]="true" [field]="'UnitsInStock'" [header]="'Units in Stock'"></igx-column>
             <igx-column [field]="'Discontinued'" [sortable]="true" [hidden]="true">
                 <ng-template igxHeader let-column="column">
-                    <p style="color: crimson">{{column.field</p>
+                    <p>{{column.field}}</p>
                 </ng-template>
-                <ng-template igxCell let-item="item" let-ri="rowIndex" let-column="column">
-                    <igx-checkbox [checked]="item" (change)="grid3.updateCell($event.checkbox.checked, ri, column?.field)"></igx-checkbox>
+                <ng-template igxCell let-item let-cell="cell">
+                    <igx-checkbox [checked]="item" (change)="grid3.updateCell($event.checked, cell.row.key, cell.column.field)"></igx-checkbox>
                 </ng-template>
             </igx-column>
             <igx-paginator [perPage]="10"></igx-paginator>
         </igx-grid>
-        <button (click)="updateRow11()">Update Row With primaryKey</button>
+        <button igxButton="outlined" (click)="updateRow11()">Update Row With primary Key</button>
     </article>
-
 </section>
 
 <igx-toast #toast></igx-toast>

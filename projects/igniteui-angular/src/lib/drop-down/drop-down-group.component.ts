@@ -1,4 +1,4 @@
-import { Component, Input, HostBinding } from '@angular/core';
+import { Component, Input, HostBinding, booleanAttribute } from '@angular/core';
 
 let NEXT_ID = 0;
 /**
@@ -10,7 +10,8 @@ let NEXT_ID = 0;
     template: `
         <label id="{{labelId}}">{{ label }}</label>
         <ng-content select="igx-drop-down-item"></ng-content>
-    `
+    `,
+    standalone: true
 })
 export class IgxDropDownGroupComponent {
     /**
@@ -59,7 +60,7 @@ export class IgxDropDownGroupComponent {
      *
      * **NOTE:** All items inside of a disabled drop down group will be treated as disabled
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     @HostBinding(`attr.aria-disabled`)
     @HostBinding('class.igx-drop-down__group--disabled')
     public disabled = false;

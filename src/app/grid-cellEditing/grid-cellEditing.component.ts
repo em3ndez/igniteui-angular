@@ -1,12 +1,40 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, HostBinding, ViewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+    GridSelectionMode,
+    IGX_SELECT_DIRECTIVES,
+    IgxButtonDirective,
+    IgxButtonGroupComponent,
+    IgxCellEditorTemplateDirective,
+    IgxCellTemplateDirective,
+    IgxColumnComponent,
+    IgxColumnRequiredValidatorDirective,
+    IgxDateSummaryOperand,
+    IgxGridComponent,
+    IgxPaginatorComponent,
+    IgxSummaryResult,
+    IgxSwitchComponent,
+} from 'igniteui-angular';
+
 import { data, dataWithoutPK } from '../shared/data';
 
-import {
-    IgxGridComponent, GridSelectionMode, IgxDateSummaryOperand, IgxSummaryResult, DisplayDensity
-} from 'igniteui-angular';
 @Component({
     selector: 'app-grid-cellediting',
-    templateUrl: 'grid-cellEditing.component.html'
+    templateUrl: 'grid-cellEditing.component.html',
+    styleUrl: 'grid-cellEditing.component.scss',
+    imports: [
+        FormsModule,
+        IGX_SELECT_DIRECTIVES,
+        IgxButtonDirective,
+        IgxButtonGroupComponent,
+        IgxCellEditorTemplateDirective,
+        IgxCellTemplateDirective,
+        IgxColumnComponent,
+        IgxColumnRequiredValidatorDirective,
+        IgxGridComponent,
+        IgxPaginatorComponent,
+        IgxSwitchComponent,
+    ]
 })
 export class GridCellEditingComponent {
     @ViewChild('grid1', { read: IgxGridComponent, static: true })
@@ -14,11 +42,17 @@ export class GridCellEditingComponent {
     @ViewChild('grid', { read: IgxGridComponent, static: true })
     private gridWithoutPK: IgxGridComponent;
 
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
+
     public orderDateHidden = false;
     public data: any;
     public dataWithoutPK: any;
-    public density: DisplayDensity = 'compact';
-    public displayDensities;
+    public size : "large" | "medium" | "small" = "small";
+    public selectionModes = ['none', 'single', 'multiple'];
+    public sizes;
     public options = {
         timezone: '+0430',
         format: 'longTime',
@@ -31,7 +65,8 @@ export class GridCellEditingComponent {
     };
     public formatOptions = this.options;
 
-    public kk = false;
+    public groupable = false;
+    public exitEditOnBlur = false;
     public pname = 'ProductName';
     public selectionMode;
     public earliest = EarliestSummary;
@@ -39,12 +74,26 @@ export class GridCellEditingComponent {
     constructor() {
         this.data = data;
         this.dataWithoutPK = dataWithoutPK;
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }
+        this.sizes = [
+            { label: 'large', selected: this.size === "large", togglable: true },
+            { label: 'medium', selected: this.size === "medium", togglable: true },
+            { label: 'small', selected: this.size === "small", togglable: true }
         ];
         this.selectionMode = GridSelectionMode.multiple;
+    }
+
+
+
+    public cellEdit(evt) {
+        if (!evt.valid) {
+            evt.cancel = true;
+        }
+    }
+
+    public rowEdit(evt) {
+        if (!evt.valid) {
+            evt.cancel = true;
+        }
     }
 
     public addRow() {
@@ -152,7 +201,6 @@ export class GridCellEditingComponent {
     public updateSelectedCell() {
         let newValue;
         const selectedCell = this.gridWithoutPK.selectedCells[0];
-        console.log(selectedCell.column.dataType);
         switch (selectedCell.column.dataType) {
             case 'string': newValue = 'UpdatedCell'; break;
             case 'number': newValue = 0; break;
@@ -179,7 +227,7 @@ export class GridCellEditingComponent {
     }
 
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public customKeydown(args) {
@@ -201,6 +249,15 @@ export class GridCellEditingComponent {
             this.gridWithPK.navigateTo(target.rowIndex + 1, target.visibleColumnIndex, (obj) => obj.target.nativeElement.focus());
         }
     }
+
+    public handleFocusOut = (event: FocusEvent) => {
+        if (!this.exitEditOnBlur) return;
+
+        if (!event.relatedTarget || !this.gridWithPK.nativeElement.contains(event.relatedTarget as Node)) {
+          this.gridWithPK.endEdit(true);
+          this.gridWithPK.clearCellSelection();
+        }
+    }
 }
 
 class EarliestSummary extends IgxDateSummaryOperand {
@@ -208,7 +265,7 @@ class EarliestSummary extends IgxDateSummaryOperand {
         super();
     }
 
-    public operate(summaries?: any[]): IgxSummaryResult[] {
+    public override operate(summaries?: any[]): IgxSummaryResult[] {
         const result = super.operate(summaries).filter((obj) => {
             if (obj.key === 'earliest') {
                 const date = obj.summaryResult ? new Date(obj.summaryResult) : undefined;

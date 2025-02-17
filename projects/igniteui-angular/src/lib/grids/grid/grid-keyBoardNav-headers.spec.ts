@@ -1,11 +1,9 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import {
-    IgxGridModule
-} from './public_api';
+
 import { IgxGridComponent } from './grid.component';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
-import { setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
+import { clearGridSubs, setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import {
     SelectionWithScrollsComponent,
@@ -17,7 +15,7 @@ import { GridSelectionMode, FilterMode } from '../common/enums';
 import { IActiveNodeChangeEventArgs } from '../common/events';
 import { IgxStringFilteringOperand } from '../../data-operations/filtering-condition';
 import { IgxGridHeaderRowComponent } from '../headers/grid-header-row.component';
-import { SortingDirection } from '../../data-operations/sorting-strategy';
+import { ISortingStrategy, SortingDirection } from '../../data-operations/sorting-strategy';
 
 const DEBOUNCETIME = 30;
 
@@ -27,23 +25,23 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
         let grid: IgxGridComponent;
         let gridHeader: IgxGridHeaderRowComponent;
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    SelectionWithScrollsComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [SelectionWithScrollsComponent, NoopAnimationsModule]
             });
         }));
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(SelectionWithScrollsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
             setupGridScrollDetection(fix, grid);
             fix.detectChanges();
             gridHeader = GridFunctions.getGridHeader(grid);
-            tick();
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('when click on a header it should stay in the view', async () => {
             grid.headerContainer.getScroll().scrollLeft = 1000;
@@ -597,7 +595,7 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
         });
 
         it('Group by: Should be able group columns with keyboard', () => {
-            spyOn(grid.onGroupingDone, 'emit').and.callThrough();
+            spyOn(grid.groupingDone, 'emit').and.callThrough();
             grid.getColumnByName('ID').groupable = true;
             grid.getColumnByName('Name').groupable = true;
 
@@ -653,7 +651,7 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
 
             expect(grid.groupingExpressions.length).toEqual(1);
             expect(grid.groupingExpressions[0].fieldName).toEqual('ID');
-            expect(grid.onGroupingDone.emit).toHaveBeenCalled();
+            expect(grid.groupingDone.emit).toHaveBeenCalled();
         });
 
         it('Group by: Should be able group columns with keyboard when hideGroupedColumns is true', fakeAsync(() => {
@@ -702,6 +700,27 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
             header = GridFunctions.getColumnHeader('HireDate', fix);
             GridFunctions.verifyHeaderIsFocused(header.parent);
         }));
+
+        it('Group by: Should respect column properties when grouping with keyboard', () => {
+            grid.sort({ fieldName: 'ID', dir: SortingDirection.Desc });
+
+            let sortStrategy: ISortingStrategy;
+            const comparer = (a: string, b: string) => (a.toLowerCase() === b.toLowerCase() ? 0 : -1);
+
+            const column = grid.getColumnByName('ID');
+            column.groupable = true;
+            column.sortingIgnoreCase = false;
+            column.sortStrategy = sortStrategy;
+            column.groupingComparer = comparer;
+
+            (grid.navigation as any).performHeaderKeyCombination(column, 'arrowright', true, false, true);
+
+            expect(grid.groupingExpressions[0].fieldName).toEqual(column.field);
+            expect(grid.groupingExpressions[0].dir).toEqual(2);
+            expect(grid.groupingExpressions[0].ignoreCase).toEqual(false);
+            expect(grid.groupingExpressions[0].strategy).toBeUndefined();
+            expect(grid.groupingExpressions[0].groupingComparer).toEqual(comparer);
+        });
     });
 
     describe('MRL Headers Navigation', () => {
@@ -709,15 +728,12 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
         let grid: IgxGridComponent;
         let gridHeader: IgxGridHeaderRowComponent;
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    MRLTestComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [MRLTestComponent, NoopAnimationsModule]
             });
         }));
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(MRLTestComponent);
             fix.detectChanges();
 
@@ -725,7 +741,11 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
             setupGridScrollDetection(fix, grid);
             fix.detectChanges();
             gridHeader = GridFunctions.getGridHeader(grid);
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('should navigate through a layout with right and left arrow keys in first level', async () => {
             let header = GridFunctions.getColumnHeader('CompanyName', fix);
@@ -910,15 +930,12 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
         let grid: IgxGridComponent;
         let gridHeader: IgxGridHeaderRowComponent;
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    ColumnGroupsNavigationTestComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [ColumnGroupsNavigationTestComponent, NoopAnimationsModule]
             });
         }));
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ColumnGroupsNavigationTestComponent);
             fix.detectChanges();
 
@@ -926,7 +943,11 @@ describe('IgxGrid - Headers Keyboard navigation #grid', () => {
             setupGridScrollDetection(fix, grid);
             fix.detectChanges();
             gridHeader = GridFunctions.getGridHeader(grid);
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('should navigate through groups with right and left arrow keys in first level', () => {
             let header = GridFunctions.getColumnGroupHeaderCell('General Information', fix);

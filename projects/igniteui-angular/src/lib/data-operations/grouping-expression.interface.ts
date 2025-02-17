@@ -1,5 +1,8 @@
 import { ISortingExpression } from './sorting-strategy';
 
+/* marshalByValue */
+/* tsPlainInterface */
 export interface IGroupingExpression extends ISortingExpression {
-    groupingComparer?: (a: any, b: any) => number;
+    /* blazorCSSuppress */
+    groupingComparer?: (a: any, b: any, currRec?: any, groupRec?: any) => number;
 }

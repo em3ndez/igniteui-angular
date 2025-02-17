@@ -4,10 +4,10 @@ import { DebugElement } from '@angular/core';
 
 export const wait = (ms = 0) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const waitForGridScroll = grid => new Promise<void>(resolve => grid.gridScroll.pipe(first()).subscribe(() => {
-    grid.cdr.detectChanges();
-    resolve();
-}));
+// export const waitForGridScroll = grid => new Promise<void>(resolve => grid.gridScroll.pipe(first()).subscribe(() => {
+//     grid.cdr.detectChanges();
+//     resolve();
+// }));
 
 export const waitForActiveNodeChange = grid => new Promise<void>(resolve => grid.activeNodeChange.pipe(first()).subscribe(() => {
     grid.cdr.detectChanges();
@@ -293,7 +293,7 @@ export class UIInteractions {
         element.dispatchEvent(event);
     }
 
-    public static simulateMouseEvent(eventName: string, element, clientX, clientY) {
+    public static simulateMouseEvent(eventName: string, element, clientX?, clientY?) {
         const options: MouseEventInit = {
             view: window,
             bubbles: true,
@@ -302,6 +302,13 @@ export class UIInteractions {
             clientY
         };
         element.dispatchEvent(new MouseEvent(eventName, options));
+    }
+
+    public static simulateMouseDownEvent(element: HTMLElement, shift = false, ctrl = false) {
+        const event = new MouseEvent('mousedown', { bubbles: true });
+        UIInteractions.simulatePointerOverElementEvent('pointerdown', element, shift, ctrl);
+        UIInteractions.simulatePointerOverElementEvent('pointerup', element);
+        element.dispatchEvent(event);
     }
 
     public static createPointerEvent(eventName: string, point: Point) {
@@ -426,11 +433,11 @@ export class UIInteractions {
         };
     }
 
-    public static hoverElement(element: HTMLElement, bubbles: boolean = false) {
+    public static hoverElement(element: HTMLElement, bubbles = false) {
         element.dispatchEvent(new MouseEvent('mouseenter', { bubbles }));
     }
 
-    public static unhoverElement(element: HTMLElement, bubbles: boolean = false) {
+    public static unhoverElement(element: HTMLElement, bubbles = false) {
         element.dispatchEvent(new MouseEvent('mouseleave', { bubbles }));
     }
 

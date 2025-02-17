@@ -3,14 +3,18 @@ import {
     IgxRowIslandComponent,
     IgxHierarchicalGridComponent,
     IGridCreatedEventArgs,
-    GridSelectionMode
+    GridSelectionMode,
+    IgxButtonDirective,
+    IgxColumnComponent
 } from 'igniteui-angular';
 import { RemoteService } from '../shared/remote.service';
 
 @Component({
     selector: 'app-hierarchical-grid-updating-sample',
+    styleUrls: ['hierarchical-grid-updating.sample.scss'],
     templateUrl: 'hierarchical-grid-updating.sample.html',
-    providers: [ RemoteService ]
+    providers: [RemoteService],
+    imports: [IgxButtonDirective, IgxHierarchicalGridComponent, IgxColumnComponent, IgxRowIslandComponent]
 })
 export class HierarchicalGridUpdatingSampleComponent implements AfterViewInit {
     @ViewChild('rowIsland1', { static: true })

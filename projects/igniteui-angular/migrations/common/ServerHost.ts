@@ -1,18 +1,21 @@
-import { Tree } from '@angular-devkit/schematics';
+import type { Tree } from '@angular-devkit/schematics';
 import * as pathFs from 'path';
 import * as ts from 'typescript/lib/tsserverlibrary';
 import { CUSTOM_TS_PLUGIN_NAME, CUSTOM_TS_PLUGIN_PATH } from './tsUtils';
+import { createRequire } from 'module';
 
 /**
- * Langauge server host is responsible for **most** of the FS operations / checks
+ * Language server host is responsible for **most** of the FS operations / checks
  * Angular's Ivy LS sometimes bypasses these, calling path methods instead of tsLsHost operations
  */
 export class ServerHost implements ts.server.ServerHost {
     public readonly args: string[];
     public readonly newLine: string;
     public readonly useCaseSensitiveFileNames: boolean;
+    /** Cached because Angular schematics encapsulation's customRequire doesn't provide `resolve` */
+    private nativeRequire = createRequire(__filename);
 
-    constructor(private host: Tree) {
+    constructor(public host: Tree) {
         this.args = ts.sys.args;
         this.newLine = ts.sys.newLine;
         this.useCaseSensitiveFileNames = ts.sys.useCaseSensitiveFileNames;
@@ -22,7 +25,7 @@ export class ServerHost implements ts.server.ServerHost {
      * Read a file's content from the Virtual Tree
      * If file does not exist in virtual tree, check in physical FS
      */
-    public readFile(path: string, encoding?: string): string | undefined {
+    public readFile(path: string, encoding?: BufferEncoding): string | undefined {
         let content;
         // ensure the path is relative, so it can be found in the Tree, reflecting latest state
         path = pathFs.relative(this.getCurrentDirectory(), path);
@@ -38,15 +41,24 @@ export class ServerHost implements ts.server.ServerHost {
         return ts.sys.getFileSize(path);
     }
 
-    public watchFile(path: string, callback: ts.FileWatcherCallback, pollingInterval?: number):
+    //#region Watchers
+    // Atm we do not need to have file or dir watchers that access the actual FS
+    // as we are only working with NG's virtual FS
+    // Prior to https://github.com/microsoft/TypeScript/pull/49990 we were more or less required
+    // to add a watcher since it threw an error otherwise
+
+    public watchFile(_path: string, _callback: ts.FileWatcherCallback, _pollingInterval?: number):
         ts.FileWatcher {
-        return ts.sys.watchFile(path, callback, pollingInterval);
+        // return ts.sys.watchFile(path, callback, pollingInterval);
+        return { close: () => {} };
     }
 
-    public watchDirectory(path: string, callback: ts.DirectoryWatcherCallback, recursive?: boolean):
+    public watchDirectory(_path: string, _callback: ts.DirectoryWatcherCallback, _recursive?: boolean):
         ts.FileWatcher {
-        return ts.sys.watchDirectory(path, callback, recursive);
+        // return ts.sys.watchDirectory(path, callback, recursive);
+        return { close: () => {} };
     }
+    //#endregion
 
     public resolvePath(path: string): string {
         return ts.sys.resolvePath(path);
@@ -97,7 +109,7 @@ export class ServerHost implements ts.server.ServerHost {
         // check directory contents in Tree (w/ relative paths)
         path = pathFs.relative(this.getCurrentDirectory(), path);
         // return directory contents w/ absolute paths for LS
-        return this.host.getDir(path).subdirs.map(e => pathFs.resolve(e));
+        return this.host.getDir(path).subdirs.map(e => pathFs.resolve(path, e));
     }
 
     /**
@@ -107,7 +119,7 @@ export class ServerHost implements ts.server.ServerHost {
         // check directory contents in Tree (w/ relative paths)
         path = pathFs.relative(this.getCurrentDirectory(), path);
         // return directory contents w/ absolute paths for LS
-        return this.host.getDir(path).subfiles.map(e => pathFs.resolve(e));
+        return this.host.getDir(path).subfiles.map(e => pathFs.resolve(path, e));
     }
 
     public require(initialPath: string, moduleName: string) {
@@ -117,7 +129,7 @@ export class ServerHost implements ts.server.ServerHost {
                 moduleName = CUSTOM_TS_PLUGIN_PATH;
                 paths.push(__dirname);
             }
-            const modulePath = require.resolve(moduleName, { paths });
+            const modulePath = this.nativeRequire.resolve(moduleName, { paths });
             return {
                 module: require(modulePath),
                 error: undefined,
@@ -129,6 +141,12 @@ export class ServerHost implements ts.server.ServerHost {
             };
         }
     }
+
+    public gc(): void {
+        global.gc();
+    }
+
+    public trace(_s: string): void { /* noop */ }
 
     public getModifiedTime(path: string): Date | undefined {
         return ts.sys.getModifiedTime(path);
@@ -142,87 +160,67 @@ export class ServerHost implements ts.server.ServerHost {
         return ts.sys.createSHA256Hash(data);
     }
 
-    //#region Not implemented methods
-
-    public write(_data: string): void {
-        throw new Error('Method "write" not implemented.');
-        // ts.sys.write(data);
+    public write(data: string): void {
+        ts.sys.write(data);
     }
 
     public writeOutputIsTTY(): boolean {
-        throw new Error('Method "writeOutputIsTTY" not implemented.');
-        // return ts.sys.writeOutputIsTTY();
+        return ts.sys.writeOutputIsTTY();
     }
 
-    public writeFile(_path: string, _data: string, _writeByteOrderMark?: boolean): void {
-        throw new Error('Method "writeFile" not implemented.');
-        // return ts.sys.writeFile(path, data, writeByteOrderMark);
+    public writeFile(path: string, data: string, writeByteOrderMark?: boolean): void {
+        return ts.sys.writeFile(path, data, writeByteOrderMark);
     }
 
-    public createDirectory(_path: string): void {
-        throw new Error('Method "createDirectory" not implemented.');
-        // return ts.sys.createDirectory(path);
+    public createDirectory(path: string): void {
+        return ts.sys.createDirectory(path);
     }
 
-    public setModifiedTime(_path: string, _time: Date): void {
-        throw new Error('Method "setModifiedTime" not implemented.');
-        // return ts.sys.setModifiedTime(path, time);
+    public setModifiedTime(path: string, time: Date): void {
+        return ts.sys.setModifiedTime(path, time);
     }
 
-    public deleteFile(_path: string): void {
-        throw new Error('Method "deleteFile" not implemented.');
-        // return ts.sys.deleteFile(path);
+    public deleteFile(path: string): void {
+        return ts.sys.deleteFile(path);
     }
 
-    public createHash(_data: string): string {
-        throw new Error('Method "createHash" not implemented.');
-        // return ts.sys.createHash(data);
+    public createHash(data: string): string {
+        return ts.sys.createHash(data);
     }
 
     public getMemoryUsage(): number {
-        throw new Error('Method "getMemoryUsage" not implemented.');
-        // return ts.sys.getMemoryUsage();
+        return ts.sys.getMemoryUsage();
     }
 
-    public exit(_exitCode?: number): void {
-        throw new Error('Method "exit" not implemented.');
-        // return ts.sys.exit(exitCode);
+    public exit(exitCode?: number): void {
+        return ts.sys.exit(exitCode);
     }
 
-    public setTimeout(_callback: (...argsv: any[]) => void, _ms: number, ..._args: any[]): any {
-        throw new Error('Method "setTimeout" not implemented.');
-        // return ts.sys.setTimeout(callback, ms, ...args);
+    public setTimeout(callback: (...argsv: any[]) => void, ms: number, ...args: any[]): any {
+        return ts.sys.setTimeout(callback, ms, ...args);
     }
 
-    public clearTimeout(_timeoutId: any): void {
-        throw new Error('Method "clearTimeout" not implemented.');
-        // return ts.sys.clearTimeout(timeoutId);
+    public clearTimeout(timeoutId: any): void {
+        return ts.sys.clearTimeout(timeoutId);
     }
 
     public clearScreen(): void {
-        throw new Error('Method "clearScreen" not implemented.');
-        // return ts.sys.clearScreen();
+        return ts.sys.clearScreen();
     }
 
-    public base64decode(_input: string): string {
-        throw new Error('Method "base64decode" not implemented.');
-        // return ts.sys.base64decode(input);
+    public base64decode(input: string): string {
+        return ts.sys.base64decode(input);
     }
 
-    public base64encode(_input: string): string {
-        throw new Error('Method "base64encode" not implemented.');
-        // return ts.sys.base64encode(input);
+    public base64encode(input: string): string {
+        return ts.sys.base64encode(input);
     }
 
-    public setImmediate(_callback: (...argsv: any[]) => void, ..._args: any[]): any {
-        throw new Error('Method "setImmediate" not implemented.');
-        // return setImmediate(callback, ...args);
+    public setImmediate(callback: (...argsv: any[]) => void, ...args: any[]): any {
+        return setImmediate(callback, ...args);
     }
 
-    public clearImmediate(_timeoutId: any): void {
-        throw new Error('Method "clearImmediate" not implemented.');
-        // return clearImmediate(timeoutId);
+    public clearImmediate(timeoutId: any): void {
+        return clearImmediate(timeoutId);
     }
-
-    //#endregion
 }

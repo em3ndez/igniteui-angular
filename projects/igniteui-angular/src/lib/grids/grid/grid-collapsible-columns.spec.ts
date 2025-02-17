@@ -1,5 +1,4 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
-import { IgxGridModule } from './grid.module';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { IgxGridComponent } from './grid.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { configureTestSuite } from '../../test-utils/configure-suite';
@@ -12,12 +11,12 @@ import { GridFunctions } from '../../test-utils/grid-functions.spec';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
 import { DropPosition } from '../moving/moving.service';
 import { SortingDirection } from '../../data-operations/sorting-strategy';
+import { IgxColumnGroupComponent } from '../columns/column-group.component';
 
 describe('IgxGrid - multi-column headers #grid', () => {
-
     let contactInf;
     let countryInf;
-    let addressInf;
+    let addressInf: IgxColumnGroupComponent;
     let regionInf;
     let cityInf;
     let phoneCol;
@@ -25,15 +24,12 @@ describe('IgxGrid - multi-column headers #grid', () => {
     let emptyCol;
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
+        return TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
                 CollapsibleColumnGroupTestComponent,
                 CollapsibleGroupsTemplatesTestComponent,
                 CollapsibleGroupsDynamicColComponent
-            ],
-            imports: [
-                NoopAnimationsModule,
-                IgxGridModule
             ]
         });
     }));
@@ -42,7 +38,7 @@ describe('IgxGrid - multi-column headers #grid', () => {
         let fixture;
         let grid: IgxGridComponent;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(CollapsibleColumnGroupTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
@@ -54,7 +50,7 @@ describe('IgxGrid - multi-column headers #grid', () => {
             phoneCol = grid.getColumnByName('Phone');
             countryCol = grid.getColumnByName('Country');
             emptyCol = grid.getColumnByName('Empty');
-        }));
+        });
 
         it('verify setting collapsible to a column group ', () => {
             GridFunctions.verifyColumnIsHidden(contactInf, false, 10);
@@ -271,12 +267,12 @@ describe('IgxGrid - multi-column headers #grid', () => {
         let fixture;
         let grid: IgxGridComponent;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(CollapsibleGroupsTemplatesTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
             addressInf = GridFunctions.getColGroup(grid, 'Address Information');
-        }));
+        });
 
         it('verify that templates can be defined in the markup', () => {
             const generalInf = GridFunctions.getColGroup(grid, 'General Information');
@@ -288,7 +284,7 @@ describe('IgxGrid - multi-column headers #grid', () => {
             GridFunctions.verifyGroupIsExpanded(fixture, generalInf, true, false, ['remove', 'add']);
         });
 
-        it('verify setting templates by property', () => {
+        it('verify setting templates by property', fakeAsync(() => {
             GridFunctions.verifyGroupIsExpanded(fixture, addressInf);
 
             // Set template
@@ -304,22 +300,24 @@ describe('IgxGrid - multi-column headers #grid', () => {
 
             // remove template
             addressInf.collapsibleIndicatorTemplate = null;
+            // Changing the template back takes an async cycle, so tick is needed
+            tick();
             fixture.detectChanges();
 
             GridFunctions.verifyGroupIsExpanded(fixture, addressInf, true, false);
-        });
+        }));
     });
 
     describe('Dynamic Columns Tests', () => {
         let fixture;
         let grid: IgxGridComponent;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             pending('The test will work when use Angular 9');
             fixture = TestBed.createComponent(CollapsibleGroupsDynamicColComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('verify adding columns', () => {
             pending('The test will work when use Angular 9');
@@ -554,7 +552,7 @@ describe('IgxGrid - multi-column headers #grid', () => {
             GridFunctions.verifyGroupIsExpanded(fixture, addressInf, true, true);
         });
 
-        it('Moving: Verify that expanded state is preserved when move column group', () => {
+        it('Moving: Verify that expanded state is preserved when move column group', fakeAsync(() => {
             const generalInf = GridFunctions.getColGroup(grid, 'General Information');
 
             expect(addressInf.expanded).toBeTruthy();
@@ -562,22 +560,25 @@ describe('IgxGrid - multi-column headers #grid', () => {
             expect(generalInf.visibleIndex).toBe(1);
 
             grid.moveColumn(generalInf, addressInf, DropPosition.AfterDropTarget);
+            tick();
             fixture.detectChanges();
 
             expect(addressInf.expanded).toBeTruthy();
             expect(generalInf.collapsible).toBeFalsy();
             expect(generalInf.visibleIndex).toBe(3);
             addressInf.expanded = false;
+            tick();
             fixture.detectChanges();
 
             expect(addressInf.expanded).toBeFalsy();
             grid.moveColumn(generalInf, addressInf, DropPosition.BeforeDropTarget);
+            tick();
             fixture.detectChanges();
 
             expect(addressInf.expanded).toBeFalsy();
             expect(generalInf.collapsible).toBeFalsy();
             expect(generalInf.visibleIndex).toBe(1);
-        });
+        }));
 
         it('Moving: Verify moving column inside the group', () => {
             const postalCode = grid.getColumnByName('PostalCode');

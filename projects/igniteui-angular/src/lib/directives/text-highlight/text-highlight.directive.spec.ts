@@ -1,16 +1,16 @@
-import { Component, forwardRef, ViewChild } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { TestBed, waitForAsync } from '@angular/core/testing';
 
 import { IgxTextHighlightDirective, IActiveHighlightInfo} from './text-highlight.directive';
 
 import { configureTestSuite } from '../../test-utils/configure-suite';
+import { IgxTextHighlightService } from './text-highlight.service';
 
 describe('IgxHighlight', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                IgxTextHighlightDirective,
+            imports: [
                 HighlightLoremIpsumComponent
             ]
         });
@@ -302,22 +302,24 @@ describe('IgxHighlight', () => {
 });
 
 @Component({
-    template:
-    // eslint-disable-next-line max-len
-    `<div igxTextHighlight [cssClass]="highlightClass" [activeCssClass]="activeHighlightClass" [groupName]="groupName" [value]="html" [column]="0" [row]="0" [containerClass]="'test'">
+    template: `
+    <div igxTextHighlight [cssClass]="highlightClass" [activeCssClass]="activeHighlightClass" [groupName]="groupName" [value]="html" [column]="0" [row]="0" [containerClass]="'test'">
         {{html}}
-    </div>`
+    </div>
+    `,
+    imports: [IgxTextHighlightDirective]
 })
 class HighlightLoremIpsumComponent {
-    @ViewChild(forwardRef(() => IgxTextHighlightDirective), { read: IgxTextHighlightDirective, static: true })
+    @ViewChild(IgxTextHighlightDirective, { read: IgxTextHighlightDirective, static: true })
     public highlight: IgxTextHighlightDirective;
 
     public highlightClass = 'igx-highlight';
     public activeHighlightClass = 'igx-highlight__active';
     public groupName = 'test';
 
-    // eslint-disable-next-line max-len
     public html = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum vulputate luctus dui ut maximus. Quisque sed suscipit lorem. Vestibulum sit.';
+
+    constructor(private highlightService: IgxTextHighlightService) { }
 
     public highlightText(text: string, caseSensitive?: boolean, exactMatch?: boolean) {
         return this.highlight.highlight(text, caseSensitive, exactMatch);
@@ -337,6 +339,6 @@ class HighlightLoremIpsumComponent {
             column: 0,
             index
         };
-        IgxTextHighlightDirective.setActiveHighlight(this.groupName, activeHighlightInfo);
+        this.highlightService.setActiveHighlight(this.groupName, activeHighlightInfo);
     }
 }

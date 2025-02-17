@@ -1,26 +1,27 @@
-import { IgxSplitterModule } from './splitter.module';
 import { configureTestSuite } from '../test-utils/configure-suite';
-import { TestBed, waitForAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { Component, ViewChild, DebugElement } from '@angular/core';
 import { SplitterType, IgxSplitterComponent, ISplitterBarResizeEventArgs } from './splitter.component';
 import { By } from '@angular/platform-browser';
 import { UIInteractions } from '../test-utils/ui-interactions.spec';
+import { IgxSplitterPaneComponent } from './splitter-pane/splitter-pane.component';
 
 
 const SPLITTERBAR_CLASS = 'igx-splitter-bar';
 const SPLITTERBAR_DIV_CLASS = '.igx-splitter-bar';
 const SPLITTER_BAR_VERTICAL_CLASS = 'igx-splitter-bar--vertical';
+const COLLAPSIBLE_CLASS = 'igx-splitter-bar--collapsible';
 
 describe('IgxSplitter', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => TestBed.configureTestingModule({
-            declarations: [ SplitterTestComponent ],
-            imports: [
-                IgxSplitterModule
-            ]
-        }).compileComponents()));
-
-    let fixture; let splitter;
+    imports: [
+        SplitterTestComponent
+    ]
+}).compileComponents()));
+    let fixture: ComponentFixture<SplitterTestComponent>;
+    let splitter: IgxSplitterComponent;
+    
     beforeEach(waitForAsync(() => {
         fixture = TestBed.createComponent(SplitterTestComponent);
         fixture.detectChanges();
@@ -38,6 +39,18 @@ describe('IgxSplitter', () => {
         expect(firstPane.style.order).toBe('0');
         expect(splitterBar.style.order).toBe('1');
         expect(secondPane.style.order).toBe('2');
+    });
+
+    it('should correctly add the collapsible class.', () => {
+        const splitterBarDIV = fixture.debugElement.query(By.css(SPLITTERBAR_DIV_CLASS)).nativeElement;
+        const collapsibleClass = splitterBarDIV.classList.contains(COLLAPSIBLE_CLASS);
+        expect(collapsibleClass).toBeTruthy();
+
+        splitter.nonCollapsible = true;
+        fixture.detectChanges();
+
+        const noCollapsibleClass = splitterBarDIV.classList.contains(COLLAPSIBLE_CLASS);
+        expect(noCollapsibleClass).toBeFalsy();
     });
 
     it('should render vertical splitter.', () => {
@@ -291,16 +304,34 @@ describe('IgxSplitter', () => {
         expect(pane2.element.offsetWidth).toBeCloseTo(pane2_originalSize - 100);
     });
 
+    it('should reset transform style of vertical splitter bar after dragging', async () => {
+        const pane1 =  splitter.panes.toArray()[0];
+        pane1.size = '200px';
+        fixture.detectChanges();
+
+        fixture.componentInstance.type = SplitterType.Vertical;
+        fixture.detectChanges();
+        const splitterBarComponent = fixture.debugElement.query(By.css(SPLITTERBAR_CLASS)).nativeElement;
+
+        const splitterBar = fixture.debugElement.query(By.css(SPLITTERBAR_CLASS)).context;
+        splitterBar.moveStart.emit(pane1);
+        splitterBar.moving.emit(-150);
+        fixture.detectChanges();
+
+        splitterBar.movingEnd.emit(50);
+        fixture.detectChanges();
+
+        expect(splitterBarComponent.style.transform).not.toBe('translate3d(0px, 0px, 0px)');
+    });
 });
 
 describe('IgxSplitter pane toggle', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => TestBed.configureTestingModule({
-            declarations: [ SplitterTogglePaneComponent ],
-            imports: [
-                IgxSplitterModule
-            ]
-        }).compileComponents()));
+        imports: [
+            SplitterTogglePaneComponent
+        ]
+    }).compileComponents()));
 
     let fixture; let splitter;
     beforeEach(waitForAsync(() => {
@@ -401,11 +432,10 @@ describe('IgxSplitter pane toggle', () => {
 describe('IgxSplitter pane collapse', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => TestBed.configureTestingModule({
-            declarations: [ SplitterCollapsedPaneComponent ],
-            imports: [
-                IgxSplitterModule
-            ]
-        }).compileComponents()));
+        imports: [
+            SplitterCollapsedPaneComponent
+        ]
+    }).compileComponents()));
 
     let fixture; let splitter;
     beforeEach(waitForAsync(() => {
@@ -447,6 +477,7 @@ describe('IgxSplitter pane collapse', () => {
     </igx-splitter-pane>
 </igx-splitter>
     `,
+    imports: [IgxSplitterComponent, IgxSplitterPaneComponent]
 })
 export class SplitterTestComponent {
     @ViewChild(IgxSplitterComponent, { static: true })
@@ -474,6 +505,7 @@ export class SplitterTestComponent {
     </igx-splitter-pane>
 </igx-splitter>
     `,
+    imports: [IgxSplitterComponent, IgxSplitterPaneComponent]
 })
 
 export class SplitterTogglePaneComponent extends SplitterTestComponent {
@@ -499,6 +531,7 @@ export class SplitterTogglePaneComponent extends SplitterTestComponent {
     </igx-splitter-pane>
 </igx-splitter>
     `,
+    imports: [IgxSplitterComponent, IgxSplitterPaneComponent]
 })
 export class SplitterCollapsedPaneComponent extends SplitterTestComponent {
 }

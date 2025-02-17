@@ -1,11 +1,11 @@
 import { Component, ViewChild } from '@angular/core';
 import { TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { IgxNavbarComponent, IgxNavbarModule, IgxNavbarTitleDirective, IgxNavbarActionDirective } from './navbar.component';
-import { IgxIconModule } from '../icon/public_api';
+import { IgxNavbarComponent, IgxNavbarTitleDirective, IgxNavbarActionDirective } from './navbar.component';
 
 import { configureTestSuite } from '../test-utils/configure-suite';
 import { wait } from '../test-utils/ui-interactions.spec';
+import { IgxIconComponent } from '../icon/icon.component';
 
 const LEFT_AREA_CSS_CLAS = '.igx-navbar__left';
 
@@ -13,17 +13,13 @@ describe('IgxNavbar', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
                 NavbarIntializeTestComponent,
                 NavbarCustomActionIconTestComponent,
                 NavbarCustomIgxIconTestComponent,
                 NavbarCustomTitleTestComponent,
                 NavbarCustomTitleDirectiveTestComponent,
                 NavbarCustomIgxIconDirectiveTestComponent
-            ],
-            imports: [
-                IgxNavbarModule,
-                IgxIconModule
             ]
         }).compileComponents();
     }));
@@ -130,16 +126,13 @@ describe('IgxNavbar', () => {
             const customActionIcon = domNavbar.query(By.css('igx-navbar-action'));
             const customIcon = customActionIcon.query(By.css('igx-icon'));
 
-            // Verify custom igxIcon is vertically-centered within the igx-navbar-action.
-            const navbarTop = domNavbar.nativeElement.getBoundingClientRect().top;
-            const customIconTop = customIcon.nativeElement.getBoundingClientRect().top;
-            const topOffset = customIconTop - navbarTop;
+            const navbarRect = domNavbar.nativeElement.getBoundingClientRect();
+            const iconRect = customIcon.nativeElement.getBoundingClientRect();
 
-            const navbarBottom = domNavbar.nativeElement.getBoundingClientRect().bottom;
-            const customIconBottom = customIcon.nativeElement.getBoundingClientRect().bottom;
-            const bottomOffset = navbarBottom - customIconBottom;
+            const navbarMidpoint = Math.round(navbarRect.top + (navbarRect.height / 2));
+            const iconMidpoint = Math.round(iconRect.top + (iconRect.height / 2));
 
-            expect(topOffset).toBe(bottomOffset, 'Custom icon is not vertically-centered.');
+            expect(navbarMidpoint).toBe(iconMidpoint, 'Custom icon is not exactly vertically centered within the navbar.');
         }));
 
         it('action icon via directive', (async () => {
@@ -168,13 +161,13 @@ describe('IgxNavbar', () => {
             fixture = TestBed.createComponent(NavbarCustomTitleTestComponent);
             fixture.detectChanges();
 
-            const leftArea = fixture.debugElement.query(By.css(LEFT_AREA_CSS_CLAS));
+            const midArea = fixture.debugElement.query(By.css('.igx-navbar__middle'));
 
             // Verify there is no default icon on the left.
-            const customTitle = leftArea.query(By.css('igx-navbar-title'));
+            const customTitle = midArea.query(By.css('igx-navbar-title'));
             expect(customTitle.nativeElement.textContent).toBe('Custom Title', 'Custom title is missing');
 
-            const defaultTitle = leftArea.query(By.css('igx-navbar__title'));
+            const defaultTitle = midArea.query(By.css('igx-navbar__title'));
             expect(defaultTitle).toBeNull('Default title should not be present');
         });
 
@@ -182,14 +175,14 @@ describe('IgxNavbar', () => {
             fixture = TestBed.createComponent(NavbarCustomTitleDirectiveTestComponent);
             fixture.detectChanges();
 
-            const leftArea = fixture.debugElement.query(By.css(LEFT_AREA_CSS_CLAS));
+            const midArea = fixture.debugElement.query(By.css('.igx-navbar__middle'));
 
             // Verify there is no default icon on the left.
-            const customTitle = leftArea.query(By.directive(IgxNavbarTitleDirective));
+            const customTitle = midArea.query(By.directive(IgxNavbarTitleDirective));
             expect(customTitle.nativeElement.children[0].textContent).toBe('Custom', 'Custom title is missing');
             expect(customTitle.nativeElement.children[1].textContent).toBe('Title', 'Custom title is missing');
 
-            const defaultTitle = leftArea.query(By.css('igx-navbar__title'));
+            const defaultTitle = midArea.query(By.css('igx-navbar__title'));
             expect(defaultTitle).toBeNull('Default title should not be present');
         });
     });
@@ -200,7 +193,8 @@ describe('IgxNavbar', () => {
                             [title]="title"
                             [actionButtonIcon]="actionButtonIcon"
                             [isActionButtonVisible]="isActionButtonVisible">
-               </igx-navbar>`
+               </igx-navbar>`,
+    imports: [IgxNavbarComponent]
 })
 class NavbarIntializeTestComponent {
     @ViewChild(IgxNavbarComponent, { static: true }) public navbar: IgxNavbarComponent;
@@ -216,9 +210,10 @@ class NavbarIntializeTestComponent {
                             actionButtonIcon="home"
                             isActionButtonVisible="true">
                     <igx-navbar-action>
-                        <button>custom action</button>
+                        <button type="button">custom action</button>
                     </igx-navbar-action>
-               </igx-navbar>`
+               </igx-navbar>`,
+    imports: [IgxNavbarComponent, IgxNavbarActionDirective]
 })
 class NavbarCustomActionIconTestComponent {
     @ViewChild(IgxNavbarComponent, { static: true }) public navbar: IgxNavbarComponent;
@@ -233,7 +228,8 @@ class NavbarCustomActionIconTestComponent {
                     <igx-navbar-action>
                         <igx-icon>arrow_back</igx-icon>
                     </igx-navbar-action>
-               </igx-navbar>`
+               </igx-navbar>`,
+    imports: [IgxNavbarComponent, IgxNavbarActionDirective, IgxIconComponent]
 })
 class NavbarCustomIgxIconTestComponent {
     @ViewChild(IgxNavbarComponent, { static: true }) public navbar: IgxNavbarComponent;
@@ -246,7 +242,8 @@ class NavbarCustomIgxIconTestComponent {
                             actionButtonIcon="home"
                             isActionButtonVisible="true">
                     <igx-icon igxNavbarAction>arrow_back</igx-icon>
-               </igx-navbar>`
+               </igx-navbar>`,
+    imports: [IgxNavbarComponent, IgxIconComponent, IgxNavbarActionDirective]
 })
 class NavbarCustomIgxIconDirectiveTestComponent {
     @ViewChild(IgxNavbarComponent, { static: true }) public navbar: IgxNavbarComponent;
@@ -262,7 +259,8 @@ class NavbarCustomIgxIconDirectiveTestComponent {
                         <igx-icon>arrow_back</igx-icon>
                     </igx-navbar-action>
                     <igx-navbar-title>Custom Title</igx-navbar-title>
-               </igx-navbar>`
+               </igx-navbar>`,
+    imports: [IgxNavbarComponent, IgxNavbarActionDirective, IgxNavbarTitleDirective, IgxIconComponent]
 })
 class NavbarCustomTitleTestComponent {
     @ViewChild(IgxNavbarComponent, { static: true }) public navbar: IgxNavbarComponent;
@@ -281,7 +279,8 @@ class NavbarCustomTitleTestComponent {
                         <div>Custom</div>
                         <span>Title</span>
                     </div>
-               </igx-navbar>`
+               </igx-navbar>`,
+    imports: [IgxNavbarComponent, IgxNavbarActionDirective, IgxNavbarTitleDirective, IgxIconComponent]
 })
 class NavbarCustomTitleDirectiveTestComponent {
     @ViewChild(IgxNavbarComponent, { static: true }) public navbar: IgxNavbarComponent;

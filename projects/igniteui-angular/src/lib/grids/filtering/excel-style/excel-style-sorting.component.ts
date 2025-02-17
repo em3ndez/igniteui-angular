@@ -9,13 +9,17 @@ import { IgxButtonGroupComponent } from '../../../buttonGroup/buttonGroup.compon
 import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { BaseFilteringComponent } from './base-filtering.component';
+import { IgxIconComponent } from '../../../icon/icon.component';
+import { IgxButtonDirective } from '../../../directives/button/button.directive';
+import { NgIf } from '@angular/common';
 
 /**
  * A component used for presenting Excel style column sorting UI.
  */
 @Component({
     selector: 'igx-excel-style-sorting',
-    templateUrl: './excel-style-sorting.component.html'
+    templateUrl: './excel-style-sorting.component.html',
+    imports: [NgIf, IgxButtonGroupComponent, IgxButtonDirective, IgxIconComponent]
 })
 export class IgxExcelStyleSortingComponent implements OnDestroy {
     /**
@@ -47,7 +51,7 @@ export class IgxExcelStyleSortingComponent implements OnDestroy {
      * @hidden @internal
      */
     public onSortButtonClicked(sortDirection) {
-        if (this.sortButtonGroup.selectedIndexes.length === 0) {
+        if (this.sortButtonGroup.buttons.filter(b => b.selected).length === 0) {
             if (this.esf.grid.isColumnGrouped(this.esf.column.field)) {
                 this.sortButtonGroup.selectButton(sortDirection - 1);
             } else {
@@ -56,6 +60,11 @@ export class IgxExcelStyleSortingComponent implements OnDestroy {
         } else {
             this.esf.grid.sort({ fieldName: this.esf.column.field, dir: sortDirection, ignoreCase: true });
         }
+    }
+
+    protected get esfSize(): string {
+        const esf = this.esf as any;
+        return esf.size;
     }
 
     private updateSelectedButtons(fieldName: string) {

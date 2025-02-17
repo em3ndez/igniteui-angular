@@ -1,5 +1,5 @@
 import {
-    ChangeDetectorRef, Component, ElementRef, Inject, QueryList, OnDestroy, AfterViewInit, ContentChildren, Optional, Input
+    ChangeDetectorRef, Component, ElementRef, Inject, QueryList, OnDestroy, AfterViewInit, ContentChildren, Input, booleanAttribute
 } from '@angular/core';
 import { IgxComboBase, IGX_COMBO_COMPONENT } from './combo.common';
 import { IDropDownBase, IGX_DROPDOWN_BASE } from '../drop-down/drop-down.common';
@@ -10,17 +10,19 @@ import { IgxComboAPIService } from './combo.api';
 import { IgxDropDownItemBaseDirective } from '../drop-down/drop-down-item.base';
 import { IgxSelectionAPIService } from '../core/selection';
 import { IgxComboItemComponent } from './combo-item.component';
-import { DisplayDensityToken, IDisplayDensityOptions } from '../core/density';
+import { DOCUMENT, NgIf } from '@angular/common';
+import { IgxToggleDirective } from '../directives/toggle/toggle.directive';
 
 /** @hidden */
 @Component({
     selector: 'igx-combo-drop-down',
     templateUrl: '../drop-down/drop-down.component.html',
-    providers: [{ provide: IGX_DROPDOWN_BASE, useExisting: IgxComboDropDownComponent }]
+    providers: [{ provide: IGX_DROPDOWN_BASE, useExisting: IgxComboDropDownComponent }],
+    imports: [IgxToggleDirective, NgIf]
 })
 export class IgxComboDropDownComponent extends IgxDropDownComponent implements IDropDownBase, OnDestroy, AfterViewInit {
     /** @hidden @internal */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public singleMode = false;
 
     /**
@@ -28,10 +30,11 @@ export class IgxComboDropDownComponent extends IgxDropDownComponent implements I
      * @internal
      */
     @ContentChildren(IgxComboItemComponent, { descendants: true })
-    public children: QueryList<IgxDropDownItemBaseDirective> = null;
+    public override children: QueryList<IgxDropDownItemBaseDirective> = null;
 
     /** @hidden @internal */
-    public get scrollContainer(): HTMLElement {
+    public override get scrollContainer(): HTMLElement {
+        // TODO: Update, use public API if possible:
         return this.virtDir.dc.location.nativeElement;
     }
 
@@ -62,7 +65,7 @@ export class IgxComboDropDownComponent extends IgxDropDownComponent implements I
      * let myDropDownItems = this.dropdown.items;
      * ```
      */
-    public get items(): IgxComboItemComponent[] {
+    public override get items(): IgxComboItemComponent[] {
         const items: IgxComboItemComponent[] = [];
         if (this.children !== undefined) {
             const sortedChildren = this.sortedChildren as IgxComboItemComponent[];
@@ -77,13 +80,13 @@ export class IgxComboDropDownComponent extends IgxDropDownComponent implements I
     }
 
     constructor(
-        protected elementRef: ElementRef,
-        protected cdr: ChangeDetectorRef,
-        protected selection: IgxSelectionAPIService,
+        elementRef: ElementRef,
+        cdr: ChangeDetectorRef,
+        @Inject(DOCUMENT) document: any,
+        selection: IgxSelectionAPIService,
         @Inject(IGX_COMBO_COMPONENT) public combo: IgxComboBase,
-        protected comboAPI: IgxComboAPIService,
-        @Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions: IDisplayDensityOptions) {
-        super(elementRef, cdr, selection, _displayDensityOptions);
+        protected comboAPI: IgxComboAPIService) {
+        super(elementRef, cdr, document, selection);
     }
 
     /**
@@ -91,6 +94,7 @@ export class IgxComboDropDownComponent extends IgxDropDownComponent implements I
      */
     public onFocus() {
         this.focusedItem = this._focusedItem || this.items[0];
+        this.combo.setActiveDescendant();
     }
 
     /**
@@ -98,68 +102,74 @@ export class IgxComboDropDownComponent extends IgxDropDownComponent implements I
      */
     public onBlur(_evt?) {
         this.focusedItem = null;
+        this.combo.setActiveDescendant();
     }
 
     /**
      * @hidden @internal
      */
-    public onToggleOpened() {
+    public override onToggleOpened() {
         this.opened.emit();
     }
 
     /**
      * @hidden
      */
-    public navigateFirst() {
-        this.navigateItem(this.virtDir.igxForOf.findIndex(e => !e.isHeader));
+    public override navigateFirst() {
+        this.navigateItem(this.virtDir.igxForOf.findIndex(e => !e?.isHeader));
+        this.combo.setActiveDescendant();
     }
 
     /**
      * @hidden
      */
-    public navigatePrev() {
+    public override navigatePrev() {
         if (this._focusedItem && this._focusedItem.index === 0 && this.virtDir.state.startIndex === 0) {
             this.combo.focusSearchInput(false);
+            this.focusedItem = null;
         } else {
             super.navigatePrev();
         }
+        this.combo.setActiveDescendant();
     }
 
 
     /**
      * @hidden
      */
-    public navigateNext() {
+    public override navigateNext() {
         const lastIndex = this.combo.totalItemCount ? this.combo.totalItemCount - 1 : this.virtDir.igxForOf.length - 1;
         if (this._focusedItem && this._focusedItem.index === lastIndex) {
             this.focusAddItemButton();
         } else {
             super.navigateNext();
         }
+        this.combo.setActiveDescendant();
     }
 
     /**
      * @hidden @internal
      */
-    public selectItem(item: IgxDropDownItemBaseDirective) {
+    public override selectItem(item: IgxDropDownItemBaseDirective) {
         if (item === null || item === undefined) {
             return;
         }
         this.comboAPI.set_selected_item(item.itemID);
         this._focusedItem = item;
+        this.combo.setActiveDescendant();
     }
 
     /**
      * @hidden @internal
      */
-    public updateScrollPosition() {
+    public override updateScrollPosition() {
         this.virtDir.getScroll().scrollTop = this._scrollPosition;
     }
 
     /**
      * @hidden @internal
      */
-    public onItemActionKey(key: DropDownActionKey) {
+    public override onItemActionKey(key: DropDownActionKey) {
         switch (key) {
             case DropDownActionKey.ENTER:
                 this.handleEnter();
@@ -172,20 +182,19 @@ export class IgxComboDropDownComponent extends IgxDropDownComponent implements I
         }
     }
 
-    public ngAfterViewInit() {
+    public override ngAfterViewInit() {
         this.virtDir.getScroll().addEventListener('scroll', this.scrollHandler);
     }
 
     /**
      * @hidden @internal
      */
-    public ngOnDestroy(): void {
+    public override ngOnDestroy(): void {
         this.virtDir.getScroll().removeEventListener('scroll', this.scrollHandler);
-        this.destroy$.next(true);
-        this.destroy$.complete();
+        super.ngOnDestroy();
     }
 
-    protected scrollToHiddenItem(_newItem: any): void { }
+    protected override scrollToHiddenItem(_newItem: any): void { }
 
     protected scrollHandler = () => {
         this.comboAPI.disableTransitions = true;

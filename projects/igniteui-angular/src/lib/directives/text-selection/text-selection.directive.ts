@@ -1,31 +1,11 @@
-import { Directive, ElementRef, HostListener, Input, NgModule } from '@angular/core';
+import { Directive, ElementRef, HostListener, Input, booleanAttribute } from '@angular/core';
 
 @Directive({
     exportAs: 'igxTextSelection',
-    selector: '[igxTextSelection]'
+    selector: '[igxTextSelection]',
+    standalone: true
 })
 export class IgxTextSelectionDirective {
-    private selectionState = true;
-
-    /**
-     * Returns whether the input element is selectable through the directive.
-     *
-     * ```typescript
-     * // get
-     * @ViewChild('firstName',
-     *  {read: IgxTextSelectionDirective})
-     * public firstName: IgxTextSelectionDirective;
-     *
-     * public getFirstNameSelectionStatus() {
-     *  return this.firstName.selected;
-     * }
-     * ```
-     */
-    @Input('igxTextSelection')
-    public get selected(): boolean {
-        return this.selectionState;
-    }
-
     /**
      *  Determines whether the input element could be selected through the directive.
      *
@@ -45,9 +25,8 @@ export class IgxTextSelectionDirective {
      * </input>
      * ```
      */
-    public set selected(val: boolean) {
-        this.selectionState = val;
-    }
+    @Input({ alias: 'igxTextSelection', transform: booleanAttribute })
+    public selected = true;
 
     /**
      * Returns the nativeElement of the element where the directive was applied.
@@ -108,7 +87,9 @@ export class IgxTextSelectionDirective {
 
     public trigger() {
         if (this.selected && this.nativeElement.value.length) {
-                this.nativeElement.select();
+            // delay the select call to avoid race conditions in case the directive is applied
+            // to an element with its own focus handler
+            requestAnimationFrame(() => this.nativeElement.select());
         }
     }
 }
@@ -116,8 +97,4 @@ export class IgxTextSelectionDirective {
 /**
  * @hidden
  */
-@NgModule({
-    declarations: [IgxTextSelectionDirective],
-    exports: [IgxTextSelectionDirective]
-})
-export class IgxTextSelectionModule { }
+

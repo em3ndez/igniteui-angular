@@ -1,31 +1,17 @@
 import {
+    AfterViewInit,
     Component,
     EventEmitter,
     HostBinding,
     HostListener,
     Input,
-    Output,
-    ViewChild,
-    ElementRef,
-    ChangeDetectorRef
+    booleanAttribute
 } from '@angular/core';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IBaseEventArgs, mkenum } from '../core/utils';
-import { EditorProvider } from '../core/edit-provider';
-import { noop } from 'rxjs';
+import { ControlValueAccessor } from '@angular/forms';
+import { EditorProvider, EDITOR_PROVIDER } from '../core/edit-provider';
+import { IgxRippleDirective } from '../directives/ripple/ripple.directive';
+import { CheckboxBaseDirective } from '../checkbox/checkbox-base.directive';
 
-export interface IChangeRadioEventArgs extends IBaseEventArgs {
-    value: any;
-    radio: IgxRadioComponent;
-}
-
-export const RadioLabelPosition = mkenum({
-    BEFORE: 'before',
-    AFTER: 'after'
-});
-export type RadioLabelPosition = (typeof RadioLabelPosition)[keyof typeof RadioLabelPosition];
-
-let nextId = 0;
 /**
  * **Ignite UI for Angular Radio Button** -
  * [Documentation](https://www.infragistics.com/products/ignite-ui-angular/angular/components/radio_button.html)
@@ -40,212 +26,20 @@ let nextId = 0;
  * ```
  */
 @Component({
-    providers: [
-        {
-            provide: NG_VALUE_ACCESSOR,
-            useExisting: IgxRadioComponent,
-            multi: true,
-        },
-    ],
     selector: 'igx-radio',
-    templateUrl: 'radio.component.html'
+    providers: [{
+            provide: EDITOR_PROVIDER,
+            useExisting: IgxRadioComponent,
+            multi: true
+        }],
+    templateUrl: 'radio.component.html',
+    imports: [IgxRippleDirective]
 })
-export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
-    private static ngAcceptInputType_required: boolean | '';
-    private static ngAcceptInputType_disabled: boolean | '';
-    /**
-     * Returns reference to native radio element.
-     * ```typescript
-     * let radioElement =  this.radio.nativeRadio;
-     * ```
-     *
-     * @memberof IgxSwitchComponent
-     */
-    @ViewChild('radio', { static: true })
-    public nativeRadio: ElementRef;
-
-    /**
-     * Returns reference to native label element.
-     * ```typescript
-     * let labelElement =  this.radio.nativeLabel;
-     * ```
-     *
-     * @memberof IgxSwitchComponent
-     */
-    @ViewChild('nativeLabel', { static: true })
-    public nativeLabel: ElementRef;
-
-    /**
-     * Returns reference to the label placeholder element.
-     * ```typescript
-     * let labelPlaceholder =  this.radio.placeholderLabel;
-     * ```
-     *
-     * @memberof IgxSwitchComponent
-     */
-    @ViewChild('placeholderLabel', { static: true })
-    public placeholderLabel: ElementRef;
-
-    /**
-     * Sets/gets the `id` of the radio component.
-     * If not set, the `id` of the first radio component will be `"igx-radio-0"`.
-     * ```html
-     * <igx-radio id = "my-first-radio"></igx-radio>
-     * ```
-     * ```typescript
-     * let radioId =  this.radio.id;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @HostBinding('attr.id')
-    @Input()
-    public id = `igx-radio-${nextId++}`;
-
-    /**
-     * Sets/gets the id of the `label` element in the radio component.
-     * If not set, the id of the `label` in the first radio component will be `"igx-radio-0-label"`.
-     * ```html
-     * <igx-radio labelId = "Label1"></igx-radio>
-     * ```
-     * ```typescript
-     * let labelId =  this.radio.labelId;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input()
-    public labelId = `${this.id}-label`;
-
-    /**
-     * Sets/gets the position of the `label` in the radio component.
-     * If not set, `labelPosition` will have value `"after"`.
-     * ```html
-     * <igx-radio labelPosition = "before"></igx-radio>
-     * ```
-     * ```typescript
-     * let labelPosition =  this.radio.labelPosition;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input()
-    public labelPosition: RadioLabelPosition | string = 'after';
-
-    /**
-     * Sets/gets the `value` attribute.
-     * ```html
-     * <igx-radio [value] = "'radioButtonValue'"></igx-radio>
-     * ```
-     * ```typescript
-     * let value =  this.radio.value;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input()
-    public value: any;
-
-    /**
-     * Sets/gets the `name` attribute of the radio component.
-     * ```html
-     * <igx-radio name = "Radio1"></igx-radio>
-     *  ```
-     * ```typescript
-     * let name =  this.radio.name;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input()
-    public name: string;
-
-    /**
-     * Sets the value of the `tabindex` attribute.
-     * ```html
-     * <igx-radio [tabindex] = "1"></igx-radio>
-     * ```
-     * ```typescript
-     * let tabIndex =  this.radio.tabindex;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input()
-    public tabindex: number = null;
-
-    /**
-     * Enables/disables the ripple effect on the radio button..
-     * If not set, the `disableRipple` will have value `false`.
-     * ```html
-     * <igx-radio [disableRipple] = "true"></igx-radio>
-     * ```
-     * ```typescript
-     * let isDisabledRipple =  this.radio.disableRipple;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input()
-    public disableRipple = false;
-
-    /**
-     * Sets/gets whether the radio button is required.
-     * If not set, `required` will have value `false`.
-     * ```html
-     * <igx-radio required></igx-radio>
-     * ```
-     * ```typescript
-     * let isRequired =  this.radio.required;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-     @Input()
-     public get required(): boolean {
-         return this._required;
-     }
-     public set required(value: boolean) {
-         this._required = (value as any === '') || value;
-     }
-
-    /**
-     * Sets/gets the `aria-labelledby` attribute of the radio component.
-     * If not set, the `aria-labelledby` will be equal to the value of `labelId` attribute.
-     * ```html
-     * <igx-radio aria-labelledby = "Radio1"></igx-radio>
-     * ```
-     * ```typescript
-     * let ariaLabelledBy = this.radio.ariaLabelledBy;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input('aria-labelledby')
-    public ariaLabelledBy = this.labelId;
-
-    /**
-     * Sets/gets the `aria-label` attribute of the radio component.
-     * ```html
-     * <igx-radio aria-label = "Radio1"></igx-radio>
-     * ```
-     * ```typescript
-     * let ariaLabel =  this.radio.ariaLabel;
-     * ```
-     *
-     * @memberof IgxRadioComponent
-     */
-    @Input('aria-label')
-    public ariaLabel: string | null = null;
-
-    /**
-     * An event that is emitted after the radio `value` is changed.
-     * Provides references to the `IgxRadioComponent` and the `value` property as event arguments.
-     *
-     * @memberof IgxRadioComponent
-     */
-    // eslint-disable-next-line @angular-eslint/no-output-native
-    @Output() public readonly change: EventEmitter<IChangeRadioEventArgs> = new EventEmitter<IChangeRadioEventArgs>();
+export class IgxRadioComponent
+    extends CheckboxBaseDirective
+    implements AfterViewInit, ControlValueAccessor, EditorProvider {
+    /** @hidden @internal */
+    public blurRadio = new EventEmitter();
 
     /**
      * Returns the class of the radio component.
@@ -256,13 +50,13 @@ export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
      * @memberof IgxRadioComponent
      */
     @HostBinding('class.igx-radio')
-    public cssClass = 'igx-radio';
+    public override cssClass = 'igx-radio';
 
     /**
      * Sets/gets  the `checked` attribute.
      * Default value is `false`.
      * ```html
-     * <igx-radio [checked] = "true"></igx-radio>
+     * <igx-radio [checked]="true"></igx-radio>
      * ```
      * ```typescript
      * let isChecked =  this.radio.checked;
@@ -271,8 +65,13 @@ export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
      * @memberof IgxRadioComponent
      */
     @HostBinding('class.igx-radio--checked')
-    @Input()
-    public checked = false;
+    @Input({ transform: booleanAttribute })
+    public override set checked(value: boolean) {
+        this._checked = value;
+    }
+    public override get checked() {
+        return this._checked;
+    }
 
     /**
      * Sets/gets  the `disabled` attribute.
@@ -287,13 +86,24 @@ export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
      * @memberof IgxRadioComponent
      */
     @HostBinding('class.igx-radio--disabled')
-    @Input()
-    public get disabled(): boolean {
-        return this._disabled;
-    }
-    public set disabled(value: boolean) {
-        this._disabled = (value as any === '') || value;
-    }
+    @Input({ transform: booleanAttribute })
+    public override disabled = false;
+
+    /**
+     * Sets/gets whether the radio button is invalid.
+     * Default value is `false`.
+     * ```html
+     * <igx-radio invalid></igx-radio>
+     * ```
+     * ```typescript
+     * let isInvalid =  this.radio.invalid;
+     * ```
+     *
+     * @memberof IgxRadioComponent
+     */
+    @HostBinding('class.igx-radio--invalid')
+    @Input({ transform: booleanAttribute })
+    public override invalid = false;
 
     /**
      * Sets/gets whether the radio component is on focus.
@@ -308,50 +118,24 @@ export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
      * @memberof IgxRadioComponent
      */
     @HostBinding('class.igx-radio--focused')
-    public focused = false;
-
-    /**
-     * @hidden
-     */
-    public inputId = `${this.id}-input`;
-    /**
-     * @hidden
-     * @internal
-     */
-    private _required = false;
-    /**
-     * @hidden
-     * @internal
-     */
-    private _disabled = false;
-    /**
-     * @hidden
-     */
-    private _onTouchedCallback: () => void = noop;
-
-    /**
-     * @hidden
-     */
-    private _onChangeCallback: (_: any) => void = noop;
-
-    constructor(private cdr: ChangeDetectorRef) { }
+    public override focused = false;
 
     /**
      * @hidden
      * @internal
      */
-    @HostListener('keyup', ['$event'])
-    public onKeyUp(event: KeyboardEvent) {
-        event.stopPropagation();
-        this.focused = true;
-        this.select();
+    @HostListener('change', ['$event'])
+    public _changed(event: Event) {
+        if (event instanceof Event) {
+            event.preventDefault();
+        }
     }
 
     /**
      * @hidden
      */
     @HostListener('click')
-    public _clicked() {
+    public override _onCheckboxClick() {
         this.select();
     }
 
@@ -364,11 +148,13 @@ export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
      * @memberof IgxRadioComponent
      */
     public select() {
-        this.nativeRadio.nativeElement.focus();
-
-        if(!this.checked) {
+        if (!this.checked) {
             this.checked = true;
-            this.change.emit({ value: this.value, radio: this });
+            this.change.emit({
+                value: this.value,
+                owner: this,
+                checked: this.checked,
+            });
             this._onChangeCallback(this.value);
         }
     }
@@ -394,60 +180,24 @@ export class IgxRadioComponent implements ControlValueAccessor, EditorProvider {
      * this.radio.writeValue('radioButtonValue');
      * ```
      */
-    public writeValue(value: any) {
-        this.value = this.value || value;
+    public override writeValue(value: any) {
+        this.value = this.value ?? value;
 
         if (value === this.value) {
-            this.select();
+            if (!this.checked) {
+                this.checked = true;
+            }
         } else {
             this.deselect();
         }
     }
 
-    /** @hidden */
-    public getEditElement() {
-        return this.nativeRadio.nativeElement;
-    }
-
     /**
      * @hidden
      */
-    public get labelClass(): string {
-        switch (this.labelPosition) {
-            case RadioLabelPosition.BEFORE:
-                return `${this.cssClass}__label--before`;
-            case RadioLabelPosition.AFTER:
-            default:
-                return `${this.cssClass}__label`;
-        }
-    }
-
-    /**
-     * @hidden
-     */
-    public onBlur() {
-        this.focused = false;
-        this._onTouchedCallback();
-    }
-
-    /**
-     * @hidden
-     */
-    public registerOnChange(fn: (_: any) => void) {
-        this._onChangeCallback = fn;
-    }
-
-    /**
-     * @hidden
-     */
-    public registerOnTouched(fn: () => void) {
-        this._onTouchedCallback = fn;
-    }
-
-    /**
-     * @hidden
-     */
-    public setDisabledState(isDisabled: boolean) {
-        this.disabled = isDisabled;
+    @HostListener('blur')
+    public override onBlur() {
+        super.onBlur();
+        this.blurRadio.emit();
     }
 }

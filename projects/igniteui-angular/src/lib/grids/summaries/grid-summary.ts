@@ -1,10 +1,19 @@
+import { IGroupByRecord } from '../../data-operations/groupby-record.interface';
+
+/* tsPlainInterface */
+/* marshalByValue */
 export interface ISummaryExpression {
     fieldName: string;
+    /* blazorCSSuppress */
     customSummary?: any;
 }
+
+/* tsPlainInterface */
+/* marshalByValue */
 export interface IgxSummaryResult {
     key: string;
     label: string;
+    /* blazorAlternateName: Result */
     summaryResult: any;
     /**
      * Apply default formatting based on the grid column type.
@@ -31,6 +40,7 @@ const clear = (el) => el === 0 || Boolean(el);
 const first = (arr) => arr[0];
 const last = (arr) => arr[arr.length - 1];
 
+/* blazorCSSuppress */
 export class IgxSummaryOperand {
     /**
      * Counts all the records in the data source.
@@ -59,7 +69,7 @@ export class IgxSummaryOperand {
      *   constructor() {
      *     super();
      *   }
-     *   public operate(data: any[], allData: any[], fieldName: string): IgxSummaryResult[] {
+     *   public operate(data: any[], allData: any[], fieldName: string, groupRecord: IGroupByRecord): IgxSummaryResult[] {
      *     const result = [];
      *     result.push({
      *       key: "test",
@@ -74,7 +84,7 @@ export class IgxSummaryOperand {
      *
      * @memberof IgxSummaryOperand
      */
-    public operate(data: any[] = [], allData: any[] = [], fieldName?: string): IgxSummaryResult[] {
+    public operate(data: any[] = [], _allData: any[] = [], _fieldName?: string, _groupRecord?: IGroupByRecord): IgxSummaryResult[] {
         return [{
             key: 'count',
             label: 'Count',
@@ -84,6 +94,7 @@ export class IgxSummaryOperand {
     }
 }
 
+/* blazorCSSuppress */
 // @dynamic
 export class IgxNumberSummaryOperand extends IgxSummaryOperand {
     /**
@@ -149,8 +160,8 @@ export class IgxNumberSummaryOperand extends IgxSummaryOperand {
      *   constructor() {
      *     super();
      *   }
-     *   public operate(data: any[], allData: any[], fieldName: string): IgxSummaryResult[] {
-     *     const result = super.operate(data, allData, fieldName);
+     *   public operate(data: any[], allData: any[], fieldName: string, groupRecord: IGroupByRecord): IgxSummaryResult[] {
+     *     const result = super.operate(data, allData, fieldName, groupRecord);
      *     result.push({
      *       key: "avg",
      *       label: "Avg",
@@ -169,8 +180,8 @@ export class IgxNumberSummaryOperand extends IgxSummaryOperand {
      *
      * @memberof IgxNumberSummaryOperand
      */
-    public operate(data: any[] = [], allData: any[] = [], fieldName?: string): IgxSummaryResult[] {
-        const result = super.operate(data, allData, fieldName);
+    public override operate(data: any[] = [], allData: any[] = [], fieldName?: string, groupRecord?: IGroupByRecord): IgxSummaryResult[] {
+        const result = super.operate(data, allData, fieldName, groupRecord);
         result.push({
             key: 'min',
             label: 'Min',
@@ -199,6 +210,7 @@ export class IgxNumberSummaryOperand extends IgxSummaryOperand {
     }
 }
 
+/* blazorCSSuppress */
 // @dynamic
 export class IgxDateSummaryOperand extends IgxSummaryOperand {
     /**
@@ -242,8 +254,8 @@ export class IgxDateSummaryOperand extends IgxSummaryOperand {
      *   constructor() {
      *     super();
      *   }
-     *   public operate(data: any[], allData: any[], fieldName: string): IgxSummaryResult[] {
-     *     const result = super.operate(data, allData, fieldName);
+     *   public operate(data: any[], allData: any[], fieldName: string, groupRecord: IGroupByRecord): IgxSummaryResult[] {
+     *     const result = super.operate(data, allData, fieldName, groupRecord);
      *     result.push({
      *       key: "deadline",
      *       label: "Deadline Date",
@@ -257,8 +269,8 @@ export class IgxDateSummaryOperand extends IgxSummaryOperand {
      *
      * @memberof IgxDateSummaryOperand
      */
-    public operate(data: any[] = [], allData: any[] = [],  fieldName?: string): IgxSummaryResult[] {
-        const result = super.operate(data, allData, fieldName);
+    public override operate(data: any[] = [], allData: any[] = [],  fieldName?: string, groupRecord?: IGroupByRecord): IgxSummaryResult[] {
+        const result = super.operate(data, allData, fieldName, groupRecord);
         result.push({
             key: 'earliest',
             label: 'Earliest',
@@ -275,6 +287,7 @@ export class IgxDateSummaryOperand extends IgxSummaryOperand {
     }
 }
 
+/* blazorCSSuppress */
 // @dynamic
 export class IgxTimeSummaryOperand extends IgxSummaryOperand {
     /**
@@ -310,8 +323,8 @@ export class IgxTimeSummaryOperand extends IgxSummaryOperand {
     /**
      * @memberof IgxTimeSummaryOperand
      */
-    public operate(data: any[] = [], allData: any[] = [],  fieldName?: string): IgxSummaryResult[] {
-        const result = super.operate(data, allData, fieldName);
+    public override operate(data: any[] = [], allData: any[] = [],  fieldName?: string, groupRecord?: IGroupByRecord): IgxSummaryResult[] {
+        const result = super.operate(data, allData, fieldName, groupRecord);
         result.push({
             key: 'earliest',
             label: 'Earliest',

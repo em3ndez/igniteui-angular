@@ -1,12 +1,25 @@
-import { Component, HostBinding, Input } from '@angular/core';
+import { Component, HostBinding, Input, booleanAttribute } from '@angular/core';
 import { IgxGridActionsBaseDirective } from './grid-actions-base.directive';
 import { showMessage } from '../../core/utils';
-import { addRow, addChild  } from '@igniteui/material-icons-extended';
+import { addRow, addChild } from '@igniteui/material-icons-extended';
+import { IgxGridActionButtonComponent } from './grid-action-button.component';
+import { NgIf } from '@angular/common';
 
+
+/* blazorElement */
+/* wcElementTag: igc-grid-editing-actions */
+/* blazorIndirectRender */
+/* singleInstanceIdentifier */
+/**
+ * Grid Editing Actions for the Action Strip
+ *
+ * @igxParent IgxActionStripComponent
+ */
 @Component({
     selector: 'igx-grid-editing-actions',
     templateUrl: 'grid-editing-actions.component.html',
-    providers: [{ provide: IgxGridActionsBaseDirective, useExisting: IgxGridEditingActionsComponent }]
+    providers: [{ provide: IgxGridActionsBaseDirective, useExisting: IgxGridEditingActionsComponent }],
+    imports: [NgIf, IgxGridActionButtonComponent]
 })
 
 export class IgxGridEditingActionsComponent extends IgxGridActionsBaseDirective {
@@ -23,7 +36,7 @@ export class IgxGridEditingActionsComponent extends IgxGridActionsBaseDirective 
     /**
      * An input to enable/disable action strip row adding button
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public set addRow(value: boolean) {
         this._addRow = value;
     }
@@ -34,6 +47,18 @@ export class IgxGridEditingActionsComponent extends IgxGridActionsBaseDirective 
         }
         return this._addRow;
     }
+
+    /**
+     * An input to enable/disable action strip row editing button
+     */
+    @Input({ transform: booleanAttribute })
+    public editRow = true;
+
+    /**
+    * An input to enable/disable action strip row deleting button
+    */
+    @Input({ transform: booleanAttribute })
+    public deleteRow = true;
 
     /**
      * Getter if the row is disabled
@@ -71,7 +96,7 @@ export class IgxGridEditingActionsComponent extends IgxGridActionsBaseDirective 
     /**
      * An input to enable/disable action strip child row adding button
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public addChild = false;
 
     private isMessageShown = false;
@@ -100,25 +125,20 @@ export class IgxGridEditingActionsComponent extends IgxGridActionsBaseDirective 
             this.isMessageShown = showMessage(
                 'The grid should be editable in order to use IgxGridEditingActionsComponent',
                 this.isMessageShown);
-                return;
+            return;
         }
         // be sure row is in view
         if (grid.rowList.filter(r => r === row).length !== 0) {
             grid.gridAPI.crudService.enterEditMode(firstEditable, event);
-            firstEditable.activate(event);
+            if (!grid.gridAPI.crudService.nonEditable) {
+                firstEditable.activate(event);
+            }
         }
         this.strip.hide();
     }
 
-    /**
-     * Delete a row according to the context
-     *
-     * @example
-     * ```typescript
-     * this.gridEditingActions.deleteRow();
-     * ```
-     */
-    public deleteRow(event?): void {
+    /** @hidden @internal **/
+    public deleteRowHandler(event?): void {
         if (event) {
             event.stopPropagation();
         }
@@ -132,6 +152,7 @@ export class IgxGridEditingActionsComponent extends IgxGridActionsBaseDirective 
         this.strip.hide();
     }
 
+    /** @hidden @internal **/
     public addRowHandler(event?, asChild?: boolean): void {
         if (event) {
             event.stopPropagation();

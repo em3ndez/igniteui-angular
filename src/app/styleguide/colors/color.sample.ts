@@ -1,9 +1,11 @@
 import { Component } from '@angular/core';
+import { NgFor, NgIf } from '@angular/common';
 
 @Component({
     selector: 'app-colors-sample',
     styleUrls: ['color.sample.scss'],
-    templateUrl: 'color.sample.html'
+    templateUrl: 'color.sample.html',
+    imports: [NgFor, NgIf]
 })
 export class ColorsSampleComponent {
     public colors = [
@@ -46,7 +48,7 @@ export class ColorsSampleComponent {
             ]
         },
         {
-            name: 'grays',
+            name: 'gray',
             variants: [
                 50,
                 100,

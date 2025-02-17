@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsDE_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * German resource strings for IgxGrid
+ */
+export const GridResourceStringsDE = {
     igx_grid_groupByArea_message: 'Lege eine Spaltenüberschrift hier ab, um danach zu gruppieren.',
     igx_grid_emptyFilteredGrid_message: 'Keine Einträge gefunden.',
     igx_grid_emptyGrid_message: 'Grid hat keine Daten.',
@@ -87,7 +90,8 @@ const GridResourceStringsDE_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Logischer Filter',
     igx_grid_excel_currency_filter: 'Währungs Filter',
     igx_grid_excel_custom_filter: 'Benutzerdefinierter Filter...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Keine Übereinstimmungen',
+    igx_grid_excel_matches_count: '{0} Übereinstimmungen',
     igx_grid_advanced_filter_title: 'Erweiterte Filterung',
     igx_grid_advanced_filter_and_group: '"Und" Gruppe',
     igx_grid_advanced_filter_or_group: '"Oder" Gruppe',
@@ -110,6 +114,7 @@ const GridResourceStringsDE_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Löse alle',
     igx_grid_row_edit_btn_done: 'Fertig',
     igx_grid_row_edit_btn_cancel: 'Abbrechen',
+    igx_grid_row_edit_text: 'Sie haben {0} Änderungen in dieser Zeile und {1} ausgeblendete Spalten',
     igx_grid_toolbar_actions_filter_prompt: 'Filter Spalten-Liste...',
     igx_grid_toolbar_pinning_button_tooltip: 'Öffne Menü, um Spalten zu fixieren',
     igx_grid_toolbar_hiding_button_tooltip: 'Öffne Menü, um Spalten zu verstecken',
@@ -134,33 +139,35 @@ const GridResourceStringsDE_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Löse',
     igx_grid_actions_jumpUp_label: 'Springe hoch',
     igx_grid_actions_jumpDown_label: 'Springe runter',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
+    igx_grid_pivot_date_dimension_total: 'Alle Zeiträume',
+    igx_grid_pivot_aggregate_count: 'Anzahl',
     igx_grid_pivot_aggregate_min: 'Minimum',
     igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * German resource strings for IgxGrid
- */
-export const GridResourceStringsDE = GridResourceStringsDE_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_aggregate_sum: 'Summe',
+    igx_grid_pivot_aggregate_avg: 'Durchschnitt',
+    igx_grid_pivot_aggregate_date_latest: 'Spätester Datum',
+    igx_grid_pivot_aggregate_date_earliest: 'Frühestes Datum',
+    igx_grid_pivot_aggregate_time_latest: 'Spätester Zeitpunkt',
+    igx_grid_pivot_aggregate_time_earliest: 'Früheste Zeitpunkt',
+    igx_grid_pivot_empty_row_drop_area: 'Zeilenfelder hier ablegen.',
+    igx_grid_pivot_empty_column_drop_area: 'Spaltenfelder hier ablegen.',
+    igx_grid_pivot_empty_filter_drop_area: 'Filterfelder hier ablegen.',
+    igx_grid_pivot_empty_value_drop_area: 'Wertfelder hier ablegen.',
+    igx_grid_pivot_row_drop_chip: 'Hier ablegen, um es als Zeile zu verwenden',
+    igx_grid_pivot_column_drop_chip: 'Hier ablegen, um es als Spalte zu verwenden',
+    igx_grid_pivot_filter_drop_chip: 'Hier ablegen, um es als Filter zu verwenden',
+    igx_grid_pivot_value_drop_chip: 'Hier ablegen, um es als Wert zu verwenden',
+    igx_grid_pivot_selector_filters: 'Filter',
+    igx_grid_pivot_selector_rows: 'Zeilen',
+    igx_grid_pivot_selector_columns: 'Spalten',
+    igx_grid_pivot_selector_values: 'Werte',
+    igx_grid_pivot_selector_panel_empty: 'Elemente mit der Maus hierhin ziehen',
+    igx_grid_pivot_empty_message: 'Das Pivot-Grid hat keine Dimensionen und Werte.',
+    igx_grid_required_validation_error: 'Dieses Feld ist erforderlich',
+    igx_grid_min_validation_error: 'Bitte geben Sie einen Wert größer oder gleich {0} ein',
+    igx_grid_max_validation_error: 'Bitte geben Sie einen Wert kleiner oder gleich {0} ein',
+    igx_grid_min_length_validation_error: 'Bitte geben Sie mindestens {0} Zeichen ein',
+    igx_grid_max_length_validation_error: 'Bitte geben Sie nicht mehr als {0} Zeichen ein',
+    igx_grid_email_validation_error: 'Eine gültige E-Mail-Adresse sollte eingegeben werden',
+    igx_grid_pattern_validation_error: 'Eintrag entspricht nicht dem erforderlichen Muster'
+} satisfies MakeRequired<IGridResourceStrings>;

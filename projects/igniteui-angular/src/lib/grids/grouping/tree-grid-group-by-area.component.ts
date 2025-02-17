@@ -6,6 +6,7 @@ import {
     IterableDiffer,
     IterableDiffers,
     OnDestroy,
+    booleanAttribute,
 } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -13,7 +14,14 @@ import { IChipsAreaReorderEventArgs } from '../../chips/public_api';
 import { PlatformUtil } from '../../core/utils';
 import { IGroupingExpression } from '../../data-operations/grouping-expression.interface';
 import { ISortingExpression } from '../../data-operations/sorting-strategy';
-import { IgxGroupByAreaDirective } from './group-by-area.directive';
+import { IgxGroupByAreaDirective, IgxGroupByMetaPipe } from './group-by-area.directive';
+import { IgxDropDirective } from '../../directives/drag-drop/drag-drop.directive';
+import { IgxGroupAreaDropDirective } from '../grid.directives';
+import { IgxSuffixDirective } from '../../directives/suffix/suffix.directive';
+import { IgxIconComponent } from '../../icon/icon.component';
+import { IgxChipComponent } from '../../chips/chip.component';
+import { NgFor, NgTemplateOutlet } from '@angular/common';
+import { IgxChipsAreaComponent } from '../../chips/chips-area.component';
 
 /**
  * An internal component representing the group-by drop area for the igx-grid component.
@@ -23,16 +31,17 @@ import { IgxGroupByAreaDirective } from './group-by-area.directive';
 @Component({
     selector: 'igx-tree-grid-group-by-area',
     templateUrl: 'group-by-area.component.html',
-    providers: [{ provide: IgxGroupByAreaDirective, useExisting: IgxTreeGridGroupByAreaComponent }]
+    providers: [{ provide: IgxGroupByAreaDirective, useExisting: IgxTreeGridGroupByAreaComponent }],
+    imports: [IgxChipsAreaComponent, NgFor, IgxChipComponent, IgxIconComponent, IgxSuffixDirective, IgxGroupAreaDropDirective, IgxDropDirective, NgTemplateOutlet, IgxGroupByMetaPipe]
 })
 export class IgxTreeGridGroupByAreaComponent extends IgxGroupByAreaDirective implements AfterContentInit, OnDestroy {
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get hideGroupedColumns() {
         return this._hideGroupedColumns;
     }
 
     public set hideGroupedColumns(value: boolean) {
-        if (this.grid.columnList && this.expressions) {
+        if (this.grid?.columns && this.expressions) {
             this.setColumnsVisibility(value);
         }
 
@@ -48,7 +57,7 @@ export class IgxTreeGridGroupByAreaComponent extends IgxGroupByAreaDirective imp
     }
 
     public ngAfterContentInit(): void {
-        if (this.grid.columnList && this.expressions) {
+        if (this.grid.columns && this.expressions) {
             this.groupingDiffer = this.differs.find(this.expressions).create();
             this.updateColumnsVisibility();
         }
@@ -107,45 +116,14 @@ export class IgxTreeGridGroupByAreaComponent extends IgxGroupByAreaDirective imp
         this.grid.notifyChanges(true);
     }
 
-    protected expressionsChanged() {
-        this.updateSortingExpressions();
+    protected override expressionsChanged() {
         this.updateColumnsVisibility();
     }
 
-    private updateSortingExpressions() {
-        const sortingExpressions = this.grid.sortingExpressions;
-        let changed = false;
-
-        this.expressions.forEach((expr, index) => {
-            const sortingIndex = sortingExpressions.findIndex(s => s.fieldName === expr.fieldName);
-
-            if (sortingIndex > -1) {
-                if (sortingIndex !== index) {
-                    const sortExpr = sortingExpressions.splice(sortingIndex, 1)[0];
-                    sortExpr.dir = expr.dir;
-                    sortingExpressions.splice(index, 0, sortExpr);
-                    changed = true;
-                } else if (sortingExpressions[sortingIndex].dir !== expr.dir) {
-                    sortingExpressions[sortingIndex].dir = expr.dir;
-                    changed = true;
-                }
-            } else {
-                const exprCopy = { ...expr };
-                sortingExpressions.splice(index, 0, exprCopy);
-                changed = true;
-            }
-
-        });
-
-        if (changed) {
-            this.grid.sortingExpressions = [...sortingExpressions];
-        }
-    }
-
     private updateColumnsVisibility() {
-        if (this.groupingDiffer && this.grid.columnList && !this.grid.hasColumnLayouts) {
+        if (this.groupingDiffer && this.grid.columns && !this.grid.hasColumnLayouts) {
             const changes = this.groupingDiffer.diff(this.expressions);
-            if (changes && this.grid.columnList.length > 0) {
+            if (changes && this.grid.columns.length > 0) {
                 changes.forEachAddedItem((rec) => {
                     const col = this.grid.getColumnByName(rec.item.fieldName);
                     col.hidden = this.hideGroupedColumns;
@@ -159,7 +137,7 @@ export class IgxTreeGridGroupByAreaComponent extends IgxGroupByAreaDirective imp
     }
 
     private setColumnsVisibility(value) {
-        if (this.grid.columnList.length > 0 && !this.grid.hasColumnLayouts) {
+        if (this.grid.columns.length > 0 && !this.grid.hasColumnLayouts) {
             this.expressions.forEach((expr) => {
                 const col = this.grid.getColumnByName(expr.fieldName);
                 col.hidden = value;

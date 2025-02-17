@@ -1,27 +1,13 @@
 import * as path from 'path';
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update 10.1.0', () => {
     let appTree: UnitTestTree;
     const schematicRunner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-    };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it('should upgrade the igx-action-icon to igx-navbar-action', async () => {
@@ -32,8 +18,7 @@ describe('Update 10.1.0', () => {
             <igx-icon>arrow_back</igx-icon>
             </igx-action-icon>
             </igx-navbar>`);
-        const tree = await schematicRunner.runSchematicAsync('migration-16', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-16', {}, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/custom.component.html'))
             .toEqual(
@@ -51,7 +36,7 @@ describe('Update 10.1.0', () => {
             @ViewChild(IgxActionIconDirective, { read: IgxActionIconDirective })
             private actionIcon: IgxActionIconDirective; }`);
 
-        const tree = await schematicRunner.runSchematicAsync('migration-16', {}, appTree).toPromise();
+        const tree = await schematicRunner.runSchematic('migration-16', {}, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/custom.component.ts'))
             .toEqual(
@@ -96,7 +81,7 @@ describe('Update 10.1.0', () => {
             '/testSrc/appPrefix/component/drop.component.ts',
             origFileContent);
 
-        const tree = await schematicRunner.runSchematicAsync('migration-16', {}, appTree).toPromise();
+        const tree = await schematicRunner.runSchematic('migration-16', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/drop.component.ts'))
             .toEqual(expectedFileContent);
     });
@@ -107,8 +92,7 @@ describe('Update 10.1.0', () => {
             '<igx-tree-grid (onDataPreLoad)="handleEvent($event)"></igx-tree-grid>'
         );
 
-        const tree = await schematicRunner.runSchematicAsync('migration-16', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-16', {}, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/tree-grid.component.html'))
             .toEqual('<igx-tree-grid (onScroll)="handleEvent($event)"></igx-tree-grid>');

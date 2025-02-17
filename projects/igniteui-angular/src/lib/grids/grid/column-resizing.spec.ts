@@ -2,36 +2,37 @@ import { Component, DebugElement, OnInit, ViewChild } from '@angular/core';
 import { TestBed, fakeAsync, tick, ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxAvatarModule } from '../../avatar/avatar.component';
 import { Calendar } from '../../calendar/public_api';
 import { IgxGridComponent } from './grid.component';
-import { IgxGridModule, IColumnResizeEventArgs } from './public_api';
 import { UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { GridTemplateStrings, ColumnDefinitions } from '../../test-utils/template-strings.spec';
 import { SampleTestData } from '../../test-utils/sample-test-data.spec';
 import { MultiColumnHeadersComponent } from '../../test-utils/grid-samples.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { GridFunctions } from '../../test-utils/grid-functions.spec';
+import { IgxCellHeaderTemplateDirective, IgxCellTemplateDirective } from '../columns/templates.directive';
+import { NgFor } from '@angular/common';
+import { IgxAvatarComponent } from '../../avatar/avatar.component';
+import { IColumnResizeEventArgs, IgxColumnComponent } from '../public_api';
+import { Size } from "../common/enums";
+import { setElementSize } from '../../test-utils/helper-utils.spec';
+import { IgxColumnResizerDirective } from '../resizing/resizer.directive';
 
 describe('IgxGrid - Deferred Column Resizing #grid', () => {
 
     const COLUMN_HEADER_GROUP_CLASS = '.igx-grid-thead__item';
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
+        return TestBed.configureTestingModule({
+            imports: [
+                MultiColumnHeadersComponent,
+                NoopAnimationsModule,
                 ResizableColumnsComponent,
                 GridFeaturesComponent,
                 LargePinnedColGridComponent,
                 NullColumnsComponent,
-                MultiColumnHeadersComponent,
                 ColGridComponent,
                 ColPercentageGridComponent
-            ],
-            imports: [
-                IgxAvatarModule,
-                NoopAnimationsModule,
-                IgxGridModule
             ]
         });
     }));
@@ -133,6 +134,27 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             expect(grid.columnList.get(1).width).toEqual('70px');
         }));
 
+        it('should calculate correctly resizer position and column width when grid is scaled and zoomed', fakeAsync(() => {
+            grid.nativeElement.style.transform = 'scale(1.2)';
+            grid.nativeElement.style.setProperty('zoom', '1.05');
+            fixture.detectChanges();
+            headerResArea = GridFunctions.getHeaderResizeArea(headers[1]).nativeElement;
+            UIInteractions.simulateMouseEvent('mousedown', headerResArea, 153, 0);
+            tick(200);
+            fixture.detectChanges();
+
+            const resizer = GridFunctions.getResizer(fixture);
+            const resizerDirective = resizer.componentInstance.resizer as IgxColumnResizerDirective;
+            const leftSetterSpy = spyOnProperty(resizerDirective, 'left', 'set').and.callThrough();
+            UIInteractions.simulateMouseEvent('mousemove', resizer.nativeElement, 200, 5);
+            UIInteractions.simulateMouseEvent('mouseup', resizer.nativeElement, 200, 5);
+            fixture.detectChanges();
+
+            expect(leftSetterSpy).toHaveBeenCalled();
+            expect(parseInt(leftSetterSpy.calls.mostRecent().args[0].toFixed(0))).toEqual(200);
+            expect(parseInt(grid.columnList.get(1).headerCell.nativeElement.getBoundingClientRect().width.toFixed(0))).toEqual(173);
+        }));
+
         it('should be able to resize column to the minWidth < defaultMinWidth', fakeAsync(() => {
             const column = grid.getColumnByName('ID');
             column.minWidth = 'a';
@@ -164,7 +186,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             expect(column.width).toEqual('50px');
         }));
 
-        it('should change the defaultMinWidth on density change', fakeAsync(() => {
+        it('should change the defaultMinWidth on grid size change', fakeAsync(() => {
             const column = grid.getColumnByName('ID');
 
             expect(column.defaultMinWidth).toBe('80');
@@ -179,8 +201,8 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('80px');
-            grid.displayDensity = 'cosy';
-            tick(200);
+            setElementSize(grid.nativeElement, Size.Medium)
+            tick(16); // needed because of the throttleTime of the resize obserer
             fixture.detectChanges();
 
             expect(column.defaultMinWidth).toBe('64');
@@ -194,8 +216,8 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('64px');
-            grid.displayDensity = 'compact';
-            tick(200);
+            setElementSize(grid.nativeElement, Size.Small)
+            tick(16); // needed because of the throttleTime of the resize obserer
             fixture.detectChanges();
 
             expect(column.defaultMinWidth).toBe('56');
@@ -374,7 +396,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             expect(grid.columnList.get(2).width).toEqual('92px');
         }));
 
-        it('should autosize column programmatically.', fakeAsync(/** height/width setter rAF */() => {
+        it('should autosize column programmatically.', () => {
             const column = grid.getColumnByName('ID');
             column.minWidth = '30px';
             expect(column.width).toEqual('100px');
@@ -383,9 +405,20 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('67px');
-        }));
+        });
 
-        it('should autosize column programmatically based only on header.', fakeAsync(() => {
+        it('should autosize column correctly if there is scaling via css.', () => {
+            grid.nativeElement.style.transform = 'scale(0.6)';
+            const column = grid.getColumnByName('Items');
+
+            column.autosize();
+            fixture.detectChanges();
+
+            expect(column.width).toEqual('92px');
+            grid.nativeElement.style.transform = '';
+        });
+
+        it('should autosize column programmatically based only on header.', () => {
             const column = fixture.componentInstance.grid.columnList.filter(c => c.field === 'ReleaseDate')[0];
             expect(column.width).toEqual('100px');
 
@@ -393,9 +426,9 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('112px');
-        }));
+        });
 
-        it('should autosize pinned column programmatically.', fakeAsync(/** height/width setter rAF */() => {
+        it('should autosize pinned column programmatically.', () => {
             const column = grid.getColumnByName('Released');
             expect(column.width).toEqual('100px');
 
@@ -403,9 +436,9 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('95px');
-        }));
+        });
 
-        it('should autosize last pinned column programmatically.', fakeAsync(/** height/width setter rAF */() => {
+        it('should autosize last pinned column programmatically.', () => {
             const column = grid.getColumnByName('Items');
             expect(column.width).toEqual('100px');
 
@@ -413,9 +446,9 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('92px');
-        }));
+        });
 
-        it('should autosize column when minWidth is set.', fakeAsync(/** height/width setter rAF */() => {
+        it('should autosize column when minWidth is set.', () => {
             const column = grid.getColumnByName('ID');
             column.minWidth = '70px';
             expect(column.minWidth).toEqual('70px');
@@ -425,7 +458,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
 
             expect(column.width).toEqual('70px');
-        }));
+        });
     });
 
     describe('Percentage tests: ', () => {
@@ -555,7 +588,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             expect(grid.columnList.get(0).width).toBe('25%');
             grid.columnList.get(0).autosize();
             fixture.detectChanges();
-            expect(grid.columnList.get(0).width).toBe('30%');
+            expect(grid.columnList.get(0).width).toBe('31%');
         }));
 
         it('should autosize column with % width on double click.', fakeAsync(() => {
@@ -567,7 +600,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             UIInteractions.simulateMouseEvent('dblclick', headerResArea, 0, 0);
             tick(200);
             fixture.detectChanges();
-            expect(grid.columnList.get(0).width).toBe('30%');
+            expect(grid.columnList.get(0).width).toBe('31%');
         }));
     });
 
@@ -707,7 +740,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             grid = fixture.componentInstance.grid;
         }));
 
-        it('should autosize filterable/sortable/resizable/movable column programmatically.', fakeAsync(/** height/width setter rAF */() => {
+        it('should autosize filterable/sortable/resizable/movable column programmatically.', () => {
             const column = grid.getColumnByName('Missing');
             expect(column.width).toEqual('100px');
 
@@ -715,9 +748,9 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             fixture.detectChanges();
             // the exact width is different between chrome and chrome headless so an exact match is erroneous
             expect(Math.abs(parseInt(column.width, 10) - 120)).toBeLessThan(2);
-        }));
+        });
 
-        it('should autosize MCHs programmatically.', fakeAsync(/** height/width setter rAF */() => {
+        it('should autosize MCHs programmatically.', () => {
             let column = grid.getColumnByName('CompanyName');
             expect(column.width).toEqual('130px');
 
@@ -745,7 +778,7 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             column.autosize();
             fixture.detectChanges();
             expect(column.width).toEqual('111px');
-        }));
+        });
     });
 
     describe('Different columns widths tests: ', () => {
@@ -855,11 +888,24 @@ describe('IgxGrid - Deferred Column Resizing #grid', () => {
             expect(headerGroups[2].nativeElement.getBoundingClientRect().width).toBeCloseTo(expectedWidth, 0);
             expect(headerGroups[3].nativeElement.getBoundingClientRect().width).toBeCloseTo(expectedWidth, 0);
         });
+
+        it('should render all columns when all have autosize set initially.', fakeAsync(() => {
+            const fixture = TestBed.createComponent(ColAutosizeGridComponent);
+            fixture.detectChanges();
+            tick(200);
+
+            const headers = GridFunctions.getColumnHeaders(fixture);
+            const firstRowCells = GridFunctions.getRowCells(fixture, 0);
+            expect(headers.length).toEqual(11);
+            expect(headers[headers.length - 1].nativeElement.innerText).toEqual("ReleaseDate");
+            expect(firstRowCells.length).toEqual(11);
+        }));
     });
 });
 
 @Component({
-    template: GridTemplateStrings.declareGrid(`width="500px" height="300px"`, ``, ColumnDefinitions.resizableThreeOfFour)
+    template: GridTemplateStrings.declareGrid(`width="500px" height="300px"`, ``, ColumnDefinitions.resizableThreeOfFour),
+    imports: [IgxGridComponent, IgxColumnComponent]
 })
 export class ResizableColumnsComponent {
     @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
@@ -868,8 +914,7 @@ export class ResizableColumnsComponent {
 }
 
 @Component({
-    template: GridTemplateStrings.declareGrid(`width="618px" height="600px"`, ``,
-        `<igx-column [field]="'Released'" [pinned]="true" width="100px" dataType="boolean" [resizable]="true"></igx-column>
+    template: GridTemplateStrings.declareGrid(`width="618px" height="600px"`, ``, `<igx-column [field]="'Released'" [pinned]="true" width="100px" dataType="boolean" [resizable]="true"></igx-column>
         <igx-column [field]="'ReleaseDate'" [pinned]="true" width="100px" dataType="date" [resizable]="true"
             [formatter]="returnVal"></igx-column>
         <igx-column [field]="'Items'" [pinned]="true" width="100px" dataType="string" [resizable]="true"></igx-column>
@@ -881,8 +926,8 @@ export class ResizableColumnsComponent {
             </ng-template>
         </igx-column>
         <igx-column [field]="'Downloads'" width="100px" dataType="number" [resizable]="true"></igx-column>
-        <igx-column [field]="'Category'" width="100px" dataType="string" [resizable]="true"></igx-column>`
-    )
+        <igx-column [field]="'Category'" width="100px" dataType="string" [resizable]="true"></igx-column>`),
+    imports: [IgxGridComponent, IgxColumnComponent, IgxCellTemplateDirective]
 })
 export class LargePinnedColGridComponent implements OnInit {
     @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
@@ -902,7 +947,8 @@ export class LargePinnedColGridComponent implements OnInit {
 }
 
 @Component({
-    template: GridTemplateStrings.declareGrid(``, ``, ColumnDefinitions.gridFeatures)
+    template: GridTemplateStrings.declareGrid(``, ``, ColumnDefinitions.gridFeatures),
+    imports: [IgxGridComponent, IgxColumnComponent, IgxCellTemplateDirective, IgxCellHeaderTemplateDirective, IgxAvatarComponent]
 })
 export class GridFeaturesComponent {
     @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
@@ -914,7 +960,8 @@ export class GridFeaturesComponent {
 }
 
 @Component({
-    template: GridTemplateStrings.declareGrid(`height="800px"`, ``, ColumnDefinitions.resizableColsComponent)
+    template: GridTemplateStrings.declareGrid(`height="800px"`, ``, ColumnDefinitions.resizableColsComponent),
+    imports: [IgxGridComponent, IgxColumnComponent, NgFor]
 })
 export class NullColumnsComponent implements OnInit {
     @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
@@ -941,14 +988,13 @@ export class NullColumnsComponent implements OnInit {
 }
 
 @Component({
-    template: GridTemplateStrings.declareGrid(`width="400px" height="600px" [allowFiltering]="true"`, ``,
-        `<igx-column [field]="'Items'" [width]="'40px'" dataType="string" [filterable]="true"></igx-column>
+    template: GridTemplateStrings.declareGrid(`width="400px" height="600px" [allowFiltering]="true"`, ``, `<igx-column [field]="'Items'" [width]="'40px'" dataType="string" [filterable]="true"></igx-column>
          <igx-column [field]="'ID'" [width]="'50px'" [header]="'ID'" [filterable]="true"></igx-column>
          <igx-column [field]="'ProductName'" [width]="'30px'" dataType="string" [filterable]="true"></igx-column>
          <igx-column [field]="'Test'" width="300px" dataType="string" [resizable]="true"></igx-column>
          <igx-column [field]="'Downloads'" width="300px" dataType="number" [resizable]="true"></igx-column>
-         <igx-column [field]="'Category'" width="300px" dataType="string" [resizable]="true"></igx-column>`
-    )
+         <igx-column [field]="'Category'" width="300px" dataType="string" [resizable]="true"></igx-column>`),
+    imports: [IgxGridComponent, IgxColumnComponent]
 })
 export class ColGridComponent implements OnInit {
     @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
@@ -961,14 +1007,38 @@ export class ColGridComponent implements OnInit {
 }
 
 @Component({
-    template: GridTemplateStrings.declareGrid(`width="400px" height="600px" [allowFiltering]="true"`, ``,
-        `<igx-column [field]="'Items'" [width]="'25%'" dataType="string" [filterable]="true" [resizable]="true"></igx-column>
+    template: GridTemplateStrings.declareGrid(`width="400px" height="600px" [allowFiltering]="true"`, ``, `<igx-column [field]="'Items'" [width]="'25%'" dataType="string" [filterable]="true" [resizable]="true"></igx-column>
          <igx-column [field]="'ID'" [width]="'25%'" [header]="'ID'" [filterable]="true"></igx-column>
          <igx-column [field]="'ProductName'" [width]="'25%'" dataType="string" [filterable]="true"></igx-column>
-         <igx-column [field]="'Test'"[width]="'25%'" dataType="string" [resizable]="true"></igx-column>`
-    )
+         <igx-column [field]="'Test'"[width]="'25%'" dataType="string" [resizable]="true"></igx-column>`),
+    imports: [IgxGridComponent, IgxColumnComponent]
 })
 export class ColPercentageGridComponent implements OnInit {
+    @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
+
+    public data = [];
+
+    public ngOnInit() {
+        this.data = SampleTestData.generateProductData(10);
+    }
+}
+
+@Component({
+    template: GridTemplateStrings.declareGrid(`width="1500px" height="600px"`, ``, `<igx-column [field]="'Items'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'ID'" [width]="'auto'" [header]="'ID'" [resizable]="true"></igx-column>
+    <igx-column [field]="'ProductName'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Test'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Downloads'" [width]="'auto'" [dataType]="'number'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Category'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Category'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Category'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Category'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'Released'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    <igx-column [field]="'ReleaseDate'" [width]="'auto'" [dataType]="'string'" [resizable]="true"></igx-column>
+    `),
+    imports: [IgxGridComponent, IgxColumnComponent]
+})
+export class ColAutosizeGridComponent implements OnInit {
     @ViewChild(IgxGridComponent, { static: true }) public grid: IgxGridComponent;
 
     public data = [];

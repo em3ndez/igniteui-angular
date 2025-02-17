@@ -12,7 +12,7 @@
                 </ng-template>
                 <igx-list-item [isHeader]="true">Contacts</igx-list-item>
                 <igx-list-item igxRipple="pink" igxRippleTarget=".igx-list__item-content" *ngFor="let item of navItems">
-                        <igx-avatar igxListThumbnail [src]="item.avatar" [roundShape]="true"></igx-avatar>
+                        <igx-avatar igxListThumbnail [src]="item.avatar"></igx-avatar>
                         <p igxListLineTitle>{{item.text}}</p>
                         <span igxListLineSubTitle>{{item.phone}}</span>
                         <igx-icon igxListAction [style.color]="item.favorite ? 'orange' : 'lightgray'" (click)="toggleFavorite(item)">star</igx-icon>
@@ -34,7 +34,7 @@
                 </ng-template>
                 <igx-list-item [isHeader]="true">Contacts</igx-list-item>
                 <igx-list-item igxRipple="pink" igxRippleTarget=".igx-list__item-content" *ngFor="let item of navItems2">
-                        <igx-avatar igxListThumbnail [src]="item.avatar" [roundShape]="true"></igx-avatar>
+                        <igx-avatar igxListThumbnail [src]="item.avatar"></igx-avatar>
                             <p igxListLineTitle>{{item.text}}</p>
                             <span igxListLineSubTitle>{{item.phone}}</span>
                         <igx-icon igxListAction [style.color]="item.favorite ? 'orange' : 'lightgray'" (click)="toggleFavorite(item)">star</igx-icon>
@@ -42,6 +42,6 @@
             </igx-list>
             <igx-toast #toast></igx-toast>
         </div>
-        <button igxButton="raised" (click)="repopulateHandler()">Repopulate List</button>
+        <button igxButton="contained" (click)="repopulateHandler()">Repopulate List</button>
     </article>
 </section>

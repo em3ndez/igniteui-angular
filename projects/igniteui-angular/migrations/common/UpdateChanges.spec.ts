@@ -1,10 +1,10 @@
-import { EmptyTree } from '@angular-devkit/schematics';
 import { UnitTestTree } from '@angular-devkit/schematics/testing';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ClassChanges, BindingChanges, SelectorChanges, ThemeChanges, ImportsChanges, ElementType, ThemeType } from './schema';
+import { ClassChanges, BindingChanges, SelectorChanges, ThemeChanges, ImportsChanges, ElementType, ThemeType, MemberChanges } from './schema';
 import { UpdateChanges, InputPropertyType, BoundPropertyObject } from './UpdateChanges';
 import * as tsUtils from './tsUtils';
+import { setupTestTree } from './setup.spec';
 
 describe('UpdateChanges', () => {
     let appTree: UnitTestTree;
@@ -31,14 +31,21 @@ describe('UpdateChanges', () => {
     }
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify({
+        appTree = setupTestTree({
             projects: {
                 testProj: {
-                    sourceRoot: '/'
+                    projectType: 'application',
+                    root: '',
+                    sourceRoot: '/',
+                    architect: { build: { options: {} } }
+                }
+            },
+            schematics: {
+                '@schematics/angular:component': {
+                    prefix: 'app'
                 }
             }
-        }));
+        });
     });
 
     it('should replace/remove components', done => {
@@ -150,6 +157,14 @@ describe('UpdateChanges', () => {
         expect(appTree.readContent('test.component.html')).toEqual(
             `<one (onReplaceMe)="a"> <comp\r\ntag (replaced)="dwdw" (onOld)=""> </other> <another />`);
 
+        // should only match the defined selector #11666
+        const fileContent2 = `<comp (onReplaceMe)="a"> <comp-not-same (onReplaceMe)="..NOT"> <another (onOld)="b" /> <another-diff (onOld)="toKeep" />`;
+        appTree.overwrite('test.component.html', fileContent2);
+        update.applyChanges();
+        expect(appTree.readContent('test.component.html')).toEqual(
+            `<comp (replaced)="a"> <comp-not-same (onReplaceMe)="..NOT"> <another /> <another-diff (onOld)="toKeep" />`
+        );
+
         outputJson.changes[0].owner = { type: 'directive' as any, selector: 'tag' };
         outputJson.changes[1].owner = { type: 'directive' as any, selector: 'tag' };
         appTree.overwrite('test.component.html', fileContent);
@@ -227,6 +242,14 @@ describe('UpdateChanges', () => {
         update4.applyChanges();
         expect(appTree.readContent('test.component.html')).toEqual(
             `<span [bait]="replaceMe"><ng-container ngProjectAs="comp"> sike! </ng-container></span>`
+        );
+
+        // should only match the defined selector #11666
+        fileContent = `<comp [replaceMe]="dwdw"> <comp-not-same [replaceMe]="..NOT"> <another oldProp="b" /> <another-diff oldProp="toKeep" />`;
+        appTree.overwrite('test.component.html', fileContent);
+        update4.applyChanges();
+        expect(appTree.readContent('test.component.html')).toEqual(
+            `<comp [replaced]="dwdw"> <comp-not-same [replaceMe]="..NOT"> <another /> <another-diff oldProp="toKeep" />`
         );
 
         done();
@@ -833,7 +856,9 @@ export class AppModule { }`);
             appTree.overwrite('/angular.json', JSON.stringify({
                 projects: {
                     testProj: {
-                        sourceRoot: '/src'
+                        projectType: 'application',
+                        sourceRoot: '/src',
+                        architect: { build: { options: {} } }
                     }
                 }
             }));
@@ -861,15 +886,18 @@ export class AppModule { }`);
                 projects: {
                     testProj: {
                         projectType: 'application',
-                        sourceRoot: 'src-one'
+                        sourceRoot: 'src-one',
+                        architect: { build: { options: {} } }
                     },
                     test2Proj: {
                         projectType: 'application',
-                        sourceRoot: '/src-two'
+                        sourceRoot: '/src-two',
+                        architect: { build: { options: {} } }
                     },
                     libProj: {
                         projectType: 'library',
-                        sourceRoot: 'src-lib'
+                        sourceRoot: 'src-lib',
+                        architect: { build: { options: {} } }
                     }
                 }
             };
@@ -899,31 +927,45 @@ export class AppModule { }`);
     describe('Language Service migrations', () => {
 
         it('Should be able to replace property of an event', () => {
-            pending('set up tests for migrations through lang service');
+            const selectorsJson: MemberChanges = {
+                changes: [
+                    { member: 'onGridKeydown', replaceWith: 'gridKeydown', definedIn: ['IgxGridComponent'] }
+                ]
+            };
+            const jsonPath = path.join(__dirname, 'changes', 'members.json');
+
+            // leave callThrough on spies for other files the LS test might want to load:
+            spyOn(fs, 'existsSync').and.callThrough()
+                .withArgs(jsonPath).and.returnValue(true);
+            spyOn(fs, 'readFileSync').and.callThrough()
+                .withArgs(jsonPath, jasmine.any(String)).and.returnValue(JSON.stringify(selectorsJson));
+
             const fileContent =
 `import { Component } from '@angular/core';
-import { IGridCreatedEventArgs } from 'igniteui-angular';
+import { IgxGridComponent, IGridKeydownEventArgs } from 'igniteui-angular';
 @Component({
   selector: 'app-custom-grid',
   template: ''
 })
 export class CustomGridComponent {
-  public childGridCreated(event: IGridCreatedEventArgs) {
-      event.grid.onGridKeydown.subscribe(() => {});
+  public childGridCreated(event: IGridKeydownEventArgs) {
+      const grid = event.owner as IgxGridComponent;
+      grid.onGridKeydown.subscribe(() => {});
   }
 }
 `;
             appTree.create('test.component.ts', fileContent);
             const expectedFileContent =
 `import { Component } from '@angular/core';
-import { IGridCreatedEventArgs } from 'igniteui-angular';
+import { IgxGridComponent, IGridKeydownEventArgs } from 'igniteui-angular';
 @Component({
   selector: 'app-custom-grid',
   template: ''
 })
 export class CustomGridComponent {
-  public childGridCreated(event: IGridCreatedEventArgs) {
-      event.grid.gridKeydown.subscribe(() => {});
+  public childGridCreated(event: IGridKeydownEventArgs) {
+      const grid = event.owner as IgxGridComponent;
+      grid.gridKeydown.subscribe(() => {});
   }
 }
 `;

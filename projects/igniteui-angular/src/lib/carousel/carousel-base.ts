@@ -1,22 +1,47 @@
-import { AnimationBuilder, AnimationPlayer, AnimationReferenceMetadata, useAnimation } from '@angular/animations';
-import { ChangeDetectorRef, EventEmitter } from '@angular/core';
-import { fadeIn } from '../animations/fade';
-import { slideInLeft } from '../animations/slide';
-import { mkenum } from '../core/utils';
+import { AnimationReferenceMetadata, useAnimation } from '@angular/animations';
+import { ChangeDetectorRef, EventEmitter, Inject, InjectionToken } from '@angular/core';
+import { IgxAngularAnimationService } from '../services/animation/angular-animation-service';
+import { AnimationPlayer, AnimationService } from '../services/animation/animation';
+import { fadeIn, slideInLeft } from 'igniteui-angular/animations';
+import { CarouselAnimationType, CarouselIndicatorsOrientation } from './enums';
 
 export enum Direction { NONE, NEXT, PREV }
-
-export const HorizontalAnimationType = mkenum({
-    none: 'none',
-    slide: 'slide',
-    fade: 'fade'
-});
-export type HorizontalAnimationType = (typeof HorizontalAnimationType)[keyof typeof HorizontalAnimationType];
 
 export interface CarouselAnimationSettings {
     enterAnimation: AnimationReferenceMetadata;
     leaveAnimation: AnimationReferenceMetadata;
 }
+
+export interface ICarouselComponentBase {
+    id: string;
+    role: string;
+    cssClass: string;
+    loop: boolean;
+    pause: boolean;
+    navigation: boolean;
+    indicators: boolean;
+    vertical: boolean;
+    keyboardSupport: boolean;
+    gesturesSupport: boolean;
+    maximumIndicatorsCount: number;
+    indicatorsOrientation: CarouselIndicatorsOrientation;
+    animationType: CarouselAnimationType;
+    total: number;
+    current: number;
+    interval: number;
+    slideChanged: EventEmitter<any>;
+    slideAdded: EventEmitter<any>;
+    slideRemoved: EventEmitter<any>;
+    carouselPaused: EventEmitter<any>;
+    carouselPlaying: EventEmitter<any>;
+    next(): void;
+    prev(): void;
+    play(): void;
+    stop(): void
+}
+
+/** @hidden */
+export const IGX_CAROUSEL_COMPONENT = /*@__PURE__*/new InjectionToken<ICarouselComponentBase>('IgxCarouselToken');
 
 /** @hidden */
 export interface IgxSlideComponentBase {
@@ -27,7 +52,7 @@ export interface IgxSlideComponentBase {
 /** @hidden */
 export abstract class IgxCarouselComponentBase {
     /** @hidden */
-    public animationType: HorizontalAnimationType = HorizontalAnimationType.slide;
+    public animationType: CarouselAnimationType = CarouselAnimationType.slide;
 
     /** @hidden @internal */
     public enterAnimationDone = new EventEmitter();
@@ -48,13 +73,17 @@ export abstract class IgxCarouselComponentBase {
     protected animationPosition = 0;
     /** @hidden */
     protected newDuration = 0;
+    /** @hidden */
+    protected vertical = false;
 
-    constructor(private builder: AnimationBuilder, private cdr: ChangeDetectorRef) {
+    constructor(
+        @Inject(IgxAngularAnimationService) private animationService: AnimationService,
+        protected cdr: ChangeDetectorRef) {
     }
 
     /** @hidden */
     protected triggerAnimations() {
-        if (this.animationType !== HorizontalAnimationType.none) {
+        if (this.animationType !== CarouselAnimationType.none) {
             if (this.animationStarted(this.leaveAnimationPlayer) || this.animationStarted(this.enterAnimationPlayer)) {
                 requestAnimationFrame(() => {
                     this.resetAnimations();
@@ -98,9 +127,9 @@ export abstract class IgxCarouselComponentBase {
             duration = this.animationPosition ? this.animationPosition * this.defaultAnimationDuration : this.defaultAnimationDuration;
         }
 
+        const trans = this.animationPosition ? this.animationPosition * 100 : 100;
         switch (this.animationType) {
-            case HorizontalAnimationType.slide:
-                const trans = this.animationPosition ? this.animationPosition * 100 : 100;
+            case CarouselAnimationType.slide:
                 return {
                     enterAnimation: useAnimation(slideInLeft,
                         {
@@ -109,8 +138,8 @@ export abstract class IgxCarouselComponentBase {
                                 duration: `${duration}ms`,
                                 endOpacity: 1,
                                 startOpacity: 1,
-                                fromPosition: `translateX(${this.currentItem.direction === 1 ? trans : -trans}%)`,
-                                toPosition: 'translateX(0%)'
+                                fromPosition: `${this.vertical ? 'translateY' : 'translateX'}(${this.currentItem.direction === 1 ? trans : -trans}%)`,
+                                toPosition: `${this.vertical ? 'translateY(0%)' : 'translateX(0%)'}`
                             }
                         }),
                     leaveAnimation: useAnimation(slideInLeft,
@@ -120,12 +149,12 @@ export abstract class IgxCarouselComponentBase {
                                 duration: `${duration}ms`,
                                 endOpacity: 1,
                                 startOpacity: 1,
-                                fromPosition: `translateX(0%)`,
-                                toPosition: `translateX(${this.currentItem.direction === 1 ? -trans : trans}%)`,
+                                fromPosition: `${this.vertical ? 'translateY(0%)' : 'translateX(0%)'}`,
+                                toPosition: `${this.vertical ? 'translateY' : 'translateX'}(${this.currentItem.direction === 1 ? -trans : trans}%)`,
                             }
                         })
                 };
-            case HorizontalAnimationType.fade:
+            case CarouselAnimationType.fade:
                 return {
                     enterAnimation: useAnimation(fadeIn,
                         { params: { duration: `${duration}ms`, startOpacity: `${this.animationPosition}` } }),
@@ -143,11 +172,10 @@ export abstract class IgxCarouselComponentBase {
         if (!animation) {
             return;
         }
-        const animationBuilder = this.builder.build(animation);
 
-        this.enterAnimationPlayer = animationBuilder.create(this.getCurrentElement());
-
-        this.enterAnimationPlayer.onDone(() => {
+        this.enterAnimationPlayer = this.animationService.buildAnimation(animation, this.getCurrentElement());
+        this.enterAnimationPlayer.animationEnd.subscribe(() => {
+            // TODO: animation may never end. Find better way to clean up the player
             if (this.enterAnimationPlayer) {
                 this.enterAnimationPlayer.reset();
                 this.enterAnimationPlayer = null;
@@ -168,10 +196,9 @@ export abstract class IgxCarouselComponentBase {
             return;
         }
 
-        const animationBuilder = this.builder.build(animation);
-        this.leaveAnimationPlayer = animationBuilder.create(this.getPreviousElement());
-
-        this.leaveAnimationPlayer.onDone(() => {
+        this.leaveAnimationPlayer = this.animationService.buildAnimation(animation, this.getPreviousElement());
+        this.leaveAnimationPlayer.animationEnd.subscribe(() => {
+            // TODO: animation may never end. Find better way to clean up the player
             if (this.leaveAnimationPlayer) {
                 this.leaveAnimationPlayer.reset();
                 this.leaveAnimationPlayer = null;

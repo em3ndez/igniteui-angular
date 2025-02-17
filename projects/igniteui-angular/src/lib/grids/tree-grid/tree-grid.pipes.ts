@@ -8,11 +8,15 @@ import { TransactionType } from '../../services/public_api';
 import { IgxAddRow } from '../common/crud.service';
 import { ISortingExpression } from '../../data-operations/sorting-strategy';
 import { IGridSortingStrategy } from '../common/strategy';
+import { IGroupingExpression } from '../../data-operations/grouping-expression.interface';
 
 /**
  * @hidden
  */
-@Pipe({ name: 'treeGridHierarchizing' })
+@Pipe({
+    name: 'treeGridHierarchizing',
+    standalone: true
+})
 export class IgxTreeGridHierarchizingPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -22,11 +26,18 @@ export class IgxTreeGridHierarchizingPipe implements PipeTransform {
         const treeGridRecordsMap = new Map<any, ITreeGridRecord>();
         const flatData: any[] = [];
 
-        if (primaryKey && foreignKey) {
-            hierarchicalRecords = this.hierarchizeFlatData(collection, primaryKey, foreignKey, treeGridRecordsMap, flatData);
-        } else if (childDataKey) {
+        if (!collection || !collection.length) {
+            this.grid.flatData = collection;
+            this.grid.records = treeGridRecordsMap;
+            this.grid.rootRecords = collection;
+            return collection;
+        }
+
+        if (childDataKey) {
             hierarchicalRecords = this.hierarchizeRecursive(collection, primaryKey, childDataKey, undefined,
                 flatData, 0, treeGridRecordsMap);
+        } else if (primaryKey) {
+            hierarchicalRecords = this.hierarchizeFlatData(collection, primaryKey, foreignKey, treeGridRecordsMap, flatData);
         }
 
         this.grid.flatData = this.grid.transactions.enabled ?
@@ -119,7 +130,10 @@ export class IgxTreeGridHierarchizingPipe implements PipeTransform {
 /**
  * @hidden
  */
-@Pipe({ name: 'treeGridFlattening' })
+@Pipe({
+    name: 'treeGridFlattening',
+    standalone: true
+})
 export class IgxTreeGridFlatteningPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -168,18 +182,23 @@ export class IgxTreeGridFlatteningPipe implements PipeTransform {
 }
 
 /** @hidden */
-@Pipe({ name: 'treeGridSorting' })
+@Pipe({
+    name: 'treeGridSorting',
+    standalone: true
+})
 export class IgxTreeGridSortingPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
 
     public transform(
         hierarchicalData: ITreeGridRecord[],
-        expressions: ISortingExpression[],
+        sortExpressions: ISortingExpression[],
+        groupExpressions: IGroupingExpression[],
         sorting: IGridSortingStrategy,
         _: number,
         pinned?: boolean): ITreeGridRecord[] {
 
+        const expressions = groupExpressions ? groupExpressions.concat(sortExpressions) : sortExpressions;
         let result: ITreeGridRecord[];
         if (!expressions.length) {
             result = hierarchicalData;
@@ -205,13 +224,16 @@ export class IgxTreeGridSortingPipe implements PipeTransform {
 }
 
 /** @hidden */
-@Pipe({ name: 'treeGridPaging' })
+@Pipe({
+    name: 'treeGridPaging',
+    standalone: true
+})
 export class IgxTreeGridPagingPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
 
-    public transform(collection: ITreeGridRecord[], page = 0, perPage = 15, _: number): ITreeGridRecord[] {
-        if (!this.grid.paginator || this.grid.pagingMode !== GridPagingMode.Local) {
+    public transform(collection: ITreeGridRecord[], enabled: boolean, page = 0, perPage = 15, _: number): ITreeGridRecord[] {
+        if (!enabled || this.grid.pagingMode !== GridPagingMode.Local) {
             return collection;
         }
 
@@ -225,13 +247,16 @@ export class IgxTreeGridPagingPipe implements PipeTransform {
 
         const result: ITreeGridRecord[] = DataUtil.page(cloneArray(collection), state, len);
         this.grid.pagingState = state;
-        this.grid.paginator.page = state.index;
+        this.grid.page = state.index;
 
         return result;
     }
 }
 /** @hidden */
-@Pipe({ name: 'treeGridTransaction' })
+@Pipe({
+    name: 'treeGridTransaction',
+    standalone: true
+})
 export class IgxTreeGridTransactionPipe implements PipeTransform {
 
 
@@ -247,17 +272,9 @@ export class IgxTreeGridTransactionPipe implements PipeTransform {
                     return collection;
                 }
 
-                const foreignKey = this.grid.foreignKey;
                 const childDataKey = this.grid.childDataKey;
 
-                if (foreignKey) {
-                    const flatDataClone = cloneArray(collection);
-                    return DataUtil.mergeTransactions(
-                        flatDataClone,
-                        aggregatedChanges,
-                        this.grid.primaryKey,
-                        this.grid.dataCloneStrategy);
-                } else if (childDataKey) {
+                if (childDataKey) {
                     const hierarchicalDataClone = cloneHierarchicalArray(collection, childDataKey);
                     return DataUtil.mergeHierarchicalTransactions(
                         hierarchicalDataClone,
@@ -265,7 +282,14 @@ export class IgxTreeGridTransactionPipe implements PipeTransform {
                         childDataKey,
                         this.grid.primaryKey,
                         this.grid.dataCloneStrategy
-                        );
+                    );
+                } else {
+                    const flatDataClone = cloneArray(collection);
+                    return DataUtil.mergeTransactions(
+                        flatDataClone,
+                        aggregatedChanges,
+                        this.grid.primaryKey,
+                        this.grid.dataCloneStrategy);
                 }
             }
         }
@@ -276,7 +300,10 @@ export class IgxTreeGridTransactionPipe implements PipeTransform {
 /**
  * This pipe maps the original record to ITreeGridRecord format used in TreeGrid.
  */
-@Pipe({ name: 'treeGridNormalizeRecord' })
+@Pipe({
+    name: 'treeGridNormalizeRecord',
+    standalone: true
+})
 export class IgxTreeGridNormalizeRecordsPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -285,18 +312,21 @@ export class IgxTreeGridNormalizeRecordsPipe implements PipeTransform {
         const primaryKey = this.grid.primaryKey;
         // using flattened data because origin data may be hierarchical.
         const flatData = this.grid.flatData;
-        const res = flatData.map(rec =>
+        const res = flatData ? flatData.map(rec =>
         ({
             rowID: this.grid.primaryKey ? rec[primaryKey] : rec,
             data: rec,
             level: 0,
             children: []
-        }));
+        })) : [];
         return res;
     }
 }
 
-@Pipe({ name: 'treeGridAddRow' })
+@Pipe({
+    name: 'treeGridAddRow',
+    standalone: true
+})
 export class IgxTreeGridAddRowPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -308,7 +338,12 @@ export class IgxTreeGridAddRowPipe implements PipeTransform {
         }
         const copy = collection.slice(0);
         const rec = (this.grid.crudService.row as IgxAddRow).recordRef;
-        copy.splice(this.grid.crudService.row.index, 0, rec);
+        if (this.grid.crudService.addRowParent.isPinned) {
+            const parentRowIndex = copy.findIndex(record => record.rowID === this.grid.crudService.addRowParent.rowID);
+            copy.splice(parentRowIndex + 1, 0, rec);
+        } else {
+            copy.splice(this.grid.crudService.row.index, 0, rec);
+        }
         this.grid.records.set(rec.key, rec);
         return copy;
     }

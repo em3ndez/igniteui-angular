@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsNL_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Dutch resource strings for IgxGrid
+ */
+export const GridResourceStringsNL = {
     igx_grid_groupByArea_message: 'Sleep een kolomkop en zet deze hier neer om op die kolom te groeperen.',
     igx_grid_groupByArea_select_message: 'Selecteer alle rijen in de groep met veldnaam {0} en waarde {1}.',
     igx_grid_groupByArea_deselect_message: 'Deselecteer alle rijen in de groep met veldnaam {0} en waarde {1}.',
@@ -89,7 +92,8 @@ const GridResourceStringsNL_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Booleaans filter',
     igx_grid_excel_currency_filter: 'Valutafilter',
     igx_grid_excel_custom_filter: 'Aangepast filter ...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Geen overeenkomsten',
+    igx_grid_excel_matches_count: '{0} overeenkomsten',
     igx_grid_advanced_filter_title: 'Geavanceerd filteren',
     igx_grid_advanced_filter_and_group: 'En-groep',
     igx_grid_advanced_filter_or_group: 'Of-groep',
@@ -112,6 +116,7 @@ const GridResourceStringsNL_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Alles losmaken',
     igx_grid_row_edit_btn_done: 'Gereed',
     igx_grid_row_edit_btn_cancel: 'Annuleren',
+    igx_grid_row_edit_text: 'U hebt {0} wijzigingen in deze rij en {1} verborgen kolommen',
     igx_grid_toolbar_actions_filter_prompt: 'Lijst met filterkolommen ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Vervolgkeuzelijst kolom vastmaken openen',
     igx_grid_toolbar_hiding_button_tooltip: 'Vervolgkeuzelijst kolom verbergen openen',
@@ -134,33 +139,35 @@ const GridResourceStringsNL_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Losmaken',
     igx_grid_actions_jumpUp_label: 'Omhoog springen',
     igx_grid_actions_jumpDown_label: 'Omlaag springen',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
+    igx_grid_pivot_date_dimension_total: 'Alle perioden',
+    igx_grid_pivot_aggregate_count: 'Aantal',
     igx_grid_pivot_aggregate_min: 'Minimum',
     igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
+    igx_grid_pivot_aggregate_sum: 'Som',
+    igx_grid_pivot_aggregate_avg: 'Gemiddeld',
+    igx_grid_pivot_aggregate_date_latest: 'Laatste datum',
+    igx_grid_pivot_aggregate_date_earliest: 'Vroegste datum',
+    igx_grid_pivot_aggregate_time_latest: 'Laatste tijd',
+    igx_grid_pivot_aggregate_time_earliest: 'Vroegste tijd',
+    igx_grid_pivot_empty_row_drop_area: 'Rijvelden hier neerzetten.',
+    igx_grid_pivot_empty_column_drop_area: 'Kolomvelden hier neerzetten.',
+    igx_grid_pivot_empty_filter_drop_area: 'Filtervelden hier neerzetten.',
+    igx_grid_pivot_empty_value_drop_area: 'Waardevelden hier neerzetten.',
+    igx_grid_pivot_row_drop_chip: 'Zet hier neer om als rij te gebruiken',
+    igx_grid_pivot_column_drop_chip: 'Zet hier neer om als kolom te gebruiken',
+    igx_grid_pivot_filter_drop_chip: 'Zet hier neer om als filter te gebruiken',
+    igx_grid_pivot_value_drop_chip: 'Zet hier neer om als waarde te gebruiken',
     igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Dutch resource strings for IgxGrid
- */
-export const GridResourceStringsNL = GridResourceStringsNL_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_selector_rows: 'Rijen',
+    igx_grid_pivot_selector_columns: 'Kolommen',
+    igx_grid_pivot_selector_values: 'Waarden',
+    igx_grid_pivot_selector_panel_empty: 'Sleep items hiernaartoe',
+    igx_grid_pivot_empty_message: 'Draairaster heeft geen dimensies en waarden.',
+    igx_grid_required_validation_error: 'Dit veld is verplicht',
+    igx_grid_min_validation_error: 'Er moet een waarde van minimaal {0} worden ingevoerd',
+    igx_grid_max_validation_error: 'Er moet een waarde van niet meer dan {0} worden ingevoerd',
+    igx_grid_min_length_validation_error: 'Invoer moet minimaal {0} teken(s) lang zijn',
+    igx_grid_max_length_validation_error: 'Invoer mag niet meer dan {0} teken(s) lang zijn',
+    igx_grid_email_validation_error: 'Er moet een geldig e-mailadres worden ingevoerd',
+    igx_grid_pattern_validation_error: 'Invoer komt niet overeen met het vereiste patroon'
+} satisfies MakeRequired<IGridResourceStrings>;

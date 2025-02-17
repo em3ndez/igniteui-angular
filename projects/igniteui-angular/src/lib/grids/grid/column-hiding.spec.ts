@@ -2,7 +2,6 @@
 import { DebugElement } from '@angular/core';
 import { TestBed, fakeAsync, tick, ComponentFixture } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxGridModule } from './public_api';
 import { IgxGridComponent } from './grid.component';
 import { ColumnHidingTestComponent, ColumnGroupsHidingTestComponent } from '../../test-utils/grid-base-components.spec';
 import { UIInteractions } from '../../test-utils/ui-interactions.spec';
@@ -15,7 +14,6 @@ import { SortingDirection } from '../../data-operations/sorting-strategy';
 
 describe('Column Hiding UI #grid', () => {
 
-
     let fix: ComponentFixture<ColumnHidingTestComponent>;
     let grid: IgxGridComponent;
     let columnChooser: IgxColumnActionsComponent;
@@ -26,26 +24,23 @@ describe('Column Hiding UI #grid', () => {
     const getColumnHidingButton = GridFunctions.getColumnHidingButton;
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                ColumnHidingTestComponent,
-                ColumnGroupsHidingTestComponent
-            ],
+        return TestBed.configureTestingModule({
             imports: [
                 NoopAnimationsModule,
-                IgxGridModule
+                ColumnHidingTestComponent,
+                ColumnGroupsHidingTestComponent
             ]
         });
     }));
 
-    describe('', () => {
-        beforeEach(fakeAsync(() => {
+    describe('Basic', () => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ColumnHidingTestComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
             columnChooser = fix.componentInstance.chooser;
             columnChooserElement = GridFunctions.getColumnHidingElement(fix);
-        }));
+        });
 
         it('title is initially empty.', () => {
             const title = GridFunctions.getColumnChooserTitle(columnChooserElement);
@@ -528,7 +523,7 @@ describe('Column Hiding UI #grid', () => {
             let fixEl = fix.nativeElement; let gridEl = grid.nativeElement;
             let tHeadItems = fixEl.querySelector('igx-grid-header-group');
             let gridRows = fixEl.querySelector('igx-grid-row');
-            let paging = fixEl.querySelector('.igx-paginator');
+            const paging = fixEl.querySelector('.igx-paginator');
             let rowSelectors = gridEl.querySelector('.igx-grid__cbx-padding > igx-checkbox');
             let dragIndicators = gridEl.querySelector('.igx-grid__drag-indicator');
             let verticalScrollBar = gridEl.querySelector('.igx-grid__tbody-scrollbar[hidden]');
@@ -551,14 +546,12 @@ describe('Column Hiding UI #grid', () => {
 
             tHeadItems = fixEl.querySelector('igx-grid-header-group');
             gridRows = fixEl.querySelector('igx-grid-row');
-            paging = fixEl.querySelector('.igx-paginator');
             rowSelectors = gridEl.querySelector('.igx-grid__cbx-padding > igx-checkbox');
             dragIndicators = gridEl.querySelector('.igx-grid__drag-indicator');
             verticalScrollBar = gridEl.querySelector('.igx-grid__tbody-scrollbar[hidden]');
 
             expect(tHeadItems).toBeNull();
             expect(gridRows).toBeNull();
-            expect(paging).toBeNull();
             expect(rowSelectors).toBeNull();
             expect(dragIndicators).toBeNull();
             expect(verticalScrollBar).not.toBeNull();
@@ -693,17 +686,15 @@ describe('Column Hiding UI #grid', () => {
         });
     });
 
-    describe('', () => {
-        beforeEach(fakeAsync(() => {
+    describe('Column Groups', () => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ColumnGroupsHidingTestComponent);
-            fix.detectChanges();
             (fix.componentInstance as ColumnGroupsHidingTestComponent).hasGroupColumns = true;
+            fix.detectChanges();
             grid = fix.componentInstance.grid;
             columnChooser = fix.componentInstance.chooser;
-            fix.detectChanges();
-
             columnChooserElement = GridFunctions.getColumnHidingElement(fix);
-         }));
+         });
 
         it('indents columns according to their level.', () => {
             const items = GridFunctions.getColumnChooserItems(columnChooserElement);

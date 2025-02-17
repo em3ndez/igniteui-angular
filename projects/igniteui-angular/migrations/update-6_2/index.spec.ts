@@ -1,28 +1,14 @@
 import * as path from 'path';
 
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update 6.2.0', () => {
     let appTree: UnitTestTree;
     const schematicRunner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-      };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it('should update igxDatePicker selector', async () => {
@@ -30,8 +16,7 @@ describe('Update 6.2.0', () => {
             '/testSrc/appPrefix/component/test.component.html',
             `<igx-datePicker></igx-datePicker>`
         );
-        const tree = await schematicRunner.runSchematicAsync('migration-05', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-05', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.html'))
             .toEqual(`<igx-date-picker></igx-date-picker>`);
     });
@@ -41,8 +26,7 @@ describe('Update 6.2.0', () => {
             '/testSrc/appPrefix/component/test.component.html',
             `<igx-combo [height]="200px"></igx-combo>`
         );
-        const tree = await schematicRunner.runSchematicAsync('migration-05', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-05', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.html'))
             .toEqual(`<igx-combo></igx-combo>`);
     });
@@ -56,8 +40,7 @@ describe('Update 6.2.0', () => {
 <igx-icon fontSet="svg-icons" name="my-icon"></igx-icon>`
         );
 
-        const tree = await schematicRunner.runSchematicAsync('migration-05', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-05', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.html'))
             .toEqual(`<igx-icon fontSet='material'>phone</igx-icon>
 <igx-icon fontSet="material-icons">{{getName()}}</igx-icon>
@@ -70,8 +53,7 @@ describe('Update 6.2.0', () => {
             '/testSrc/appPrefix/component/test.component.html',
             `<igx-grid (onEditDone)="handler"></igx-grid> <not-igx-grid (onEditDone)="handler"></not-igx-grid>`
         );
-        const tree = await schematicRunner.runSchematicAsync('migration-05', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-05', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.html'))
             .toEqual(`<igx-grid (onCellEdit)="handler"></igx-grid> <not-igx-grid (onEditDone)="handler"></not-igx-grid>`);
     });

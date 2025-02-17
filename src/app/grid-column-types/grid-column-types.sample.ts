@@ -1,13 +1,15 @@
 import { Component, ViewChild, OnInit } from '@angular/core';
-import { FilterMode, IgxGridComponent } from 'igniteui-angular';
+import { NgFor } from '@angular/common';
+import { FilterMode, IgxButtonGroupComponent, IgxColumnComponent, IgxGridComponent, IgxGridToolbarActionsComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarComponent, IgxGridToolbarHidingComponent, IgxGridToolbarPinningComponent, IgxIconService } from 'igniteui-angular';
 import { SAMPLE_DATA } from '../shared/sample-data';
 
 @Component({
     providers: [],
     selector: 'app-grid-column-types-sample',
-    templateUrl: 'grid-column-types.sample.html'
+    styleUrls: ['grid-column-types.sample.scss'],
+    templateUrl: 'grid-column-types.sample.html',
+    imports: [IgxButtonGroupComponent, IgxGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, NgFor, IgxColumnComponent]
 })
-
 export class GridColumnTypesSampleComponent implements OnInit {
     @ViewChild('grid1', { static: true }) public grid1: IgxGridComponent;
 
@@ -17,6 +19,45 @@ export class GridColumnTypesSampleComponent implements OnInit {
     public gridMCHNewIndex = 0;
     public filterMode: FilterMode = FilterMode.quickFilter;
     public filterModes;
+    public dataWithImages = [{
+        avatar: 'assets/images/avatar/1.jpg',
+        phone: '770-504-2217',
+        text: 'Terrance Orta',
+        available: false
+    }, {
+        avatar: 'assets/images/avatar/2.jpg',
+        phone: '423-676-2869',
+        text: 'Richard Mahoney',
+        available: true
+    }, {
+        avatar: 'assets/images/avatar/3.jpg',
+        phone: '859-496-2817',
+        text: 'Donna Price',
+        available: true
+    }, {
+        avatar: 'assets/images/avatar/4.jpg',
+        phone: '901-747-3428',
+        text: 'Lisa Landers',
+        available: true
+    }, {
+        avatar: 'assets/images/avatar/12.jpg',
+        phone: '573-394-9254',
+        text: 'Dorothy H. Spencer',
+        available: true
+    }, {
+        avatar: 'assets/images/avatar/13.jpg',
+        phone: '323-668-1482',
+        text: 'Stephanie May',
+        available: false
+    }, {
+        avatar: 'assets/images/avatar/14.jpg',
+        phone: '401-661-3742',
+        text: 'Marianne Taylor',
+        available: true
+    }];
+
+    constructor(private _iconService: IgxIconService) {
+    }
 
     public log(event) {
         console.log(event);
@@ -56,7 +97,13 @@ export class GridColumnTypesSampleComponent implements OnInit {
             { field: 'Phone', width: 150, resizable: true, sortable: true, filterable: true, groupable: true,
                 summary: true, type: 'string', pinned: false }
         ];
+
+        this._iconService.setIconRef("contains", "default", {
+            family: "fa-solid",
+            name: "fa-car",
+        });
     }
+
 
     public selectDensity(event) {
         this.filterMode = this.filterModes[event.index].label;

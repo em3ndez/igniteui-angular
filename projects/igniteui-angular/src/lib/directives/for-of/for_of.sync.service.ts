@@ -7,20 +7,25 @@ import { VirtualHelperBaseDirective } from './base.helper.component';
 })
 export class IgxForOfSyncService {
 
-    private _master: Map<string, IgxGridForOfDirective<any>> = new Map<string, IgxGridForOfDirective<any>>();
+    private _master: Map<string, IgxGridForOfDirective<any, any[]>> = new Map<string, IgxGridForOfDirective<any, any[]>>();
 
     /**
      * @hidden
      */
-    public isMaster(directive: IgxGridForOfDirective<any>): boolean {
+    public isMaster(directive: IgxGridForOfDirective<any, any[]>): boolean {
         return this._master.get(directive.igxForScrollOrientation) === directive;
     }
 
     /**
      * @hidden
      */
-    public setMaster(directive: IgxGridForOfDirective<any>, forced = false) {
+    public setMaster(directive: IgxGridForOfDirective<any, any[]>, forced = false) {
         const orientation = directive.igxForScrollOrientation;
+        // in case master is not in dom, set a new master
+        const isMasterInDom = this._master.get(orientation)?.dc?.instance?._viewContainer.element.nativeElement.isConnected;
+        if (!isMasterInDom) {
+            forced = true;
+        }
         if (orientation && (forced || !this._master.has(orientation))) {
             this._master.set(orientation, directive);
         }

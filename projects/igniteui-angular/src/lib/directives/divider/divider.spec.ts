@@ -1,9 +1,9 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component } from '@angular/core';
 import { TestBed, ComponentFixture, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { configureTestSuite } from '../../test-utils/configure-suite';
-import { IgxDividerModule, IgxDividerType } from './divider.directive';
+import { IgxDividerDirective, IgxDividerType } from './divider.directive';
 
 describe('Divider', () => {
     configureTestSuite();
@@ -19,8 +19,7 @@ describe('Divider', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [TestDividerComponent],
-            imports: [IgxDividerModule]
+            imports: [TestDividerComponent]
         }).compileComponents();
     }));
 
@@ -73,40 +72,14 @@ describe('Divider', () => {
         expect(divider.nativeElement).toHaveClass(classes.inset);
     });
 
-    it('should set in the divider by the specified inset amount', () => {
+    it('should inset the divider by the specified amount', () => {
         const inset = '16px';
         const divider = fixture.debugElement.query(By.css('igx-divider'));
+        const insetVar = () => window.getComputedStyle(divider.nativeElement).getPropertyValue('--inset');
         fixture.componentInstance.inset = inset;
         fixture.detectChanges();
 
-        expect(divider.nativeElement.style.marginTop).toEqual('0px');
-        expect(divider.nativeElement.style.marginRight).toEqual('0px');
-        expect(divider.nativeElement.style.marginBottom).toEqual('0px');
-        expect(divider.nativeElement.style.marginLeft).toEqual(inset);
-
-        fixture.componentInstance.middle = true;
-        fixture.detectChanges();
-
-        expect(divider.nativeElement.style.marginTop).toEqual('0px');
-        expect(divider.nativeElement.style.marginRight).toEqual(inset);
-        expect(divider.nativeElement.style.marginBottom).toEqual('0px');
-        expect(divider.nativeElement.style.marginLeft).toEqual(inset);
-
-        fixture.componentInstance.vertical = true;
-        fixture.detectChanges();
-
-        expect(divider.nativeElement.style.marginTop).toEqual(inset);
-        expect(divider.nativeElement.style.marginRight).toEqual('0px');
-        expect(divider.nativeElement.style.marginBottom).toEqual(inset);
-        expect(divider.nativeElement.style.marginLeft).toEqual('0px');
-
-        fixture.componentInstance.middle = false;
-        fixture.detectChanges();
-
-        expect(divider.nativeElement.style.marginTop).toEqual(inset);
-        expect(divider.nativeElement.style.marginRight).toEqual('0px');
-        expect(divider.nativeElement.style.marginBottom).toEqual('0px');
-        expect(divider.nativeElement.style.marginLeft).toEqual('0px');
+        expect(insetVar()).toEqual(`${inset}`);
     });
 
     it('should change the role of the divider to the specified value', () => {
@@ -126,7 +99,8 @@ describe('Divider', () => {
         [middle]="middle"
         [inset]="inset"
         [role]="role">
-    </igx-divider>`
+    </igx-divider>`,
+    imports: [IgxDividerDirective]
 })
 class TestDividerComponent {
     public type: string;

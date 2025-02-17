@@ -9,11 +9,14 @@ import { ColumnType } from '../common/grid.interface';
 // import { IgxGridHeaderGroupComponent } from '../headers/grid-header-group.component';
 
 
-@Directive({ selector: '[igxColumnMovingDrop]' })
+@Directive({
+    selector: '[igxColumnMovingDrop]',
+    standalone: true
+})
 export class IgxColumnMovingDropDirective extends IgxDropDirective implements OnDestroy {
 
     @Input('igxColumnMovingDrop')
-    public set data(val: ColumnType | IgxForOfDirective<any>) {
+    public override set data(val: ColumnType | IgxForOfDirective<ColumnType, ColumnType[]>) {
         if (val instanceof IgxGridForOfDirective) {
             this._displayContainer = val;
         } else {
@@ -45,7 +48,7 @@ export class IgxColumnMovingDropDirective extends IgxDropDirective implements On
     private _dropIndicator = null;
     private _lastDropIndicator = null;
     private _column: ColumnType;
-    private _displayContainer: IgxGridForOfDirective<any>;
+    private _displayContainer: IgxGridForOfDirective<ColumnType, ColumnType[]>;
     private _dragLeave = new Subject<boolean>();
     private _dropIndicatorClass = 'igx-grid-th__drop-indicator--active';
 
@@ -58,12 +61,13 @@ export class IgxColumnMovingDropDirective extends IgxDropDirective implements On
         super(ref, renderer, _);
     }
 
-    public ngOnDestroy() {
+    public override ngOnDestroy() {
         this._dragLeave.next(true);
         this._dragLeave.complete();
+        super.ngOnDestroy();
     }
 
-    public onDragOver(event) {
+    public override onDragOver(event) {
         const drag = event.detail.owner;
         if (!(drag instanceof IgxColumnMovingDragDirective)) {
             return;
@@ -96,7 +100,7 @@ export class IgxColumnMovingDropDirective extends IgxDropDirective implements On
         }
     }
 
-    public onDragEnter(event) {
+    public override onDragEnter(event) {
         const drag = event.detail.owner;
         if (!(drag instanceof IgxColumnMovingDragDirective)) {
             return;
@@ -116,7 +120,7 @@ export class IgxColumnMovingDropDirective extends IgxDropDirective implements On
                 this.cms.icon.innerText = 'swap_horiz';
             }
 
-            this.cms.icon.innerText = 'lock';
+            this.cms.icon.innerText = 'save_alt';
         } else {
             this.cms.icon.innerText = 'block';
         }
@@ -134,7 +138,7 @@ export class IgxColumnMovingDropDirective extends IgxDropDirective implements On
         }
     }
 
-    public onDragLeave(event) {
+    public override onDragLeave(event) {
         const drag = event.detail.owner;
         if (!(drag instanceof IgxColumnMovingDragDirective)) {
             return;
@@ -151,10 +155,11 @@ export class IgxColumnMovingDropDirective extends IgxDropDirective implements On
         }
     }
 
-    public onDragDrop(event) {
+    public override onDragDrop(event) {
         event.preventDefault();
         const drag = event.detail.owner;
-        if (!(drag instanceof IgxColumnMovingDragDirective)) {
+        if (this.cms.cancelDrop || !(drag instanceof IgxColumnMovingDragDirective)) {
+            this.cms.cancelDrop = false;
             return;
         }
 

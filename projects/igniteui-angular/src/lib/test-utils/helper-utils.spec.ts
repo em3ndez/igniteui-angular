@@ -2,21 +2,13 @@ import { EventEmitter, NgZone, Injectable } from '@angular/core';
 import { ComponentFixture } from '@angular/core/testing';
 import { IgxHierarchicalGridComponent } from '../grids/hierarchical-grid/public_api';
 import { GridType } from '../grids/common/grid.interface';
+import { Subscription } from 'rxjs';
 
-export const resizeObserverIgnoreError = () => {
-    jasmine.getEnv().allowRespy(true);
-    const spy = spyOn(window, 'onerror').and.callFake((...args) => {
-        if (args[0].toString().match('ResizeObserver loop limit exceeded')) {
-            return;
-        }
-        spy.and.callThrough().withArgs(...args);
-    });
-    return spy;
-};
+export let gridsubscriptions: Subscription [] = [];
 
 export const setupGridScrollDetection = (fixture: ComponentFixture<any>, grid: GridType) => {
-    grid.verticalScrollContainer.chunkLoad.subscribe(() => fixture.detectChanges());
-    grid.parentVirtDir.chunkLoad.subscribe(() => fixture.detectChanges());
+    gridsubscriptions.push(grid.verticalScrollContainer.chunkLoad.subscribe(() => fixture.detectChanges()));
+    gridsubscriptions.push(grid.parentVirtDir.chunkLoad.subscribe(() => fixture.detectChanges()));
 };
 
 export const setupHierarchicalGridScrollDetection = (fixture: ComponentFixture<any>, hierarchicalGrid: IgxHierarchicalGridComponent) => {
@@ -27,25 +19,44 @@ export const setupHierarchicalGridScrollDetection = (fixture: ComponentFixture<a
 
     const layouts = hierarchicalGrid.allLayoutList.toArray();
     layouts.forEach((layout) => {
-        layout.gridCreated.subscribe(evt => {
+        gridsubscriptions.push(layout.gridCreated.subscribe(evt => {
             setupGridScrollDetection(fixture, evt.grid);
-        });
+        }));
     });
 };
 
+export const clearGridSubs = () => {
+    gridsubscriptions.forEach(sub => sub.unsubscribe());
+    gridsubscriptions = [];
+}
+
+/**
+ * Sets element size as a inline style
+ */
+export function setElementSize(element: HTMLElement, size: string) {
+    element.style.setProperty('--ig-size', size);
+}
+
+/**
+ * Checks if an element contains a given class and compares it with the expected result.
+ */
+export function hasClass(element: HTMLElement, className: string, expected: boolean) {
+    expect(element.classList.contains(className)).toBe(expected);
+}
+
 @Injectable()
 export class TestNgZone extends NgZone {
-    public onStable: EventEmitter<any> = new EventEmitter(false);
+    public override onStable: EventEmitter<any> = new EventEmitter(false);
 
     constructor() {
         super({enableLongStackTrace: false, shouldCoalesceEventChangeDetection: false});
     }
 
-    public run(fn: () => void): any {
+    public override run(fn: () => void): any {
         return fn();
     }
 
-    public runOutsideAngular(fn: () => void): any {
+    public override runOutsideAngular(fn: () => void): any {
         return fn();
     }
 

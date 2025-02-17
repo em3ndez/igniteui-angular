@@ -1,6 +1,7 @@
+@use 'sass:map';
 @use '../../base' as *;
 @use '../../themes/schemas' as *;
-@use 'sass:map';
+@use 'igniteui-theming/sass/animations/easings' as *;
 
 ////
 /// @group themes
@@ -9,51 +10,40 @@
 /// @author <a href="https://github.com/desig9stein" target="_blank">Marin Popov</a>
 ////
 
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
-///
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} $background-color [null] - The background color used for modal overlays.
-///
-/// @requires $default-palette
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-///
+/// @requires $light-material-schema
 /// @example scss Change the background color
 ///   $my-overlay-theme: overlay-theme($background-color: rgba(yellow, .74));
-///   // Pass the theme to the overlay component mixin
-///   overlay($my-overlay-theme);
-///
+///   // Pass the theme to the css-vars() mixin
+///   @include css-vars($my-overlay-theme);
 @function overlay-theme(
-    $palette: null,
-    $schema: $light-schema,
+    $schema: $light-material-schema,
     $background-color: null
 ) {
     $name: 'igx-overlay';
     $selector: '.igx-overlay__wrapper--modal, .igx-overlay__content--modal';
     $overlay-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $overlay-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'overlay') {
+        $overlay-schema: map.get($schema, 'overlay');
     } @else {
         $overlay-schema: $schema;
     }
 
-    $theme: apply-palette($overlay-schema, $palette);
+    $theme: digest-schema($overlay-schema);
 
     @return extend($theme, (
         name: $name,
         selector: $selector,
-        palette: $palette,
         background-color: $background-color,
+        theme: map.get($schema, '_meta', 'theme'),
     ));
 }
 
-///
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires var-get
-///
 @mixin overlay($theme) {
     @include css-vars($theme);
 
@@ -65,12 +55,9 @@
 
     %overlay-wrapper {
         position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
+        inset: 0;
         background: transparent;
-        transition: background .25s $ease-in-out-quad;
+        transition: background .25s $in-out-quad;
         pointer-events: none;
         z-index: 10005;
         box-sizing: content-box;
@@ -108,7 +95,29 @@
         position: relative;
     }
 
-    %igx-toggle--hidden {
+    %igx-toggle--hidden:not(%igx-toggle--hidden-webkit) {
         display: none !important;
+    }
+
+    %igx-toggle--hidden-webkit {
+        // WARN: This is a workaround around a bug in Safari.
+        position: absolute;
+        visibility: hidden;
+        // width/height/min-width to 0 needed for bug #14303
+        width: 0;
+        min-width: 0;
+        height: 0;
+        // needed for bug #14302
+        padding: 0 !important;
+        top: 0;
+        left: 0;
+        margin: -1px;
+        border: none;
+        clip: rect(0, 0, 0, 0);
+        outline: 0;
+        pointer-events: none;
+        overflow: hidden;
+        appearance: none;
+        z-index: -1;
     }
 }

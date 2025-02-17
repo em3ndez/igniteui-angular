@@ -1,13 +1,16 @@
 import { Component, ViewChild, OnInit, ViewEncapsulation } from '@angular/core';
-import { IgxForOfDirective, ButtonGroupAlignment } from 'igniteui-angular';
+import { NgClass, AsyncPipe } from '@angular/common';
 import { RemoteService } from '../shared/remote.service';
+import { IgxForOfDirective, ButtonGroupAlignment, IgxListComponent, IgxButtonDirective, IgxButtonGroupComponent, IgxInputDirective, IgxInputGroupComponent, IgxListItemComponent, IgxSuffixDirective } from 'igniteui-angular';
 
 
 @Component({
     selector: 'app-virt-for-sample',
     templateUrl: 'virtual-for.sample.html',
     styleUrls: ['virtual-for.sample.css'],
-    encapsulation: ViewEncapsulation.None
+    encapsulation: ViewEncapsulation.None,
+    providers: [RemoteService],
+    imports: [IgxListComponent, IgxForOfDirective, IgxListItemComponent, IgxInputGroupComponent, IgxInputDirective, IgxSuffixDirective, IgxButtonDirective, IgxButtonGroupComponent, NgClass, AsyncPipe]
 })
 export class VirtualForSampleComponent implements OnInit {
     @ViewChild('virtDirVertical', { read: IgxForOfDirective, static: true })
@@ -127,7 +130,7 @@ export class VirtualForSampleComponent implements OnInit {
             text: 'Ward Riley',
             height: 100
         }];
-        for (let i = 10; i < 100; i++) {
+        for (let i = 10; i < 200000; i++) {
             const obj = Object.assign({}, data[i % 10]);
             obj['key'] = i;
             data.push(obj);

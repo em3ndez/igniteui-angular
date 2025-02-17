@@ -1,31 +1,34 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { Observable } from 'rxjs';
-import {
-    IgxColumnComponent,
-    IgxGridComponent,
-    IgxSnackbarComponent,
-    IgxToastComponent,
-    SortingDirection,
-    CsvFileTypes,
-    IgxBaseExporter,
-    IgxCsvExporterOptions,
-    IgxCsvExporterService,
-    IgxExcelExporterOptions,
-    IgxExporterOptionsBase,
-    IgxExcelExporterService,
-    IgxStringFilteringOperand,
-    DefaultSortingStrategy,
-    GridSelectionMode,
-    VerticalAlignment
-} from 'igniteui-angular';
+import { NgFor, AsyncPipe, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import { RemoteService } from '../shared/remote.service';
 import { LocalService } from '../shared/local.service';
+import { CsvFileTypes, DefaultSortingStrategy, GridSelectionMode, IgxBaseExporter, IgxCheckboxComponent, IgxColumnComponent, IgxCsvExporterOptions, IgxCsvExporterService, IgxExcelExporterOptions, IgxExcelExporterService, IgxExporterOptionsBase, IgxGridComponent, IgxSnackbarComponent, IgxStringFilteringOperand, IgxSwitchComponent, IgxToastComponent, IGX_CARD_DIRECTIVES, IGX_GRID_DIRECTIVES, IGX_INPUT_GROUP_DIRECTIVES, SortingDirection, VerticalAlignment } from 'igniteui-angular';
 
 
 @Component({
     selector: 'app-grid-sample',
-    styleUrls: [ 'grid.sample.css'],
-    templateUrl: 'grid.sample.html'
+    styleUrls: ['grid.sample.scss'],
+    templateUrl: 'grid.sample.html',
+    providers: [
+        LocalService,
+        RemoteService
+    ],
+    imports: [
+        FormsModule,
+        NgFor,
+        NgIf,
+        AsyncPipe,
+        IGX_GRID_DIRECTIVES,
+        IGX_CARD_DIRECTIVES,
+        IGX_INPUT_GROUP_DIRECTIVES,
+        IgxCheckboxComponent,
+        IgxSwitchComponent,
+        IgxToastComponent,
+        IgxSnackbarComponent
+    ]
 })
 export class GridSampleComponent implements OnInit, AfterViewInit {
     @ViewChild('grid1', { static: true })
@@ -53,6 +56,8 @@ export class GridSampleComponent implements OnInit, AfterViewInit {
     public exportFormat = 'XLSX';
     public customFilter = CustomStringFilter.instance();
     public selectionMode;
+    public gridPaging = true;
+    public perPage = 10;
 
     constructor(private localService: LocalService,
                 private remoteService: RemoteService,
@@ -90,11 +95,11 @@ export class GridSampleComponent implements OnInit, AfterViewInit {
         this.localService.getData();
 
         this.localData = [
-            { ID: 1, Name: 'A' },
-            { ID: 2, Name: 'B' },
-            { ID: 3, Name: 'C' },
-            { ID: 4, Name: 'D' },
-            { ID: 5, Name: 'E' }
+            { ID: 1, Name: 'A', Date: new Date() },
+            { ID: 2, Name: 'B', Date: new Date() },
+            { ID: 3, Name: 'C', Date: new Date() },
+            { ID: 4, Name: 'D', Date: new Date() },
+            { ID: 5, Name: 'E', Date: new Date() }
         ];
 
         this.grid2.sortingExpressions = [];
@@ -137,21 +142,10 @@ export class GridSampleComponent implements OnInit, AfterViewInit {
 
     public onPagination(event) {
         const total = this.grid2.data.length;
-        const state = this.grid2.pagingState;
-        if ((state.recordsPerPage * event) >= total) {
+        if ((this.perPage * event) >= total) {
             return;
         }
         this.grid2.paginator.paginate(event);
-    }
-
-    public onPerPage(event) {
-        const total = this.grid2.data.length;
-        const state = this.grid2.pagingState;
-        if ((state.index * event) >= total) {
-            return;
-        }
-        this.grid2.perPage = event;
-        state.paging.recordsPerPage = event;
     }
 
     public selectCell(event) {

@@ -1,11 +1,17 @@
-import { Component, ViewChild } from '@angular/core';
-import { IgxGridComponent, GridSelectionMode, DisplayDensity } from 'igniteui-angular';
+import { Component, HostBinding, ViewChild } from '@angular/core';
+import { GridSelectionMode, IgxActionStripComponent, IgxButtonDirective, IgxButtonGroupComponent, IgxColumnComponent, IgxColumnLayoutComponent, IgxGridComponent, IgxGridEditingActionsComponent, IgxGridPinningActionsComponent, IgxGridToolbarActionsComponent, IgxGridToolbarComponent, IgxGridToolbarHidingComponent, IgxGridToolbarPinningComponent } from 'igniteui-angular';
+
 
 @Component({
     selector: 'app-grid-mrl-sample',
-    templateUrl: 'grid-mrl.sample.html'
+    templateUrl: 'grid-mrl.sample.html',
+    imports: [IgxButtonGroupComponent, IgxGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxColumnLayoutComponent, IgxColumnComponent, IgxActionStripComponent, IgxGridPinningActionsComponent, IgxGridEditingActionsComponent, IgxButtonDirective]
 })
 export class GridMRLSampleComponent {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
     private grid: IgxGridComponent;
 
@@ -23,11 +29,10 @@ export class GridMRLSampleComponent {
         }
     ];
 
-    public density: DisplayDensity = 'compact';
-    public displayDensities;
+    public size = 'small';
+    public sizes;
     public selectionMode;
     public data = [
-        /* eslint-disable max-len */
         { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative', Address: 'Obere Str. 57', City: 'Berlin', Region: null, PostalCode: '12209', Country: 'Germany', Phone: '030-0074321', Fax: '030-0076545' },
         { ID: 'ANATR', CompanyName: 'Ana Trujillo Emparedados y helados', ContactName: 'Ana Trujillo', ContactTitle: 'Owner', Address: 'Avda. de la Constitución 2222', City: 'México D.F.', Region: null, PostalCode: '05021', Country: 'Mexico', Phone: '(5) 555-4729', Fax: '(5) 555-3745' },
         { ID: 'ANTON', CompanyName: 'Antonio Moreno Taquería', ContactName: 'Antonio Moreno', ContactTitle: 'Owner', Address: 'Mataderos 2312', City: 'México D.F.', Region: null, PostalCode: '05023', Country: 'Mexico', Phone: '(5) 555-3932', Fax: null },
@@ -58,16 +63,16 @@ export class GridMRLSampleComponent {
     ];
 
     constructor() {
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }
+        this.sizes = [
+            { label: 'small', selected: this.size === 'small', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'large', selected: this.size === 'large', togglable: true }
         ];
         this.selectionMode = GridSelectionMode.none;
     }
 
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public hideGroup() {

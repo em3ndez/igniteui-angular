@@ -1,11 +1,13 @@
-import { AnimationBuilder } from '@angular/animations';
 import {
     AfterViewInit, ChangeDetectorRef, ContentChildren, Directive, EventEmitter,
-    Input, OnDestroy, Output, QueryList
+    Inject,
+    Input, OnDestroy, Output, QueryList, booleanAttribute
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { Direction, IgxCarouselComponentBase } from '../carousel/carousel-base';
 import { IBaseEventArgs } from '../core/utils';
+import { IgxAngularAnimationService } from '../services/animation/angular-animation-service';
+import { AnimationService } from '../services/animation/animation';
 import { IgxDirectionality } from '../services/direction/directionality';
 import { IgxTabItemDirective } from './tab-item.directive';
 import { IgxTabContentBase, IgxTabsBase } from './tabs.base';
@@ -29,7 +31,7 @@ export interface ITabsSelectedItemChangeEventArgs extends ITabsBaseEventArgs {
 export abstract class IgxTabsDirective extends IgxCarouselComponentBase implements IgxTabsBase, AfterViewInit, OnDestroy {
 
     /**
-     * An @Input property that gets/sets the index of the selected item.
+     * Gets/Sets the index of the selected item.
      * Default value is 0 if contents are defined otherwise defaults to -1.
      */
     @Input()
@@ -62,14 +64,8 @@ export abstract class IgxTabsDirective extends IgxCarouselComponentBase implemen
     /**
      * Enables/disables the transition animation of the contents.
      */
-    @Input()
-    public get disableAnimation() {
-        return this._disableAnimation;
-    }
-
-    public set disableAnimation(value: boolean) {
-        this._disableAnimation = value;
-    }
+    @Input({ transform: booleanAttribute })
+    public disableAnimation = false;
 
     /**
      * Output to enable support for two-way binding on [(selectedIndex)]
@@ -108,11 +104,9 @@ export abstract class IgxTabsDirective extends IgxCarouselComponentBase implemen
     public panels: QueryList<IgxTabContentBase>;
 
     /** @hidden */
-    protected _disableAnimation = false;
+    protected override currentItem: IgxTabItemDirective;
     /** @hidden */
-    protected currentItem: IgxTabItemDirective;
-    /** @hidden */
-    protected previousItem: IgxTabItemDirective;
+    protected override previousItem: IgxTabItemDirective;
     /** @hidden */
     protected componentName: string;
 
@@ -120,8 +114,11 @@ export abstract class IgxTabsDirective extends IgxCarouselComponentBase implemen
     private _itemChanges$: Subscription;
 
     /** @hidden */
-    constructor(builder: AnimationBuilder, cdr: ChangeDetectorRef, public dir: IgxDirectionality) {
-        super(builder, cdr);
+    constructor(
+        @Inject(IgxAngularAnimationService) animationService: AnimationService,
+        cdr: ChangeDetectorRef,
+        public dir: IgxDirectionality) {
+        super(animationService, cdr);
     }
 
     /** @hidden */

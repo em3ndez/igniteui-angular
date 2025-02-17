@@ -1,5 +1,5 @@
 import { ColumnType } from '../common/grid.interface';
-
+import { WEEKDAYS } from "../../calendar/calendar";
 
 /**
  * @hidden
@@ -22,7 +22,7 @@ export interface MRLResizeColumnInfo {
     spanUsed: number;
 }
 
-export interface IColumnPipeArgs {
+export interface IFieldPipeArgs {
     /** The date/time components that a date column will display, using predefined options or a custom format string. */
     format?: string;
     /** A timezone offset (such as '+0430'), or a standard UTC/GMT or continental US timezone abbreviation. */
@@ -42,4 +42,25 @@ export interface IColumnPipeArgs {
      * The value is of type string. By default is set to 'symbol'
      */
     display?: string;
+
+    /** The first week day to be displayed in calendar when filtering or editing a date column */
+    weekStart?: WEEKDAYS | number;
+}
+
+// D.P. Can't use `export type IColumnPipeArgs = IFieldPipeArgs` because TypeScripts Compiler API optimizes it away completely
+ 
+export interface IColumnPipeArgs extends IFieldPipeArgs {}
+
+export interface IFieldEditorOptions {
+    /**
+     * A custom input format string used for the built-in editors of date/time columns.
+     * See the Editing section under https://www.infragistics.com/products/ignite-ui-angular/angular/components/grid/column-types#datetime-date-and-time
+     */
+    dateTimeFormat?: string;
+}
+
+export interface IColumnEditorOptions extends IFieldEditorOptions {}
+
+export interface ISortingOptions {
+    mode: 'single' | 'multiple';
 }

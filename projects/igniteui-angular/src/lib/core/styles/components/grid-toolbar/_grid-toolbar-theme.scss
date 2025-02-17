@@ -1,6 +1,6 @@
+@use 'sass:map';
 @use '../../base' as *;
 @use '../../themes/schemas' as *;
-@use 'sass:map';
 
 ////
 /// @group themes
@@ -9,9 +9,7 @@
 /// @author <a href="https://github.com/simeonoff" target="_blank">Simeon Simeonoff</a>
 ////
 
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
-/// @param {Map} $elevations [null] - The elevations (shadows) map to be used.
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} $background-color [null] - The toolbar background color.
 /// @param {Color} $title-text-color [null] - The toolbar title text color.
 /// @param {Color} $dropdown-background [null] - The toolbar drop-down background color.
@@ -20,25 +18,16 @@
 /// @param {Color} $item-hover-text-color [null] - The toolbar drop-down item hover text color.
 /// @param {Color} $item-focus-background [null] - The toolbar drop-down item focus background color.
 /// @param {Color} $item-focus-text-color [null] - The toolbar drop-down item focus text color.
-///
-/// @requires $default-palette
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-/// @requires elevation
-/// @requires text-contrast
-///
+/// @param {Color} $border-color [null] - The toolbar border-bottom color.
+/// @requires $light-material-schema
 /// @example scss Change the toolbar background color
 ///   $my-toolbar-theme: grid-toolbar-theme(
 ///     $background-color: black
 ///   );
-///   // Pass the theme to the grid-toolbar component mixin
-///   @include grid-toolbar($my-toolbar-theme);
-
+///   // Pass the theme to the css-vars mixin
+///   @include css-vars($my-toolbar-theme);
 @function grid-toolbar-theme(
-    $palette: null,
-    $schema: $light-schema,
-    $elevations: null,
+    $schema: $light-material-schema,
 
     $background-color: null,
     $title-text-color: null,
@@ -48,19 +37,22 @@
     $item-hover-background: null,
     $item-hover-text-color: null,
     $item-focus-background: null,
-    $item-focus-text-color: null
+    $item-focus-text-color: null,
+    $size: null,
+    $border-color: null,
 ) {
     $name: 'igx-grid-toolbar';
     $selector: 'igx-grid-toolbar, .igx-grid-toolbar__dd-list';
     $grid-toolbar-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $grid-toolbar-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'grid-toolbar') {
+        $grid-toolbar-schema: map.get($schema, 'grid-toolbar');
     } @else {
         $grid-toolbar-schema: $schema;
     }
 
-    $theme: apply-palette($grid-toolbar-schema, $palette);
+    $theme: digest-schema($grid-toolbar-schema);
+    $meta: map.get($theme, '_meta');
 
     @if not($title-text-color) and $background-color {
         $title-text-color: text-contrast($background-color);
@@ -89,8 +81,6 @@
     @return extend($theme, (
         name: $name,
         selector: $selector,
-        palette: $palette,
-        elevations: $elevations,
         background-color: $background-color,
         title-text-color: $title-text-color,
         item-text-color: $item-text-color,
@@ -98,34 +88,52 @@
         item-hover-background: $item-hover-background,
         item-hover-text-color: $item-hover-text-color,
         item-focus-background: $item-focus-background,
-        item-focus-text-color: $item-focus-text-color
+        item-focus-text-color: $item-focus-text-color,
+        theme: map.get($schema, '_meta', 'theme'),
+        _meta: map.merge(if($meta, $meta, ()), (
+            variant: map.get($schema, '_meta', 'theme')
+        )),
+        size: $size,
+        border-color: $border-color
     ));
 }
 
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires color
-/// @requires {mixin} ellipsis
-/// @requires rem
-/// @requires em
-/// @requires var-get
 @mixin grid-toolbar($theme) {
     @include css-vars($theme);
 
-    $variant: map.get($theme, variant);
+    $variant: map.get($theme, '_meta', 'variant');
     $bootstrap-theme: $variant == 'bootstrap';
-
-    $left: if-ltr(left, right);
-    $right: if-ltr(right, left);
 
     // Caption
     $grid-toolbar-fs: rem(16px);
 
-    $grid-toolbar-padding: (
-        comfortable: 0 rem(16px) 0 rem(24px),
-        cosy: 0 rem(12px) 0 rem(16px),
-        compact: 0 rem(8px) 0 rem(12px)
+    $grid-toolbar-padding-start: (
+        comfortable: rem(24px),
+        cosy: rem(16px),
+        compact: rem(12px)
     );
+
+    $grid-toolbar-padding-end: (
+        comfortable: rem(16px),
+        cosy: rem(12px),
+        compact: rem(8px)
+    );
+
+    $grid-toolbar-padding-start-indigo: (
+        comfortable: rem(24px),
+        cosy: rem(16px),
+        compact: rem(12px)
+    );
+
+    $grid-toolbar-padding-end-indigo: (
+        comfortable: rem(24px),
+        cosy: rem(16px),
+        compact: rem(12px)
+    );
+
 
     $grid-toolbar-spacer: (
         comfortable: rem(16px),
@@ -133,10 +141,10 @@
         compact: rem(8px)
     );
 
-    $grid-toolbar-padding-rtl: (
-        comfortable: 0 rem(24px) 0 rem(16px),
-        cosy: 0 rem(16px) 0 rem(12px),
-        compact: 0 rem(12px) 0 rem(8px)
+    $grid-toolbar-spacer-indigo: (
+        comfortable: rem(16px),
+        cosy: rem(16px),
+        compact: rem(16px)
     );
 
     $grid-toolbar-height: (
@@ -146,93 +154,72 @@
     );
 
     %igx-grid-toolbar {
+        @include sizable();
+        --component-size: var(--ig-size, var(--ig-size-large));
+        position: relative;
+        width: 100%;
         display: flex;
         align-items: center;
         justify-content: space-between;
         grid-row: 1;
         font-size: $grid-toolbar-fs;
-
-        @if $bootstrap-theme {
-            border-bottom: 1px solid color(map.get($theme, 'palette'), 'grays', 100);
-        } @else {
-            border-bottom: 1px solid color(map.get($theme, 'palette'), 'grays', 300);
-        }
-
+        border-bottom: rem(1px) solid var-get($theme, 'border-color');
         background: var-get($theme, 'background-color');
         height: auto;
-        min-height: map.get($grid-toolbar-height, 'comfortable');
-        position: relative;
+        min-height: var-get($theme, 'size');
+        padding-block: 0;
 
-        @include if-ltr() {
-            padding: map.get($grid-toolbar-padding, 'comfortable');
-        }
-
-        @include if-rtl() {
-            padding: map.get($grid-toolbar-padding-rtl, 'comfortable');
+        @if $variant == 'indigo' {
+            padding-inline-start: pad-inline(map.get($grid-toolbar-padding-start-indigo, 'compact'), map.get($grid-toolbar-padding-start-indigo, 'cosy'), map.get($grid-toolbar-padding-start-indigo, 'comfortable'));
+            padding-inline-end: pad-inline(map.get($grid-toolbar-padding-end-indigo, 'compact'), map.get($grid-toolbar-padding-end-indigo, 'cosy'), map.get($grid-toolbar-padding-end-indigo, 'comfortable'));
+        } @else {
+            padding-inline-start: pad-inline(map.get($grid-toolbar-padding-start, 'compact'), map.get($grid-toolbar-padding-start, 'cosy'), map.get($grid-toolbar-padding-start, 'comfortable'));
+            padding-inline-end: pad-inline(map.get($grid-toolbar-padding-end, 'compact'), map.get($grid-toolbar-padding-end, 'cosy'), map.get($grid-toolbar-padding-end, 'comfortable'));
         }
 
         [igxButton] {
-            margin-#{$left}: map.get($grid-toolbar-spacer, 'comfortable');
+            margin-inline-start: pad-inline(map.get($grid-toolbar-spacer, 'compact'), map.get($grid-toolbar-spacer, 'cosy'), map.get($grid-toolbar-spacer, 'comfortable'));
 
             &:first-of-type {
-                margin-#{$left}: 0;
+                margin-inline-start: 0;
             }
 
             &:last-of-type {
-                margin-#{$right}: 0;
+                margin-inline-end: 0;
             }
         }
 
         &[dir='rtl'] {
-            text-align: #{$right};
+            text-align: end;
 
             [igxButton] {
-                margin-#{$left}: 0;
-                margin-#{$right}: rem(8);
+                margin-inline-start: 0;
+                margin-inline-end: rem(8);
 
                 &:last-child {
-                    margin-#{$right}: 0;
+                    margin-inline-end: 0;
                 }
             }
         }
     }
 
-    %igx-grid-toolbar--cosy {
-        min-height: map.get($grid-toolbar-height, 'cosy');
-        @include if-ltr() {
-            padding: map.get($grid-toolbar-padding, 'cosy');
-        }
-
-        @include if-rtl() {
-            padding: map.get($grid-toolbar-padding-rtl, 'cosy');
-        }
-
-        [igxButton] {
-            margin-#{$left}: map.get($grid-toolbar-spacer, 'cosy');
-        }
-    }
-
-    %igx-grid-toolbar--compact {
-        min-height: map.get($grid-toolbar-height, 'compact');
-        @include if-ltr() {
-            padding: map.get($grid-toolbar-padding, 'compact');
-        }
-
-        @include if-rtl() {
-            padding: map.get($grid-toolbar-padding-rtl, 'compact');
-        }
-
-        [igxButton] {
-            margin-#{$left}: map.get($grid-toolbar-spacer, 'compact');
-        }
-    }
-
     %igx-grid-toolbar__title {
+        @if $variant == 'indigo' {
+            /* stylelint-disable scss/at-extend-no-missing-placeholder */
+            @extend .ig-typography__h6;
+            /* stylelint-enable scss/at-extend-no-missing-placeholder */
+        }
+
         color: var-get($theme, 'title-text-color');
         flex: 1 1 auto;
         @include ellipsis();
         max-width: 40ch;
-        margin-#{$right}: map.get($grid-toolbar-spacer, 'comfortable')
+
+        @if $variant == 'indigo' {
+            margin-inline-end: map.get($grid-toolbar-spacer-indigo, 'comfortable')
+        } @else {
+            margin-inline-end: map.get($grid-toolbar-spacer, 'comfortable')
+        }
     }
 
     %igx-grid-toolbar__custom-content {
@@ -240,22 +227,28 @@
         flex-wrap: wrap;
         flex-grow: 1;
         justify-content: flex-end;
-        margin-#{$right}: map.get($grid-toolbar-spacer, 'comfortable');
+
+        @if $variant == 'indigo' {
+            margin-inline-end: map.get($grid-toolbar-spacer-indigo, 'comfortable')
+        } @else {
+            margin-inline-end: map.get($grid-toolbar-spacer, 'comfortable')
+        }
     }
 
     %igx-grid-toolbar__actions {
         display: flex;
         align-items: center;
         flex-flow: row wrap;
-        margin-#{$left}: auto;
+        margin-inline-start: auto;
+
+        @if $variant == 'indigo' {
+            gap: map.get($grid-toolbar-spacer-indigo, 'comfortable')
+        } @else {
+            gap: map.get($grid-toolbar-spacer, 'comfortable')
+        }
 
         > * {
             display: flex;
-            margin-#{$left}: map.get($grid-toolbar-spacer, 'comfortable');
-
-            &:first-child {
-                margin-#{$left}: 0;
-            }
         }
     }
 
@@ -270,7 +263,7 @@
     %igx-grid-toolbar__title:empty + %igx-grid-toolbar__custom-content:empty {
         + %igx-grid-toolbar__actions {
             width: 100%;
-            margin-left: 0;
+            margin-inline-start: 0;
             justify-content: flex-end;
         }
     }
@@ -278,8 +271,8 @@
     %igx-grid-toolbar__progress-bar {
         position: absolute;
         width: 100%;
-        left: 0;
-        right: 0;
+        inset-inline-start: 0;
+        inset-inline-end: 0;
         bottom: rem(-1px);
         height: rem(2px);
         overflow: hidden;
@@ -289,22 +282,7 @@
             border-radius: 0;
 
             &:first-child > div {
-                background: color(map.get($theme, 'palette'), 'secondary');
-            }
-        }
-    }
-
-    %igx-grid-toolbar__adv-filter--filtered {
-        border-color: color(map.get($theme, 'palette'), 'secondary') !important;
-
-        @if $bootstrap-theme {
-            border-width: 2px;
-            border-color: color(map.get($theme, 'palette'), 'primary', 800) !important;
-            color: color(map.get($theme, 'palette'), 'primary', 800);
-
-            &:hover,
-            &:focus {
-                background: color(map.get($theme, 'palette'), 'primary', 800);
+                background: color($color: 'secondary');
             }
         }
     }
@@ -318,13 +296,13 @@
         background: var-get($theme, 'dropdown-background');
         margin: 0;
         padding: 0;
-        box-shadow: elevation($elevation: 8);
+        box-shadow: elevation(8);
     }
 
     %igx-grid-toolbar__dd-list-items {
         cursor: pointer;
         position: relative;
-        padding: em(8px) em(16px);
+        padding: rem(8px) rem(16px);
         color: var-get($theme, 'item-text-color');
         white-space: nowrap;
 

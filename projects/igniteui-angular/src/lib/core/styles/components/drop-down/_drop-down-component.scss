@@ -1,20 +1,16 @@
 @use '../../base' as *;
 @use 'sass:string';
 
-////
-/// @group components
+/// @access private
 /// @author <a href="https://github.com/desig9stein" target="_blank">Marin Popov</a>
-/// @requires {mixin} bem-block
-/// @requires {mixin} bem-elem
-/// @requires {mixin} bem-mod
-////
-
 @mixin component {
     @include b(igx-drop-down) {
         $this: bem--selector-to-string(&);
         @include register-component(
             $name: string.slice($this, 2, -1),
-            $deps: ()
+            $deps: (
+                igx-overlay,
+            )
         );
 
         @extend %igx-drop-down !optional;
@@ -39,14 +35,6 @@
             @extend %igx-drop-down__content !optional;
         }
 
-        @include e(item, $m: cosy) {
-            @extend %igx-drop-down__item--cosy !optional;
-        }
-
-        @include e(item, $m: compact) {
-            @extend %igx-drop-down__item--compact !optional;
-        }
-
         @include e(item, $m: focused) {
             @extend %igx-drop-down__item--focused !optional;
         }
@@ -65,14 +53,6 @@
 
         @include e(header) {
             @extend %igx-drop-down__header !optional;
-        }
-
-        @include e(header, $m: cosy) {
-            @extend %igx-drop-down__header--cosy !optional;
-        }
-
-        @include e(header, $m: compact) {
-            @extend %igx-drop-down__header--compact !optional;
         }
 
         @include e(group) {

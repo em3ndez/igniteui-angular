@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsDA_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Danish resource strings for IgxGrid
+ */
+export const GridResourceStringsDA = {
     igx_grid_groupByArea_message: 'Træk et kolonnesidehoved og slip den her for at gruppere efter den kolonne.',
     igx_grid_groupByArea_select_message: 'Vælg alle rækker i gruppen med navnet {0} og værdi {1}.',
     igx_grid_groupByArea_deselect_message: 'Fravælg alle rækker i gruppen med navnet {0} og værdi {1}.',
@@ -89,7 +92,8 @@ const GridResourceStringsDA_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Boolsk filter',
     igx_grid_excel_currency_filter: 'Valutafilter',
     igx_grid_excel_custom_filter: 'Brugerdefineret filter',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Ingen forekomster',
+    igx_grid_excel_matches_count: '{0} forekomster',
     igx_grid_advanced_filter_title: 'Avanceret filtrering',
     igx_grid_advanced_filter_and_group: '"Og" gruppe',
     igx_grid_advanced_filter_or_group: '"Eller" gruppe',
@@ -112,6 +116,7 @@ const GridResourceStringsDA_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Frigør alle',
     igx_grid_row_edit_btn_done: 'Færdig',
     igx_grid_row_edit_btn_cancel: 'Annuller',
+    igx_grid_row_edit_text: 'Du har {0} ændringer i denne række og {1} skjulte kolonner',
     igx_grid_toolbar_actions_filter_prompt: 'Filtrer kolonneliste ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Åbn rulleliste til fastgørelse af kolonner',
     igx_grid_toolbar_hiding_button_tooltip: 'Åbn rulleliste til skjulning af kolonner',
@@ -134,33 +139,35 @@ const GridResourceStringsDA_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Frigør',
     igx_grid_actions_jumpUp_label: 'Spring op',
     igx_grid_actions_jumpDown_label: 'Spring ned',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
+    igx_grid_pivot_date_dimension_total: 'Alle perioder',
+    igx_grid_pivot_aggregate_count: 'Tælle',
     igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Danish resource strings for IgxGrid
- */
-export const GridResourceStringsDA = GridResourceStringsDA_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_aggregate_max: 'Maksimum',
+    igx_grid_pivot_aggregate_sum: 'Summen',
+    igx_grid_pivot_aggregate_avg: 'Gennemsnit',
+    igx_grid_pivot_aggregate_date_latest: 'Seneste dato',
+    igx_grid_pivot_aggregate_date_earliest: 'Tidligste dato',
+    igx_grid_pivot_aggregate_time_latest: 'Seneste tid',
+    igx_grid_pivot_aggregate_time_earliest: 'Tidligste tid',
+    igx_grid_pivot_empty_row_drop_area: 'Slip rækkefelter her.',
+    igx_grid_pivot_empty_column_drop_area: 'Slip kolonnefelter her.',
+    igx_grid_pivot_empty_filter_drop_area: 'Slip filterfelter her.',
+    igx_grid_pivot_empty_value_drop_area: 'Slip værdifelter her.',
+    igx_grid_pivot_row_drop_chip: 'Slip her for at bruge som række',
+    igx_grid_pivot_column_drop_chip: 'Slip her for at bruge som kolonne',
+    igx_grid_pivot_filter_drop_chip: 'Slip her for at bruge som filter',
+    igx_grid_pivot_value_drop_chip: 'Slip her for at bruge som værdi',
+    igx_grid_pivot_selector_filters: 'Filtre',
+    igx_grid_pivot_selector_rows: 'Rækker',
+    igx_grid_pivot_selector_columns: 'Kolonner',
+    igx_grid_pivot_selector_values: 'Værdier',
+    igx_grid_pivot_selector_panel_empty: 'Træk elementer hertil',
+    igx_grid_pivot_empty_message: 'Pivottabel har ingen dimensioner og værdier.',
+    igx_grid_required_validation_error: 'Dette felt er påkrævet',
+    igx_grid_min_validation_error: 'Der skal indtastes en værdi på mindst {0}',
+    igx_grid_max_validation_error: 'Der skal indtastes en værdi, der ikke mere end {0}',
+    igx_grid_min_length_validation_error: 'Indtastningen skal være mindst {0} tegn',
+    igx_grid_max_length_validation_error: 'Indtastningen må højst være {0} tegn',
+    igx_grid_email_validation_error: 'Der skal indtastes en gyldig e-mailadresse',
+    igx_grid_pattern_validation_error: 'Indtastning stemmer ikke overens med det krævede mønster'
+} satisfies MakeRequired<IGridResourceStrings>;

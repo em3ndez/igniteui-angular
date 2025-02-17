@@ -1,26 +1,33 @@
-/* eslint-disable max-len */
-import { Component, ViewChild, OnInit, Inject } from '@angular/core';
+import { Component, ViewChild, OnInit, TemplateRef, HostBinding } from '@angular/core';
+import { NgFor, NgIf } from '@angular/common';
+import { IgxButtonDirective, IgxCellTemplateDirective, IgxColumnComponent, IgxGridComponent, IgxGridDetailTemplateDirective, IgxGridStateDirective } from 'igniteui-angular';
 
-import { IgxGridComponent } from 'igniteui-angular';
-import { DisplayDensity, IDisplayDensityOptions, DisplayDensityToken } from 'projects/igniteui-angular/src/lib/core/density';
 
 @Component({
-    providers: [{ provide: DisplayDensityToken, useValue: { displayDensity: DisplayDensity.compact} }],
     selector: 'app-grid-sample',
-    styleUrls: ['grid-master-detail.sample.css'],
-    templateUrl: 'grid-master-detail.sample.html'
+    styleUrls: ['grid-master-detail.sample.scss'],
+    templateUrl: 'grid-master-detail.sample.html',
+    imports: [IgxButtonDirective, IgxGridComponent, IgxGridStateDirective, NgFor, IgxColumnComponent, IgxCellTemplateDirective, NgIf, IgxGridDetailTemplateDirective]
 })
 export class GridMasterDetailSampleComponent implements OnInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-small)`;
+    }
     @ViewChild('grid1', { static: true }) public grid1: IgxGridComponent;
     public data: Array<any>;
+
     public expState = [];
     public columns: Array<any>;
-    constructor(@Inject(DisplayDensityToken) public displayDensityOptions: IDisplayDensityOptions) {}
+
+    @ViewChild('detailTemplate', {read: TemplateRef, static: true })
+    public detailTemplate: TemplateRef<any>;
+
+    constructor() {}
     public ngOnInit(): void {
         this.columns = [
             { dataType: 'string', field: 'ContactName', width: 200 },
             { dataType: 'string', field: 'CompanyName', width: 300 },
-            { dataType: 'string', field: 'Salary', width: 300 }
         ];
 
         this.data = [
@@ -32,7 +39,7 @@ export class GridMasterDetailSampleComponent implements OnInit {
             { Salary: '800',ID: 'BLAUS', CompanyName: 'Blauer See Delikatessen', ContactName: 'Hanna Moos', ContactTitle: 'Sales Representative', Address: 'Forsterstr. 57', City: 'Mannheim', Region: null, PostalCode: '68306', Country: 'Germany', Phone: '0621-08460', Fax: '0621-08924' },
             { Salary: '900',ID: 'BLONP', CompanyName: 'Blondesddsl père et fils', ContactName: 'Frédérique Citeaux', ContactTitle: 'Marketing Manager', Address: '24, place Kléber', City: 'Strasbourg', Region: null, PostalCode: '67000', Country: 'France', Phone: '88.60.15.31', Fax: '88.60.15.32' },
             { Salary: '9000',ID: 'BOLID', CompanyName: 'Bólido Comidas preparadas', ContactName: 'Martín Sommer', ContactTitle: 'Owner', Address: 'C/ Araquil, 67', City: 'Madrid', Region: null, PostalCode: '28023', Country: 'Spain', Phone: '(91) 555 22 82', Fax: '(91) 555 91 99' },
-            { Salary: '3300',ID: 'BONAP', CompanyName: 'Bon app\s', ContactName: 'Laurence Lebihan', ContactTitle: 'Owner', Address: '12, rue des Bouchers', City: 'Marseille', Region: null, PostalCode: '13008', Country: 'France', Phone: '91.24.45.40', Fax: '91.24.45.41' },
+            { Salary: '3300',ID: 'BONAP', CompanyName: 'Bon app\'s', ContactName: 'Laurence Lebihan', ContactTitle: 'Owner', Address: '12, rue des Bouchers', City: 'Marseille', Region: null, PostalCode: '13008', Country: 'France', Phone: '91.24.45.40', Fax: '91.24.45.41' },
             { Salary: '2500',ID: 'BOTTM', CompanyName: 'Bottom-Dollar Markets', ContactName: 'Elizabeth Lincoln', ContactTitle: 'Accounting Manager', Address: '23 Tsawassen Blvd.', City: 'Tsawassen', Region: 'BC', PostalCode: 'T2F 8M4', Country: 'Canada', Phone: '(604) 555-4729', Fax: '(604) 555-3745' },
             { Salary: '4700',ID: 'BSBEV', CompanyName: 'B\'s Beverages', ContactName: 'Victoria Ashworth', ContactTitle: 'Sales Representative', Address: 'Fauntleroy Circus', City: 'London', Region: null, PostalCode: 'EC2 5NT', Country: 'UK', Phone: '(171) 555-1212', Fax: null },
             { Salary: '4100',ID: 'CACTU', CompanyName: 'Cactus Comidas para llevar', ContactName: 'Patricio Simpson', ContactTitle: 'Sales Agent', Address: 'Cerrito 333', City: 'Buenos Aires', Region: null, PostalCode: '1010', Country: 'Argentina', Phone: '(1) 135-5555', Fax: '(1) 135-4892' },
@@ -52,6 +59,8 @@ export class GridMasterDetailSampleComponent implements OnInit {
             { Salary: '6600',ID: 'FRANR', CompanyName: 'France restauration', ContactName: 'Carine Schmitt', ContactTitle: 'Marketing Manager', Address: '54, rue Royale', City: 'Nantes', Region: null, PostalCode: '44000', Country: 'France', Phone: '40.32.21.21', Fax: '40.32.21.20' },
             { Salary: '4900',ID: 'FRANS', CompanyName: 'Franchi S.p.A.', ContactName: 'Paolo Accorti', ContactTitle: 'Sales Representative', Address: 'Via Monte Bianco 34', City: 'Torino', Region: null, PostalCode: '10100', Country: 'Italy', Phone: '011-4988260', Fax: '011-4988261' }
         ];
+
+        this.grid1.detailTemplate = this.detailTemplate;
     }
 
     public expandFirstRow() {
@@ -65,4 +74,17 @@ export class GridMasterDetailSampleComponent implements OnInit {
     public toggleFirstRow() {
         this.grid1.toggleRow(this.data[0]);
     }
+
+    @ViewChild(IgxGridStateDirective, { static: true })
+    public state!: IgxGridStateDirective;
+
+    public saveState() {
+        const state = this.state.getState() as string;
+        window.sessionStorage.setItem('grid-state', state);
+      }
+
+      public restoreState() {
+        const state = window.sessionStorage.getItem('grid-state');
+        this.state.setState(state as string);
+      }
 }

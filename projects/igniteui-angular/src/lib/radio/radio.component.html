@@ -1,4 +1,4 @@
-<input #radio class="igx-radio__input" type="radio"
+<input #checkbox class="igx-radio__input" type="radio"
     [id]="inputId"
     [name]="name"
     [value]="value"
@@ -6,12 +6,14 @@
     [disabled]="disabled"
     [checked]="checked"
     [required]="required"
+    [attr.aria-required]="required"
+    [attr.aria-invalid]="invalid"
     [attr.aria-checked]="checked"
     [attr.aria-labelledby]="ariaLabel ? null : ariaLabelledBy"
     [attr.aria-label]="ariaLabel"
     (blur)="onBlur()" />
 
-<span #nativeLabel class="igx-radio__composite" igxRipple
+<span #label class="igx-radio__composite" igxRipple
     igxRippleTarget=".igx-radio__ripple"
     [igxRippleDisabled]="disableRipple"
     [igxRippleCentered]="true"

@@ -31,7 +31,7 @@ export class IgxHierarchicalGridAPIService extends GridBaseAPIService<GridType> 
         const pathElem = currPath.shift();
         const childrenForLayout = this.childGrids.get(pathElem.rowIslandKey);
         if (childrenForLayout) {
-            const childGrid = childrenForLayout.get(pathElem.rowID);
+            const childGrid = childrenForLayout.get(pathElem.rowKey);
             if (currPath.length === 0) {
                 grid = childGrid;
             } else {
@@ -42,15 +42,13 @@ export class IgxHierarchicalGridAPIService extends GridBaseAPIService<GridType> 
     }
 
     public getChildGrids(inDepth?: boolean) {
-        const allChildren = [];
+        let allChildren: GridType [] = [];
         this.childGrids.forEach((layoutMap) => {
             layoutMap.forEach((grid) => {
                 allChildren.push(grid);
                 if (inDepth) {
                     const children = grid.gridAPI.getChildGrids(inDepth);
-                    children.forEach((item) => {
-                        allChildren.push(item);
-                    });
+                    allChildren = allChildren.concat(children);
                 }
             });
         });
@@ -96,7 +94,7 @@ export class IgxHierarchicalGridAPIService extends GridBaseAPIService<GridType> 
         return childrenForLayout.get(rowID);
     }
 
-    public get_row_expansion_state(record: any): boolean {
+    public override get_row_expansion_state(record: any): boolean {
         let inState;
         if (record.childGridsData !== undefined) {
             const ri = record.key;
@@ -113,7 +111,7 @@ export class IgxHierarchicalGridAPIService extends GridBaseAPIService<GridType> 
         return inState && (this.grid as any).childLayoutList.length !== 0;
     }
 
-    public allow_expansion_state_change(rowID, expanded): boolean {
+    public override allow_expansion_state_change(rowID, expanded): boolean {
         const rec = this.get_rec_by_id(rowID);
         const grid = (this.grid as any);
         if (grid.hasChildrenKey && !rec[grid.hasChildrenKey]) {
@@ -122,7 +120,7 @@ export class IgxHierarchicalGridAPIService extends GridBaseAPIService<GridType> 
         return !!rec && this.grid.expansionStates.get(rowID) !== expanded;
     }
 
-    public get_rec_by_id(rowID): any {
+    public override get_rec_by_id(rowID): any {
         const data = this.get_all_data(false);
         const index = this.get_row_index_in_data(rowID, data);
         return data[index];

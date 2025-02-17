@@ -3,7 +3,7 @@ import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
 import { IgxTabItemComponent } from './tab-item.component';
 import { IgxTabsAlignment, IgxTabsComponent } from './tabs.component';
 
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Router } from '@angular/router';
@@ -15,25 +15,11 @@ import {
     TabsTestHtmlAttributesComponent, TabsTestSelectedTabComponent, TabsWithPrefixSuffixTestComponent,
     TemplatedTabsTestComponent
 } from '../../test-utils/tabs-components.spec';
-import { IgxTabsModule } from './tabs.module';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
 import { IgxTabContentComponent } from './tab-content.component';
 import { RoutingTestGuard } from '../../test-utils/routing-test-guard.spec';
-import {
-    RoutingView1Component,
-    RoutingView2Component,
-    RoutingView3Component,
-    RoutingView4Component,
-    RoutingView5Component,
-    RoutingViewComponentsModule
-} from '../../test-utils/routing-view-components.spec';
-import { IgxButtonModule } from '../../directives/button/button.directive';
-import { IgxDropDownModule } from '../../drop-down/public_api';
-import { IgxToggleModule } from '../../directives/toggle/toggle.directive';
-import { IgxIconModule } from '../../icon/public_api';
-import { IgxPrefixModule, IgxSuffixModule } from 'igniteui-angular';
-import { PlatformUtil } from '../../core/utils';
+import { RoutingView1Component, RoutingView2Component, RoutingView3Component, RoutingView4Component, RoutingView5Component } from '../../test-utils/routing-view-components.spec';
 
 const KEY_RIGHT_EVENT = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true });
 const KEY_LEFT_EVENT = new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true });
@@ -59,13 +45,28 @@ describe('IgxTabs', () => {
         ];
 
         TestBed.configureTestingModule({
-            declarations: [TabsTestHtmlAttributesComponent, TabsTestComponent, TabsTest2Component, TemplatedTabsTestComponent,
-                TabsRoutingDisabledTestComponent, TabsTestSelectedTabComponent, TabsTestCustomStylesComponent, TabsTestBug4420Component,
-                TabsRoutingTestComponent, TabsTabsOnlyModeTest1Component, TabsTabsOnlyModeTest2Component, TabsDisabledTestComponent,
-                TabsRoutingGuardTestComponent, TabsWithPrefixSuffixTestComponent, TabsContactsComponent, AddingSelectedTabComponent, TabsRtlComponent],
-            imports: [IgxTabsModule, BrowserAnimationsModule, IgxButtonModule, IgxIconModule, IgxDropDownModule, IgxToggleModule,
-                RoutingViewComponentsModule, IgxPrefixModule, IgxSuffixModule, RouterTestingModule.withRoutes(testRoutes)],
-            providers: [RoutingTestGuard, PlatformUtil]
+            imports: [
+                NoopAnimationsModule,
+                RouterTestingModule.withRoutes(testRoutes),
+                TabsTestHtmlAttributesComponent,
+                TabsTestComponent,
+                TabsTest2Component,
+                TemplatedTabsTestComponent,
+                TabsRoutingDisabledTestComponent,
+                TabsTestSelectedTabComponent,
+                TabsTestCustomStylesComponent,
+                TabsTestBug4420Component,
+                TabsRoutingTestComponent,
+                TabsTabsOnlyModeTest1Component,
+                TabsTabsOnlyModeTest2Component,
+                TabsDisabledTestComponent,
+                TabsRoutingGuardTestComponent,
+                TabsWithPrefixSuffixTestComponent,
+                TabsContactsComponent,
+                AddingSelectedTabComponent,
+                TabsRtlComponent
+            ],
+            providers: [RoutingTestGuard]
         }).compileComponents();
     }));
 
@@ -583,6 +584,10 @@ describe('IgxTabs', () => {
         }));
 
         it('should focus next/previous tab when pressing right/left arrow', fakeAsync(() => {
+            tabsComp.activation = 'manual';
+            tick();
+            fixture.detectChanges();
+
             headerElements[0].click();
             tick(200);
             fixture.detectChanges();
@@ -620,6 +625,10 @@ describe('IgxTabs', () => {
         }));
 
         it('should focus first/last tab when pressing home/end button', fakeAsync(() => {
+            tabsComp.activation = 'manual';
+            tick();
+            fixture.detectChanges();
+
             headerElements[0].click();
             tick(200);
             fixture.detectChanges();
@@ -639,6 +648,10 @@ describe('IgxTabs', () => {
         }));
 
         it('should select focused tabs on enter/space', fakeAsync(() => {
+            tabsComp.activation = 'manual';
+            tick();
+            fixture.detectChanges();
+
             headerElements[0].click();
             tick(200);
             fixture.detectChanges();
@@ -730,6 +743,98 @@ describe('IgxTabs', () => {
             expect(tabItems[1].selected).toBe(false);
         }));
 
+        it('should set auto activation mode by default and change selectedIndex on arrow keys', fakeAsync(() => {
+            expect(tabsComp.activation).toBe('auto');
+
+            headerElements[0].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(1);
+
+            headerElements[1].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(2);
+        }));
+
+        it('should update focus and selectedIndex correctly in auto mode when navigating with arrow keys', fakeAsync(() => {
+            expect(tabsComp.selectedIndex).toBe(-1);
+
+            headerElements[0].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(1);
+            expect(document.activeElement).toBe(headerElements[1]);
+
+            headerElements[1].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(2);
+            expect(document.activeElement).toBe(headerElements[2]);
+
+            headerElements[2].dispatchEvent(KEY_LEFT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(1);
+            expect(document.activeElement).toBe(headerElements[1]);
+
+            headerElements[1].dispatchEvent(KEY_LEFT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(0);
+            expect(document.activeElement).toBe(headerElements[0]);
+        }));
+
+        it('should not change selectedIndex when using arrow keys in manual mode', fakeAsync(() => {
+            tabsComp.activation = 'manual';
+            fixture.detectChanges();
+
+            headerElements[0].click();
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(0);
+
+            headerElements[0].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(0);
+            expect(document.activeElement).toBe(headerElements[1]);
+
+            headerElements[1].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(0);
+            expect(document.activeElement).toBe(headerElements[2]);
+        }));
+
+        it('should select focused tab on Enter or Space in manual mode', fakeAsync(() => {
+            tabsComp.activation = 'manual';
+            fixture.detectChanges();
+
+            headerElements[0].click();
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(0);
+
+            headerElements[0].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(0);
+            expect(document.activeElement).toBe(headerElements[1]);
+
+            headerElements[1].dispatchEvent(KEY_ENTER_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(1);
+
+            headerElements[1].dispatchEvent(KEY_RIGHT_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            headerElements[2].dispatchEvent(KEY_SPACE_EVENT);
+            tick(200);
+            fixture.detectChanges();
+            expect(tabsComp.selectedIndex).toBe(2);
+        }));
     });
 
     describe('Tabs-only Mode With Initial Selection Set on TabItems Tests', () => {
@@ -992,6 +1097,10 @@ describe('IgxTabs', () => {
 
             it('Validate the events are not fired when navigating between tabs with arrow keys before pressing enter/space key.',
                 fakeAsync(() => {
+                    tabs.activation = 'manual';
+                    tick();
+                    fixture.detectChanges();
+
                     tick(100);
                     headers[0].focus();
 
@@ -1056,6 +1165,10 @@ describe('IgxTabs', () => {
 
             it('Validate the events are not fired when navigating between tabs with home/end before pressing enter/space key.',
                 fakeAsync(() => {
+                    tabs.activation = 'manual';
+                    tick();
+                    fixture.detectChanges();
+
                     tick(100);
                     headers[0].focus();
 
@@ -1268,13 +1381,16 @@ describe('IgxTabs', () => {
             fixture.detectChanges();
             await wait(200);
 
+            const leftScrollButton = tabs.headerContainer.nativeElement.children[0];
             const rightScrollButton = tabs.headerContainer.nativeElement.children[2];
+            expect(leftScrollButton.clientWidth).toBeTruthy();
             expect(rightScrollButton.clientWidth).toBeTruthy();
 
             tabs.tabAlignment = IgxTabsAlignment.justify;
             fixture.detectChanges();
             await wait(500);
 
+            expect(leftScrollButton.clientWidth).toBeFalsy();
             expect(rightScrollButton.clientWidth).toBeFalsy();
         });
     });
@@ -1286,12 +1402,15 @@ describe('IgxTabs', () => {
         fixture.detectChanges();
 
         const rightScrollButton = tabs.headerContainer.nativeElement.children[2];
+        const leftScrollButton = tabs.headerContainer.nativeElement.children[0];
+        expect(leftScrollButton.clientWidth).toBeTruthy();
         expect(rightScrollButton.clientWidth).toBeTruthy();
 
         fixture.componentInstance.contacts.splice(0, 1);
         fixture.detectChanges();
         await wait();
 
+        expect(leftScrollButton.clientWidth).toBeFalsy();
         expect(rightScrollButton.clientWidth).toBeFalsy();
     });
 

@@ -1,170 +1,107 @@
-<section class="sample-content">
-    <article class="sample-column">
-        <header>
-            <h4 class="sample-title">Intro to Chips</h4>
-        </header>
-
-        <section class="chip-storyboard">
-            <igx-chip>Hi! My name is Chip!</igx-chip>
-
-            <igx-chip>
-                <igx-icon igxPrefix>sentiment_satisfied_alt</igx-icon>
-                <span>I can be prefixed!</span>
+<div class="sidebar-sample">
+    <div class="preview sample-min-width">
+        <div class="preview__sample">
+            <h6>Angular Chip</h6>
+            <igx-chip
+                #me
+                [variant]="properties.variant"
+                [igSize]="properties.size"
+                [disabled]="properties.disabled"
+                [selectable]="properties.selectable"
+                [removable]="properties.removable"
+                [selected]="properties.selected"
+                [removeIcon]="customIcons ? myRemoveIcon : null"
+                [selectIcon]="customIcons ? mySelectIcon : null"
+                (remove)="removeChip(me)"
+            >
+                @if (hasAvatar) {
+                <igx-avatar
+                    igxPrefix
+                    class="chip-area-avatar"
+                    [shape]="'circle'"
+                    initials="MP"
+                ></igx-avatar>
+                } @if (hasPrefix) {
+                <igx-icon igxPrefix>face</igx-icon>
+                } @if (hasSuffix) {
+                <igx-icon igxSuffix>face</igx-icon>
+                } @if (hasProgressbar) {
+                <igx-circular-bar
+                    igxSuffix
+                    class="circular-sample"
+                    [indeterminate]="true"
+                ></igx-circular-bar>
+                } Chip component
             </igx-chip>
 
-            <igx-chip>
-                <igx-icon igxSuffix>sentiment_satisfied_alt</igx-icon>
-                <span>And suffixed, too!</span>
-            </igx-chip>
-
-            <igx-chip>
-                <igx-icon igxPrefix>insert_emoticon</igx-icon>
-                <igx-icon igxSuffix style="transform: rotate(180deg)">insert_emoticon</igx-icon>
-                <span>Why not both?</span>
-            </igx-chip>
-
-            <igx-chip [selectable]="true">
-                <igx-icon igxPrefix>touch_app</igx-icon>
-                You can select me. Click!
-            </igx-chip>
-
-            <igx-chip #me [removable]="true" (remove)="removeChip(me)">
-                <igx-icon igxPrefix>mood_bad</igx-icon>
-                <span>You can remove me.</span>
-            </igx-chip>
-
-            <div dir="rtl">
-                <igx-chip [selectable]="true">
-                    <igx-icon igxPrefix>insert_emoticon</igx-icon>
-                    <igx-icon igxSuffix style="transform: rotate(180deg)">insert_emoticon</igx-icon>
-                    <span>מימין לשמאל</span>
-                </igx-chip>
-            </div>
-
-            <igx-chip>
-                <igx-icon igxPrefix>short_text</igx-icon>
-                <span>
-                    I am only 24 characters long!
-                </span>
-            </igx-chip>
-
-            <igx-chip [selectable]="true" [selected]="true" [selectIcon]="mySelectIcon">
-                With a custom select icon.
-            </igx-chip>
-
-            <igx-chip #me2 [removable]="true" [removeIcon]="myRemoveIcon" (remove)="removeChip(me2)">
-                With a custom remove icon.
-            </igx-chip>
+            <h6>WC Chip</h6>
+            <igc-chip
+                #wc
+                [variant]="properties.variant"
+                [igSize]="properties.size"
+                [disabled]="properties.disabled"
+                [selectable]="properties.selectable"
+                [removable]="properties.removable"
+                [selected]="properties.selected"
+            >
+                @if (hasAvatar) {
+                <igc-avatar
+                    class="chip-area-avatar"
+                    slot="prefix"
+                    initials="MP"
+                    shape="circle"
+                ></igc-avatar>
+                } @if (hasPrefix) {
+                <span slot="prefix"><igc-icon name="face"></igc-icon></span>
+                } @if (customIcons) {
+                <span slot="select"
+                    ><igc-icon name="check_circle"></igc-icon
+                ></span>
+                <span slot="remove"><igc-icon name="delete"></igc-icon></span>
+                } @if (hasSuffix) {
+                <span slot="suffix"><igc-icon name="face"></igc-icon></span>
+                } @if (hasProgressbar) {
+                <igc-circular-progress
+                    class="circular-sample"
+                    slot="suffix"
+                    [indeterminate]="true"
+                ></igc-circular-progress>
+                } Chip component
+            </igc-chip>
 
             <ng-template #mySelectIcon>
-                <igx-icon family="fa-solid" name="fa-check-circle"></igx-icon>
+                <igx-icon>check_circle</igx-icon>
             </ng-template>
 
             <ng-template #myRemoveIcon>
-                <igx-icon family="fa-solid" name="fa-trash-alt"></igx-icon>
+                <igx-icon>delete</igx-icon>
             </ng-template>
-
-            <igx-chip displayDensity="cosy">
-                I can be smaller!
-            </igx-chip>
-
-            <igx-chip displayDensity="compact">
-                <igx-icon igxPrefix>child_care</igx-icon>
-                Even tiny!
-            </igx-chip>
-
-            <div class="chip-border-theme">
-                <igx-chip>
-                    <igx-icon igxPrefix>palette</igx-icon>
-                    I can be different!
-                </igx-chip>
-            </div>
-
-            <div class="chip-dark-theme">
-                <igx-chip displayDensity="cosy" [selectable]="true">
-                    <igx-icon igxSuffix>brush</igx-icon>
-                    <span>Very different!</span>
-                </igx-chip>
-            </div>
-
-        </section>
-
-        <igx-chip>
-            <span>See what else I can do</span>
-            <igx-icon igxSuffix>arrow_downward</igx-icon>
-        </igx-chip>
-
-    </article>
-</section>
-<section class="sample-content">
-    <article class="sample-column">
-        <header>
-            <h4 class="sample-title">Chips in Chip Area</h4>
-        </header>
-        <igx-chips-area #chipsArea (reorder)="chipsOrderChanged($event)" (moveEnd)="chipMovingEnded()" (selectionChange)="onChipsSelected($event)">
-            <ng-container *ngFor="let chipElem of chipList; let last = last;">
-                <igx-chip
-                    [id]="chipElem.id"
-                    [draggable]="true"
-                    [selectable]="true"
-                    [removable]="true"
-                    (remove)="chipRemoved($event)">
-                    <igx-icon igxPrefix>{{chipElem.icon}}</igx-icon>
-                    {{chipElem.text}}
-                </igx-chip>
-                <igx-icon *ngIf="!last" class="chip-area-connector">keyboard_arrow_right</igx-icon>
-            </ng-container>
-        </igx-chips-area>
-    </article>
-</section>
-<section class="sample-content">
-    <article class="sample-column">
-        <header>
-            <h4 class="sample-title">Chips in a Custom Scenario</h4>
-        </header>
-        <div class="wrapperAreaTo">
-            <igx-chips-area #chipsAreaTo class="chipAreaTo" (reorder)="chipsOrderChangedTo($event)">
-                <span>To:</span>
-                <igx-chip *ngFor="let chip of chipListTo"
-                    [id]="chip.id"
-                    [draggable]="true"
-                    (moveStart)="onMoveStartTo()"
-                    (moveEnd)="moveEndedTo()">
-                    <igx-avatar igxPrefix class="chip-area-avatar"
-                        [src]="chip.picture"
-                        [roundShape]="true">
-                    </igx-avatar>
-                    <span>{{chip.text}}</span>
-                </igx-chip>
-                <div class="dropAreaTo" igxDrop #dropTo
-                    (dropped)="onDropTo($event)"
-                    (igxDragEnter)="onDragEnterCc()"
-                    (igxDragLeave)="onDragLeaveCc()">
-                </div>
-            </igx-chips-area>
         </div>
 
-        <div class="wrapperAreaCc">
-            <igx-chips-area #chipsAreaCc class="chipAreaCc" (reorder)="chipsOrderChangedCc($event)">
-                <span>Cc:</span>
-                <igx-chip *ngFor="let chip of chipListCc"
-                    [id]="chip.id"
-                    [draggable]="true"
-                    (moveStart)="onMoveStartCc()"
-                    (moveEnd)="moveEndedCc()">
-                    <igx-avatar igxPrefix class="chip-area-avatar"
-                        [src]="chip.picture"
-                        [roundShape]="true">
-                    </igx-avatar>
-                    <span>{{chip.text}}</span>
-                </igx-chip>
-                <div igxDrop #dropCc
-                    (dropped)="onDropCc($event)"
-                    (igxDragEnter)="onDragEnterCc()"
-                    (igxDragLeave)="onDragLeaveCc()"
-                    class="dropAreaCc">
-                </div>
-            </igx-chips-area>
-        </div>
-    </article>
-</section>
+        <ng-template #customControls>
+            <div class="custom-controls">
+                @if (properties.removable) {
+                <igx-switch id="customIcons" [(ngModel)]="customIcons">
+                    <label for="customIcons">Custom Icons</label>
+                </igx-switch>
+                }
+
+                <igx-switch id="addPrefix" [(ngModel)]="hasPrefix">
+                    <label for="addPrefix">Add prefix</label>
+                </igx-switch>
+
+                <igx-switch id="addSuffix" [(ngModel)]="hasSuffix">
+                    <label for="addSuffix">Add suffix</label>
+                </igx-switch>
+
+                <igx-switch id="hasAvatar" [(ngModel)]="hasAvatar">
+                    <label for="hasAvatar">Add avatar</label>
+                </igx-switch>
+
+                <igx-switch id="hasProgressbar" [(ngModel)]="hasProgressbar">
+                    <label for="hasProgressbar">Add progressbar</label>
+                </igx-switch>
+            </div>
+        </ng-template>
+    </div>
+</div>

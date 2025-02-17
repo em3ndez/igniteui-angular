@@ -10,12 +10,12 @@
         <igx-expansion-panel-body>
             <div style='width: 100%; height: 100%'>
                 <ng-container *ngTemplateOutlet="controls; context: getContext(grid)"></ng-container>
-                <igx-grid [id]="gridId" #grid [igxGridState]="options" columnSelection="multiple" displayDensity="cosy"
+                <igx-grid [id]="gridId" #grid [igxGridState]="options" columnSelection="multiple" class="grid-size"
                     width="1200px" height="550px" [autoGenerate]="false" [data]="localData" primaryKey="EmployeeID"
                     [rowEditable]="false" [allowFiltering]="true" [allowAdvancedFiltering]="true"
-                    [filterMode]="'excelStyleFilter'" displayDensity="cosy" cellSelection="multiple"
+                    [filterMode]="'excelStyleFilter'" cellSelection="multiple"
                     rowSelection="multiple">
-                    <igx-grid-toolbar [displayDensity]="grid.displayDensity">
+                    <igx-grid-toolbar>
                         <igx-grid-toolbar-actions>
                             <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
                             <igx-grid-toolbar-hiding></igx-grid-toolbar-hiding>
@@ -54,22 +54,108 @@
         <igx-expansion-panel-body>
             <ng-container *ngTemplateOutlet="controls; context: getContext(mcGrid)"></ng-container>
             <igx-grid [id]="mcGridId" #mcGrid [igxGridState]="options" height="480px" [data]="localData"
-                displayDensity="compact" [allowFiltering]="true" [moving]="true">
-                <igx-column [resizable]="true" field="EmployeeID" [filterable]="false"></igx-column>
+                 [allowFiltering]="true" [moving]="true">
+                <igx-column [resizable]="true" field="EmployeeID" [filterable]="false">
+                    <ng-template igxHeader let-column>
+                        <span>Custom Header Template: {{column.field}}</span>
+                     </ng-template>
+                </igx-column>
                 <igx-column-group [pinned]="false" header="Employee">
-                    <igx-column [sortable]="true" [resizable]="true" field="Country"></igx-column>
-                    <igx-column-group header="Employee Names">
+                    <ng-template igxHeader let-column>
+                        <span>Custom Header Template: {{column.header}}</span>
+                     </ng-template>
+                    <igx-column-group header="Employee Names" [collapsible]="true">
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.header}}</span>
+                         </ng-template>
                         <igx-column [pinned]="false" [sortable]="true" [resizable]="true"
-                            field="FirstName"></igx-column>
-                        <igx-column [sortable]="true" [resizable]="true" field="LastName"></igx-column>
+                            field="FirstName" [visibleWhenCollapsed]="true">
+                            <ng-template igxHeader let-column>
+                                <span>Custom Header Template: {{column.field}}</span>
+                             </ng-template></igx-column>
+                        <igx-column [sortable]="true" [resizable]="true" field="LastName" [visibleWhenCollapsed]="false">
+                            <ng-template igxHeader let-column>
+                                <span>Custom Header Template: {{column.field}}</span>
+                             </ng-template>
+                        </igx-column>
                     </igx-column-group>
                 </igx-column-group>
                 <igx-column-group header="Additional Information">
+                    <ng-template igxHeader let-column>
+                        <span>Custom Header Template: {{column.header}}</span>
+                     </ng-template>
                     <igx-column-group header="Data">
-                        <igx-column [sortable]="true" [resizable]="true" field="Country"></igx-column>
-                        <igx-column [sortable]="true" [resizable]="true" field="Age"></igx-column>
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.header}}</span>
+                         </ng-template>
+                        <igx-column [sortable]="true" [resizable]="true" field="Country">
+                            <ng-template igxHeader let-column>
+                                <span>Custom Header Template: {{column.field}}</span>
+                             </ng-template>
+                        </igx-column>
+                        <igx-column [sortable]="true" [resizable]="true" field="Age">
+                            <ng-template igxHeader let-column>
+                                <span>Custom Header Template: {{column.field}}</span>
+                             </ng-template>
+                        </igx-column>
                     </igx-column-group>
                 </igx-column-group>
+            </igx-grid>
+        </igx-expansion-panel-body>
+    </igx-expansion-panel>
+
+    <div #clear="tooltip" igxTooltip>Clear the state from localStorage.</div>
+    <div #reload="tooltip" igxTooltip>Reload the page.</div>
+</div>
+
+<!-- IgxGrid with MRL-->
+<div class="grid__wrapper">
+    <igx-expansion-panel #collapsibleComponent [collapsed]="true">
+        <igx-expansion-panel-header [disabled]="false">
+            <igx-expansion-panel-title>Multi-Row Layouts</igx-expansion-panel-title>
+            <igx-expansion-panel-icon *ngIf="templatedIcon">
+                {{collapsed() ? 'Expand':'Collapse'}}
+            </igx-expansion-panel-icon>
+        </igx-expansion-panel-header>
+        <igx-expansion-panel-body>
+            <ng-container *ngTemplateOutlet="controls; context: getContext(mrlGrid)"></ng-container>
+            <igx-grid [id]="mrlGridId" #mrlGrid [igxGridState]="options" height="480px" [data]="localData"
+                 [allowFiltering]="true" [moving]="true">
+                 <igx-column-layout field='group1'>
+                    <ng-template igxHeader let-column>
+                        <span>Custom Header Template: {{column.field}}</span>
+                     </ng-template>
+                    <igx-column [groupable]="true" [rowStart]="1" [colStart]="1" [rowEnd]="4" field="EmployeeID" [width]="'200px'" [resizable]="true">
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.field}}</span>
+                         </ng-template>
+                    </igx-column>
+                </igx-column-layout>
+                <igx-column-layout field='group2'>
+                    <ng-template igxHeader let-column>
+                        <span>Custom Header Template: {{column.field}}</span>
+                     </ng-template>
+                    <igx-column [rowStart]="1" [colStart]="1" [colEnd]="3" field="FirstName" [width]="'300px'" [resizable]="true">
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.field}}</span>
+                         </ng-template>
+                    </igx-column>
+                    <igx-column [rowStart]="2" [colStart]="1" field="LastName" [width]="'300px'" [resizable]="true">
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.field}}</span>
+                         </ng-template>
+                    </igx-column>
+                    <igx-column [rowStart]="2" [colStart]="2" field="Country" [width]="'400px'" [resizable]="true">
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.field}}</span>
+                         </ng-template>
+                    </igx-column>
+                    <igx-column [rowStart]="3" [colStart]="1" [colEnd]="3" field="Age" [width]="'300px'" [resizable]="true">
+                        <ng-template igxHeader let-column>
+                            <span>Custom Header Template: {{column.field}}</span>
+                         </ng-template>
+                    </igx-column>
+                </igx-column-layout>
             </igx-grid>
         </igx-expansion-panel-body>
     </igx-expansion-panel>
@@ -91,10 +177,10 @@
             <div style='width: 100%; height: 100%'>
                 <ng-container *ngTemplateOutlet="controls; context: getContext(hGrid)"></ng-container>
                 <igx-hierarchical-grid #hierGrid [id]="hGridId" [data]="hierData" [showExpandAll]='true'
-                    hasChildrenKey="hasChild" igxGridState columnSelection="multiple" displayDensity="cosy"
+                    hasChildrenKey="hasChild" igxGridState columnSelection="multiple" class="grid-size"
                     rowSelection="multiple" [autoGenerate]="false" [allowFiltering]="true" primaryKey="ID"
                     [height]="'1300px'" [width]="'100%'" #hGrid>
-                    <igx-grid-toolbar [displayDensity]="hierGrid.displayDensity">
+                    <igx-grid-toolbar>
                         <igx-grid-toolbar-actions>
                             <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
                             <igx-grid-toolbar-hiding></igx-grid-toolbar-hiding>
@@ -107,7 +193,7 @@
 
                     <igx-row-island primaryKey="ID" key="childData" height="450px" [showExpandAll]="true"
                         [autoGenerate]="false" [allowFiltering]="true" rowSelection="multiple" #layout1>
-                        <igx-grid-toolbar [displayDensity]="hierGrid.displayDensity">
+                        <igx-grid-toolbar >
                             <igx-grid-toolbar-actions>
                                 <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
                                 <igx-grid-toolbar-hiding></igx-grid-toolbar-hiding>
@@ -154,9 +240,9 @@
             <div style='width: 100%; height: 100%'>
                 <ng-container *ngTemplateOutlet="controls; context: getContext(treeGrid)"></ng-container>
                 <igx-tree-grid [id]="treeGridId" igxGridState #treeGrid [data]="treeGridFlatData"
-                    primaryKey="employeeID" foreignKey="PID" [allowFiltering]="true" displayDensity="cosy"
+                    primaryKey="employeeID" foreignKey="PID" [allowFiltering]="true" class="grid-size"
                     rowSelection="multiple" [width]="'900px'" [height]="'800px'">
-                    <igx-grid-toolbar [displayDensity]="treeGrid.displayDensity">
+                    <igx-grid-toolbar >
                         <igx-grid-toolbar-actions>
                             <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
                             <igx-grid-toolbar-hiding></igx-grid-toolbar-hiding>
@@ -186,9 +272,9 @@
             <div style='width: 100%; height: 100%'>
                 <ng-container *ngTemplateOutlet="controls; context: getContext(treeGridHier)"></ng-container>
                 <igx-tree-grid #treeGridHier [id]="treeGridHierId" igxGridState primaryKey="Name" [data]="employees"
-                    childDataKey="Employees" displayDensity="cosy" width="100%" height="800px" [autoGenerate]="false"
+                    childDataKey="Employees" class="grid-size" width="100%" height="800px" [autoGenerate]="false"
                     [rowSelection]="'multiple'" [allowFiltering]="true" [moving]="true">
-                    <igx-grid-toolbar [displayDensity]="treeGridHier.displayDensity">
+                    <igx-grid-toolbar >
                         <igx-grid-toolbar-actions>
                             <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
                             <igx-grid-toolbar-hiding></igx-grid-toolbar-hiding>
@@ -229,14 +315,18 @@
         </div>
         <div class="switches" style="min-width: inherit">
             <div class="control-item">
-                <button igxButton="raised" (click)="restoreGridState(state)">Restore All</button>
+                <button igxButton="contained" (click)="restoreGridState(state)">Restore All</button>
             </div>
             <div class="control-item">
-                <button igxButton="raised" (click)="saveGridState(state)">Save</button>
+                <button igxButton="contained" (click)="saveGridState(state)">Save</button>
             </div>
             <div class="control-item" *ngFor="let f of features">
-                <button igxButton="raised" (click)="restoreFeature(state, f.key)">{{ f.shortName }}</button>
+                <button igxButton="contained" (click)="restoreFeature(state, f.key)">{{ f.shortName }}</button>
             </div>
         </div>
     </div>
 </ng-template>
+
+<ng-template igxCell #activeTemplate let-column let-cell="cell">
+    Hi I'm {{ cell.value }}
+  </ng-template>

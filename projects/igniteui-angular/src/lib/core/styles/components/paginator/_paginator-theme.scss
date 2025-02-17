@@ -1,6 +1,6 @@
+@use 'sass:map';
 @use '../../base' as *;
 @use '../../themes/schemas' as *;
-@use 'sass:map';
 
 ////
 /// @group themes
@@ -10,26 +10,19 @@
 ////
 
 /// Grid Paging Theme
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} $text-color [currentColor] - The text color.
 /// @param {Color} $background-color [rgba(0, 0, 0, .04)] - The background color of the paging panel.
 /// @param {Color} $border-color [rgba(0, 0, 0, .26)] - The border color of the paging panel.
-///
-/// @requires $default-palette
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-///
+/// @requires $light-material-schema
 /// @example scss Change the stripes color
 ///   $my-paginator-theme: paginator-theme(
 ///     $stripes-color: orange
 ///   );
-///   // Pass the theme to the paginator component mixin
-///   @include paginator($my-paginator-theme);
+///   // Pass the theme to the css-vars() mixin
+///   @include css-vars($my-paginator-theme);
 @function paginator-theme(
-    $palette: null,
-    $schema: $light-schema,
+    $schema: $light-material-schema,
 
     $text-color: null,
     $background-color: null,
@@ -38,14 +31,14 @@
     $name: 'igx-paginator';
     $grid-paginator-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $grid-paginator-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'paginator') {
+        $grid-paginator-schema: map.get($schema, 'paginator');
     } @else {
         $grid-paginator-schema: $schema;
     }
 
-    $theme: apply-palette($grid-paginator-schema, $palette);
-
+    $theme: digest-schema($grid-paginator-schema);
+    $meta: map.get($theme, '_meta');
 
     @if not($text-color) and $background-color {
         $text-color: text-contrast($background-color);
@@ -53,47 +46,51 @@
 
     @return extend($theme, (
         name: $name,
-        palette: $palette,
         text-color: $text-color,
         background-color: $background-color,
-        border-color: $border-color
+        border-color: $border-color,
+        theme: map.get($schema, '_meta', 'theme'),
+        _meta: map.merge(if($meta, $meta, ()), (
+            variant: map.get($schema, '_meta', 'theme')
+        )),
     ));
 }
 
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires rem
-/// @requires var-get
 @mixin paginator($theme) {
     @include css-vars($theme);
 
-    $paginator-padding: (
-        comfortable: 0 rem(24px),
-        cosy: 0 rem(16px),
-        compact: 0 rem(12px)
-    );
+    $variant: map.get($theme, '_meta', 'variant');
 
-    $paginator-height: (
-        comfortable: rem(56px),
-        cosy: rem(48px),
-        compact: rem(44px)
+    $paginator-padding-inline: (
+        comfortable: rem(24px),
+        cosy: rem(16px),
+        compact: rem(12px)
     );
-
-    $left: if-ltr(left, right);
-    $right: if-ltr(right, left);
 
     %igx-paginator {
+        --component-size: var(--ig-size, var(--ig-size-large));
+
         display: flex;
         justify-content: space-between;
         align-items: center;
         color: var-get($theme, 'text-color');
         background: var-get($theme, 'background-color');
-        grid-row: 7;
-        font-size: 12px;
-        border-top: 1px solid var-get($theme, 'border-color');
+        font-size: rem(12px);
+        border-top: rem(1px) solid var-get($theme, 'border-color');
+
+        @if $variant == 'indigo' {
+            font-size: rem(11px);
+            font-weight: 400;
+            line-height: rem(15px);
+        }
+
         z-index: 1;
-        padding: map.get($paginator-padding, 'comfortable');
-        height: map.get($paginator-height, 'comfortable');
+        padding-inline: pad-inline(map.get($paginator-padding-inline, 'compact'), map.get($paginator-padding-inline, 'cosy'), map.get($paginator-padding-inline, 'comfortable'));
+        padding-block: 0;
+        height: var-get($theme, 'size');
         width: 100%;
 
         &:empty {
@@ -101,14 +98,8 @@
         }
     }
 
-    %igx-paginator--cosy {
-        padding: map.get($paginator-padding, 'cosy');
-        height: map.get($paginator-height, 'cosy');
-    }
-
-    %igx-paginator--compact {
-        padding: map.get($paginator-padding, 'compact');
-        height: map.get($paginator-height, 'compact');
+    %igx-paginator--sizable {
+        @include sizable();
     }
 
     %igx-paginator-content {
@@ -126,14 +117,20 @@
     }
 
     %igx-page-size__label {
-        margin-#{$right}: 8px;
+        margin-inline-end: rem(8px);
         @include ellipsis();
     }
 
     %igx-page-size__select {
         display: flex;
-        max-width: 90px;
-        min-width: 80px;
+        max-width: rem(114px);
+        min-width: rem(100px);
+
+        @if $variant != 'indigo' {
+            igx-select {
+                --ig-size: 1;
+            }
+        }
     }
 
     %igx-page-nav {
@@ -143,10 +140,10 @@
         flex: 1;
 
         > * {
-            margin-#{$left}: rem(8px);
+            margin-inline-start: rem(8px);
         }
 
-        @include if-rtl() {
+        [dir='rtl'] & {
             igx-icon {
                 transform: scaleX(-1);
             }

@@ -1,60 +1,104 @@
 import { Directive, TemplateRef } from '@angular/core';
-
+import { IgxCellTemplateContext, IgxColumnTemplateContext, IgxSummaryTemplateContext } from '../common/grid.interface';
 
 @Directive({
-    selector: '[igxFilterCellTemplate]'
+    selector: '[igxFilterCellTemplate]',
+    standalone: true
 })
 export class IgxFilterCellTemplateDirective {
-    constructor(public template: TemplateRef<any>) {}
+    constructor(public template: TemplateRef<IgxColumnTemplateContext>) { }
+
+    public static ngTemplateContextGuard(_directive: IgxFilterCellTemplateDirective,
+        context: unknown): context is IgxColumnTemplateContext {
+        return true;
+    }
 }
 
 @Directive({
-    selector: '[igxCell]'
+    selector: '[igxCell]',
+    standalone: true
 })
 export class IgxCellTemplateDirective {
+    constructor(public template: TemplateRef<IgxCellTemplateContext>) { }
 
-    constructor(public template: TemplateRef<any>) { }
+    public static ngTemplateContextGuard(_directive: IgxCellTemplateDirective,
+        context: unknown): context is IgxCellTemplateContext {
+        return true;
+    }
 }
 
 @Directive({
-    selector: '[igxHeader]'
+    selector: '[igxCellValidationError]',
+    standalone: true
+})
+export class IgxCellValidationErrorDirective {
+    constructor(public template: TemplateRef<IgxCellTemplateContext>) { }
+
+    public static ngTemplateContextGuard(_directive: IgxCellValidationErrorDirective,
+        context: unknown): context is IgxCellTemplateContext {
+        return true;
+    }
+}
+
+@Directive({
+    selector: '[igxHeader]',
+    standalone: true
 })
 export class IgxCellHeaderTemplateDirective {
+    constructor(public template: TemplateRef<IgxColumnTemplateContext>) { }
 
-    constructor(public template: TemplateRef<any>) { }
-
+    public static ngTemplateContextGuard(_directive: IgxCellHeaderTemplateDirective,
+        context: unknown): context is IgxColumnTemplateContext {
+        return true;
+    }
 }
+
 /**
  * @hidden
  */
 @Directive({
-    selector: '[igxFooter]'
+    selector: '[igxFooter]',
+    standalone: true
 })
 export class IgxCellFooterTemplateDirective {
-
     constructor(public template: TemplateRef<any>) { }
 }
 
 @Directive({
-    selector: '[igxCellEditor]'
+    selector: '[igxCellEditor]',
+    standalone: true
 })
 export class IgxCellEditorTemplateDirective {
+    constructor(public template: TemplateRef<IgxCellTemplateContext>) { }
 
-    constructor(public template: TemplateRef<any>) { }
+    public static ngTemplateContextGuard(_directive: IgxCellEditorTemplateDirective,
+        context: unknown): context is IgxCellTemplateContext {
+        return true;
+    }
 }
 
 @Directive({
-    selector: '[igxCollapsibleIndicator]'
+    selector: '[igxCollapsibleIndicator]',
+    standalone: true
 })
 export class IgxCollapsibleIndicatorTemplateDirective {
+    constructor(public template: TemplateRef<IgxColumnTemplateContext>) { }
 
-    constructor(public template: TemplateRef<any>) { }
+    public static ngTemplateContextGuard(_directive: IgxCollapsibleIndicatorTemplateDirective,
+        context: unknown): context is IgxColumnTemplateContext {
+        return true;
+    }
 }
 
 @Directive({
-    selector: '[igxSummary]'
+    selector: '[igxSummary]',
+    standalone: true
 })
 export class IgxSummaryTemplateDirective {
+    constructor(public template: TemplateRef<IgxSummaryTemplateContext>) { }
 
-    constructor(public template: TemplateRef<any>) { }
+    public static ngTemplateContextGuard(_directive: IgxSummaryTemplateDirective,
+        context: unknown): context is IgxSummaryTemplateContext {
+        return true;
+    }
 }

@@ -1,10 +1,10 @@
 <div class="density-chooser">
-    <igx-buttongroup [values]="displayDensities" (selected)="selectDensity($event)"></igx-buttongroup>
+    <igx-buttongroup [values]="sizes" (selected)="selectDensity($event)"></igx-buttongroup>
 </div>
-<igx-grid #grid1 [pinning]="pinningConfig" [data]="data" [autoGenerate]="false" [displayDensity]="'compact'" [width]="w" [height]="h"
+<igx-grid #grid1 [pinning]="pinningConfig" [data]="data" [autoGenerate]="false" [width]="w" [height]="h"
     [allowFiltering]="true" [filterMode]="'excelStyleFilter'" [summaryCalculationMode]="'rootAndChildLevels'" [showSummaryOnCollapse]="true"
-    [summaryRowHeight]="rh" [rowSelection]="rowSelection ? 'multiple' : 'none'" [displayDensity]="density">
-    <igx-grid-toolbar *ngIf="showToolbar" [displayDensity]="grid1.displayDensity">
+    [summaryRowHeight]="rh" [rowSelection]="rowSelection ? 'multiple' : 'none'">
+    <igx-grid-toolbar *ngIf="showToolbar">
         <igx-grid-toolbar-title>Grid Toolbar</igx-grid-toolbar-title>
         <igx-grid-toolbar-actions>
             <igx-grid-toolbar-pinning *ngIf="columnPinning"></igx-grid-toolbar-pinning>
@@ -55,6 +55,7 @@
     </igx-column>
     <igx-column field="Sum" [hasSummary]="true" [dataType]="'percent'" [summaries]="mySummary">
     </igx-column>
+    <igx-paginator *ngIf="paging"></igx-paginator>
 </igx-grid>
 
 <div class="properties-input">
@@ -74,7 +75,7 @@
     <input type="number" [(ngModel)]="rh">
 </div>
 
-<igx-switch [(ngModel)]="grid1.paging">Enable Paging</igx-switch>
+<igx-switch [(ngModel)]="paging">Enable Paging</igx-switch>
 <igx-switch [(ngModel)]="grid1.allowFiltering">allowFiltering</igx-switch>
 <igx-switch [(ngModel)]="columnHiding">columnHiding</igx-switch>
 <igx-switch [(ngModel)]="columnPinning">columnPinning</igx-switch>
@@ -88,13 +89,16 @@
 <igx-switch [(ngModel)]="hasHidden">hasHidden</igx-switch>
 <igx-switch [(ngModel)]="rowSelection">Row Selection</igx-switch>
 
-<button (click)="enableSummary()"> Enable Summary for column ReorderLevel</button>
-<button (click)="toggleSummary()">Toggle Custom Summary</button>
-<button (click)="updateData()">Update Data</button>
-<button (click)="addRow()">Add Row</button>
-<button (click)="deleteRow()">Delete Row</button>
-<button (click)="updateCell()">Update Cell</button>
-<button (click)="updateRow()">Update Row</button>
-<button (click)="pin()">Pin</button>
-<button (click)="hide()">Hide</button>
-<div><input type='number' #input /><button (click)='scrScrollTo(input.value)'>Go To Index</button></div>
+<button igxButton="contained" (click)="enableSummary()"> Enable Summary for column ReorderLevel</button>
+<button igxButton="contained" (click)="toggleSummary()">Toggle Custom Summary</button>
+<button igxButton="contained" (click)="updateData()">Update Data</button>
+<button igxButton="contained" (click)="addRow()">Add Row</button>
+<button igxButton="contained" (click)="deleteRow()">Delete Row</button>
+<button igxButton="contained" (click)="updateCell()">Update Cell</button>
+<button igxButton="contained" (click)="updateRow()">Update Row</button>
+<button igxButton="contained" (click)="pin()">Pin</button>
+<button igxButton="contained" (click)="hide()">Hide</button>
+<div>
+    <input type='number' #input />
+    <button igxButton="contained" (click)='scrScrollTo(input.value)'>Go To Index</button>
+</div>

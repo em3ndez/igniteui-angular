@@ -1,13 +1,15 @@
-import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxTreeGridModule, IgxTreeGridComponent, CellType } from './public_api';
+import { IgxTreeGridComponent } from './public_api';
 import { IgxTreeGridWithNoScrollsComponent, IgxTreeGridWithScrollsComponent } from '../../test-utils/tree-grid-components.spec';
 import { TreeGridFunctions } from '../../test-utils/tree-grid-functions.spec';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
-import { setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
+import { clearGridSubs, setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
 import { GridFunctions } from '../../test-utils/grid-functions.spec';
 import { DebugElement } from '@angular/core';
+import { CellType } from '../public_api';
+import { firstValueFrom } from 'rxjs';
 
 const DEBOUNCETIME = 30;
 
@@ -15,11 +17,11 @@ describe('IgxTreeGrid - Key Board Navigation #tGrid', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 IgxTreeGridWithNoScrollsComponent,
                 IgxTreeGridWithScrollsComponent
-            ],
-            imports: [IgxTreeGridModule, NoopAnimationsModule],
+            ]
         }).compileComponents();
     }));
 
@@ -28,13 +30,12 @@ describe('IgxTreeGrid - Key Board Navigation #tGrid', () => {
         let treeGrid: IgxTreeGridComponent;
         let gridContent;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridWithNoScrollsComponent);
             fix.detectChanges();
-            tick(16);
             treeGrid = fix.componentInstance.treeGrid;
             gridContent = GridFunctions.getGridContent(fix);
-        }));
+        });
 
         it('should navigate with arrow keys', () => {
             spyOn(treeGrid.selected, 'emit').and.callThrough();
@@ -396,15 +397,17 @@ describe('IgxTreeGrid - Key Board Navigation #tGrid', () => {
         let gridContent: DebugElement;
         const treeColumns = ['ID', 'Name', 'HireDate', 'Age', 'OnPTO'];
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridWithScrollsComponent);
             fix.detectChanges();
-            tick(16);
             treeGrid = fix.componentInstance.treeGrid;
             gridContent = GridFunctions.getGridContent(fix);
             setupGridScrollDetection(fix, treeGrid);
-            tick(16);
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('should navigate with arrow Up and Down keys', async () => {
             spyOn(treeGrid.selected, 'emit').and.callThrough();
@@ -418,7 +421,7 @@ describe('IgxTreeGrid - Key Board Navigation #tGrid', () => {
             for (let i = 5; i < 9; i++) {
                 let cell = treeGrid.gridAPI.get_cell_by_index(i, 'ID');
                 UIInteractions.triggerEventHandlerKeyDown('ArrowDown', gridContent);
-                await wait(DEBOUNCETIME);
+                await firstValueFrom(treeGrid.verticalScrollContainer.chunkLoad);
                 fix.detectChanges();
                 TreeGridFunctions.verifyTreeGridCellSelected(treeGrid, cell, false);
                 cell = treeGrid.gridAPI.get_cell_by_index(i + 1, 'ID');
@@ -428,7 +431,10 @@ describe('IgxTreeGrid - Key Board Navigation #tGrid', () => {
             for (let i = 9; i > 0; i--) {
                 let cell = treeGrid.gridAPI.get_cell_by_index(i, 'ID');
                 UIInteractions.triggerEventHandlerKeyDown('ArrowUp', gridContent);
-                await wait(DEBOUNCETIME);
+                if (i <= 4)
+                    await firstValueFrom(treeGrid.verticalScrollContainer.chunkLoad);
+                else 
+                    await wait();
                 fix.detectChanges();
                 TreeGridFunctions.verifyTreeGridCellSelected(treeGrid, cell, false);
                 cell = treeGrid.gridAPI.get_cell_by_index(i - 1, 'ID');
@@ -575,6 +581,9 @@ describe('IgxTreeGrid - Key Board Navigation #tGrid', () => {
         });
 
         it('should expand/collapse row when Alt + arrow Left/Right keys are pressed', async () => {
+            treeGrid.width = '400px';
+            await wait(DEBOUNCETIME);
+            fix.detectChanges();
             treeGrid.headerContainer.scrollTo(4);
             await wait(DEBOUNCETIME);
             fix.detectChanges();

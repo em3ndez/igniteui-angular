@@ -1,4 +1,6 @@
 import { Component, ViewChild, ElementRef, ChangeDetectorRef, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { NgFor } from '@angular/common';
 import {
     IgxDropDownComponent,
     OverlaySettings,
@@ -12,14 +14,23 @@ import {
     ElasticPositionStrategy,
     IgxDragDirective,
     ContainerPositionStrategy,
-    IAnimationParams
+    IgxRadioComponent,
+    IgxSwitchComponent,
+    IgxInputGroupComponent,
+    IgxInputDirective,
+    IgxLabelDirective,
+    IgxButtonDirective,
+    IgxRippleDirective,
+    IgxDropDownItemComponent,
+    IChangeCheckboxEventArgs
 } from 'igniteui-angular';
+import { IAnimationParams } from 'igniteui-angular/animations';
 
 @Component({
-    // eslint-disable-next-line @angular-eslint/component-selector
     selector: 'overlay-sample',
     styleUrls: ['overlay.sample.css'],
     templateUrl: './overlay.sample.html',
+    imports: [NgFor, IgxRadioComponent, FormsModule, IgxSwitchComponent, IgxInputGroupComponent, IgxInputDirective, IgxLabelDirective, IgxButtonDirective, IgxRippleDirective, IgxDragDirective, IgxDropDownComponent, IgxDropDownItemComponent]
 })
 export class OverlaySampleComponent implements OnInit {
     @ViewChild(IgxDropDownComponent, { static: true })
@@ -49,6 +60,7 @@ export class OverlaySampleComponent implements OnInit {
     public closeOnOutsideClick = true;
     public modal = true;
     public useOutlet = false;
+    public hasAnimation = true;
     public animationLength = 300; // in ms
 
     private xAddition = 0;
@@ -68,8 +80,8 @@ export class OverlaySampleComponent implements OnInit {
         }
     }
 
-    public onChange(ev) {
-        switch (ev.radio.name) {
+    public onChange(ev: IChangeCheckboxEventArgs) {
+        switch (ev.owner.name) {
             case 'ps':
                 this.removeSelectedClass('direction');
                 this.removeSelectedClass('start-point');
@@ -227,8 +239,8 @@ export class OverlaySampleComponent implements OnInit {
         this._overlaySettings.outlet = this.useOutlet ? this.outletElement : null;
     }
 
-    public onSwitchChange(ev) {
-        switch (ev.switch.name) {
+    public onSwitchChange(ev: IChangeCheckboxEventArgs) {
+        switch (ev.owner.name) {
             case 'close':
                 this._overlaySettings.closeOnOutsideClick = ev.checked;
                 break;
@@ -347,6 +359,10 @@ export class OverlaySampleComponent implements OnInit {
                 = `${this.animationLength}ms`;
             (this._overlaySettings.positionStrategy.settings.closeAnimation.options.params as IAnimationParams).duration
                 = `${this.animationLength}ms`;
+            if (!this.hasAnimation) {
+                this._overlaySettings.positionStrategy.settings.openAnimation = null;
+                this._overlaySettings.positionStrategy.settings.closeAnimation = null;
+            }
         }
         this.igxDropDown.toggle(this._overlaySettings);
     }
@@ -375,7 +391,7 @@ export class OverlaySampleComponent implements OnInit {
 
     private removeSelectedClass(type: string) {
         const items = document.getElementsByClassName(type);
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
+
         for (let index = 0; index < items.length; index++) {
             const element = items[index];
             element.classList.remove('selected');

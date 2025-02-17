@@ -1,5 +1,5 @@
 import { IgxComboItemComponent } from './combo-item.component';
-import { Component } from '@angular/core';
+import { Component, HostBinding } from '@angular/core';
 
 /**
  * @hidden
@@ -7,19 +7,21 @@ import { Component } from '@angular/core';
 @Component({
     selector: 'igx-combo-add-item',
     template: '<ng-content></ng-content>',
-    providers: [{ provide: IgxComboItemComponent, useExisting: IgxComboAddItemComponent}]
+    providers: [{ provide: IgxComboItemComponent, useExisting: IgxComboAddItemComponent }],
 })
 export class IgxComboAddItemComponent extends IgxComboItemComponent {
-    public get selected(): boolean {
+    @HostBinding('class.igx-drop-down__item')
+    public get isDropDownItem(): boolean {
         return false;
     }
-    public set selected(value: boolean) {
+
+    public override get selected(): boolean {
+        return false;
+    }
+    public override set selected(value: boolean) {
     }
 
-    /**
-     * @inheritdoc
-     */
-    public clicked(event?) {// eslint-disable-line
+    public override clicked(event?) {// eslint-disable-line
         this.comboAPI.disableTransitions = false;
         this.comboAPI.add_custom_item();
     }

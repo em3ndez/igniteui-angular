@@ -1,20 +1,20 @@
 import { useAnimation } from '@angular/animations';
-import { CommonModule } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
     Component,
     EventEmitter,
     HostBinding,
     Input,
-    NgModule,
     OnInit,
     Output
 } from '@angular/core';
 import { takeUntil } from 'rxjs/operators';
-import { fadeIn, fadeOut } from '../animations/main';
 import { ContainerPositionStrategy, GlobalPositionStrategy, HorizontalAlignment,
     PositionSettings, VerticalAlignment } from '../services/public_api';
 import { IgxNotificationsDirective } from '../directives/notification/notifications.directive';
 import { ToggleViewEventArgs } from '../directives/toggle/toggle.directive';
+import { IgxButtonDirective } from '../directives/button/button.directive';
+import { fadeIn, fadeOut } from 'igniteui-angular/animations';
 
 let NEXT_ID = 0;
 /**
@@ -26,7 +26,7 @@ let NEXT_ID = 0;
  *
  * Example:
  * ```html
- * <button (click)="snackbar.show()">Send message</button>
+ * <button type="button" igxButton (click)="snackbar.show()">Send message</button>
  * <div>
  *   <igx-snackbar #snackbar>
  *      Message sent
@@ -36,7 +36,8 @@ let NEXT_ID = 0;
  */
 @Component({
     selector: 'igx-snackbar',
-    templateUrl: 'snackbar.component.html'
+    templateUrl: 'snackbar.component.html',
+    imports: [NgIf, IgxButtonDirective]
 })
 export class IgxSnackbarComponent extends IgxNotificationsDirective
     implements OnInit {
@@ -54,7 +55,7 @@ export class IgxSnackbarComponent extends IgxNotificationsDirective
      */
     @HostBinding('attr.id')
     @Input()
-    public id = `igx-snackbar-${NEXT_ID++}`;
+    public override id = `igx-snackbar-${NEXT_ID++}`;
 
     /**
      * The default css class applied to the component.
@@ -100,7 +101,6 @@ export class IgxSnackbarComponent extends IgxNotificationsDirective
      * ```
      */
     @Output() public animationDone = new EventEmitter<ToggleViewEventArgs>();
-
 
     /**
      * Get the position and animation settings used by the snackbar.
@@ -154,11 +154,10 @@ export class IgxSnackbarComponent extends IgxNotificationsDirective
      * this.snackbar.open();
      * ```
      */
-    public open(message?: string) {
+    public override open(message?: string) {
         if (message !== undefined) {
             this.textMessage = message;
         }
-
 
         this.strategy = this.outlet ? new ContainerPositionStrategy(this.positionSettings)
             : new GlobalPositionStrategy(this.positionSettings);
@@ -172,7 +171,7 @@ export class IgxSnackbarComponent extends IgxNotificationsDirective
      * this.snackbar.toggle();
      * ```
      */
-     public toggle() {
+     public override toggle() {
         if (this.collapsed || this.isClosing) {
             this.open();
         } else {
@@ -190,25 +189,15 @@ export class IgxSnackbarComponent extends IgxNotificationsDirective
     /**
      * @hidden
      */
-    public ngOnInit() {
-        this.opened.pipe(takeUntil(this.d$)).subscribe(() => {
+    public override ngOnInit() {
+        this.opened.pipe(takeUntil(this.destroy$)).subscribe(() => {
             const openedEventArgs: ToggleViewEventArgs = { owner: this, id: this._overlayId };
             this.animationStarted.emit(openedEventArgs);
         });
 
-        this.closed.pipe(takeUntil(this.d$)).subscribe(() => {
+        this.closed.pipe(takeUntil(this.destroy$)).subscribe(() => {
             const closedEventArgs: ToggleViewEventArgs = { owner: this, id: this._overlayId };
             this.animationDone.emit(closedEventArgs);
         });
     }
 }
-
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxSnackbarComponent],
-    exports: [IgxSnackbarComponent],
-    imports: [CommonModule]
-})
-export class IgxSnackbarModule { }

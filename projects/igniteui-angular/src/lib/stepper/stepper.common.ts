@@ -6,8 +6,9 @@ import {
     IgxStepActiveIndicatorDirective, IgxStepCompletedIndicatorDirective, IgxStepContentDirective,
     IgxStepIndicatorDirective, IgxStepInvalidIndicatorDirective
 } from './stepper.directive';
-import { Direction, HorizontalAnimationType, IgxCarouselComponentBase } from '../carousel/carousel-base';
+import { Direction, IgxCarouselComponentBase } from '../carousel/carousel-base';
 import { ToggleAnimationPlayer, ToggleAnimationSettings } from '../expansion-panel/toggle-animation-component';
+import { CarouselAnimationType } from '../carousel/enums';
 
 // Component interfaces
 export interface IgxStepper extends IgxCarouselComponentBase {
@@ -43,7 +44,6 @@ export interface IgxStepper extends IgxCarouselComponentBase {
 }
 
 // Item interfaces
-
 export interface IgxStep extends ToggleAnimationPlayer {
     id: string;
     /** @hidden @internal */
@@ -143,6 +143,11 @@ export const VerticalAnimationType = {
 } as const;
 export type VerticalAnimationType = (typeof VerticalAnimationType)[keyof typeof VerticalAnimationType];
 
+export const HorizontalAnimationType = {
+    ...CarouselAnimationType
+} as const;
+export type HorizontalAnimationType = (typeof HorizontalAnimationType)[keyof typeof HorizontalAnimationType];
+
 // Token
-export const IGX_STEPPER_COMPONENT = new InjectionToken<IgxStepperComponent>('IgxStepperToken');
-export const IGX_STEP_COMPONENT = new InjectionToken<IgxStepComponent>('IgxStepToken');
+export const IGX_STEPPER_COMPONENT = /*@__PURE__*/new InjectionToken<IgxStepperComponent>('IgxStepperToken');
+export const IGX_STEP_COMPONENT = /*@__PURE__*/new InjectionToken<IgxStepComponent>('IgxStepToken');

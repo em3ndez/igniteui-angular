@@ -6,8 +6,9 @@ import { IFilteringExpressionsTree } from '../data-operations/filtering-expressi
 import { Transaction, TransactionType, State } from '../services/transaction/transaction';
 import { IgxCell, IgxGridCRUDService, IgxEditRow } from './common/crud.service';
 import { CellType, ColumnType, GridServiceType, GridType, RowType } from './common/grid.interface';
-import { IGridEditEventArgs, IRowToggleEventArgs } from './common/events';
+import { IGridEditEventArgs, IPinRowEventArgs, IRowToggleEventArgs } from './common/events';
 import { IgxColumnMovingService } from './moving/moving.service';
+import { IGroupingExpression } from '../data-operations/grouping-expression.interface';
 import { ISortingExpression, SortingDirection } from '../data-operations/sorting-strategy';
 import { FilterUtil } from '../data-operations/filtering-strategy';
 
@@ -27,7 +28,7 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
     ) { }
 
     public get_column_by_name(name: string): ColumnType {
-        return this.grid.columnList.find((col: ColumnType) => col.field === name);
+        return this.grid.columns.find((col: ColumnType) => col.field === name);
     }
 
     public get_summary_data() {
@@ -140,12 +141,26 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         if (!cell) {
             return;
         }
-        const args = cell.createEditEventArgs(true);
-
-        this.grid.summaryService.clearSummaryCache(args);
+        const args = cell.createCellEditEventArgs(true);
+        if (!this.grid.crudService.row) { // should not recalculate summaries when there is row in edit mode
+            this.grid.summaryService.clearSummaryCache(args);
+        }
         const data = this.getRowData(cell.id.rowID);
-        this.updateData(this.grid, cell.id.rowID, data, cell.rowData, reverseMapper(cell.column.field, args.newValue));
+        const newRowData = reverseMapper(cell.column.field, args.newValue);
+        this.updateData(this.grid, cell.id.rowID, data, cell.rowData, newRowData);
+        if (!this.grid.crudService.row) {
+            this.grid.validation.update(cell.id.rowID, newRowData);
+        }
         if (this.grid.primaryKey === cell.column.field) {
+            if (this.grid.pinnedRecords.length > 0) {
+                const rowIndex = this.grid.pinnedRecords.indexOf(cell.rowData);
+                if (rowIndex !== -1) {
+                    const previousRowId = cell.value;
+                    const rowType = this.grid.getRowByIndex(cell.rowIndex);
+                    this.unpin_row(previousRowId, rowType);
+                    this.pin_row(args.newValue, rowIndex, rowType);
+                }
+            }
             if (this.grid.selectionService.isRowSelected(cell.id.rowID)) {
                 this.grid.selectionService.deselectRow(cell.id.rowID);
                 this.grid.selectionService.selectRowById(args.newValue);
@@ -173,7 +188,7 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         const hasSummarized = grid.hasSummarizedColumns;
         this.crudService.updateRowEditData(row, value);
 
-        const args = row.createEditEventArgs(true, event);
+        const args = row.createRowEditEventArgs(true, event);
 
         // If no valid row is found
         if (index === -1) {
@@ -197,6 +212,7 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         }
 
         this.updateData(grid, row.id, data[index], args.oldValue, args.newValue);
+        this.grid.validation.update(row.id, args.newValue);
         const newId = grid.primaryKey ? args.newValue[grid.primaryKey] : args.newValue;
         if (selected) {
             grid.selectionService.deselectRow(row.id);
@@ -221,6 +237,15 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         this.grid.sortingExpressions = sortingState;
     }
 
+    public sort_decoupled(expression: IGroupingExpression): void {
+        if (expression.dir === SortingDirection.None) {
+            this.remove_grouping_expression(expression.fieldName);
+        }
+        const groupingState = cloneArray((this.grid as any).groupingExpressions);
+        this.prepare_grouping_expression([groupingState], expression);
+        (this.grid as any).groupingExpressions = groupingState;
+    }
+
     public sort_multiple(expressions: ISortingExpression[]): void {
         const sortingState = cloneArray(this.grid.sortingExpressions);
 
@@ -232,6 +257,17 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         }
 
         this.grid.sortingExpressions = sortingState;
+    }
+
+    public sort_groupBy_multiple(expressions: ISortingExpression[]): void {
+        const groupingState = cloneArray((this.grid as any).groupingExpressions);
+
+        for (const each of expressions) {
+            if (each.dir === SortingDirection.None) {
+                this.remove_grouping_expression(each.fieldName);
+            }
+            this.prepare_grouping_expression([groupingState], each);
+        }
     }
 
     public clear_sort(fieldName: string) {
@@ -271,14 +307,15 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         // Add row goes to transactions and if rowEditable is properly implemented, added rows will go to pending transactions
         // If there is a row in edit - > commit and close
         const grid = this.grid;
-
+        const rowId = grid.primaryKey ? rowData[grid.primaryKey] : rowData;
         if (grid.transactions.enabled) {
-            const transactionId = grid.primaryKey ? rowData[grid.primaryKey] : rowData;
-            const transaction: Transaction = { id: transactionId, type: TransactionType.ADD, newValue: rowData };
+            const transaction: Transaction = { id: rowId, type: TransactionType.ADD, newValue: rowData };
             grid.transactions.add(transaction);
         } else {
             grid.data.push(rowData);
         }
+        grid.validation.markAsTouched(rowId);
+        grid.validation.update(rowId, rowData);
     }
 
     public deleteRowFromData(rowID: any, index: number) {
@@ -296,14 +333,14 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
             const state: State = grid.transactions.getState(rowID);
             grid.transactions.add({ id: rowID, type: TransactionType.DELETE, newValue: null }, state && state.recordRef);
         }
+        grid.validation.clear(rowID);
     }
 
     public deleteRowById(rowId: any): any {
         let index: number;
         const grid = this.grid;
-        const data = this.get_all_data();
+        const data = this.get_all_data(grid.transactions.enabled);
         if (grid.primaryKey) {
-            // eslint-disable-next-line @typescript-eslint/no-shadow
             index = data.map((record) => record[grid.primaryKey]).indexOf(rowId);
         } else {
             index = data.indexOf(rowId);
@@ -322,13 +359,13 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         }
 
         const record = data[index];
-        // //  TODO: should we emit this when cascadeOnDelete is true for each row?!?!
-        grid.rowDeletedNotifier.next({ data: data[index] });
+        const key = record ? record[grid.primaryKey] : undefined;
+        grid.rowDeletedNotifier.next({ data: record, rowData: record, owner: grid, primaryKey: key, rowKey: key });
 
         this.deleteRowFromData(rowId, index);
 
         if (grid.selectionService.isRowSelected(rowId)) {
-            grid.selectionService.deselectRow(rowId);
+            grid.selectionService.deselectRowsWithNoEvent([rowId]);
         } else {
             grid.selectionService.clearHeaderCBState();
         }
@@ -387,6 +424,7 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         }
 
         const args: IRowToggleEventArgs = {
+            rowKey: rowID,
             rowID,
             expanded,
             event,
@@ -460,6 +498,43 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
         });
     }
 
+    public prepare_grouping_expression(stateCollections: Array<Array<any>>, expression: IGroupingExpression) {
+        if (expression.dir === SortingDirection.None) {
+            stateCollections.forEach(state => {
+                state.splice(state.findIndex((expr) => expr.fieldName === expression.fieldName), 1);
+            });
+            return;
+        }
+
+        /**
+         * We need to make sure the states in each collection with same fields point to the same object reference.
+         * If the different state collections provided have different sizes we need to get the largest one.
+         * That way we can get the state reference from the largest one that has the same fieldName as the expression to prepare.
+         */
+        let maxCollection = stateCollections[0];
+        for (let i = 1; i < stateCollections.length; i++) {
+            if (maxCollection.length < stateCollections[i].length) {
+                maxCollection = stateCollections[i];
+            }
+        }
+        const maxExpr = maxCollection.find((expr) => expr.fieldName === expression.fieldName);
+
+        stateCollections.forEach(collection => {
+            const myExpr = collection.find((expr) => expr.fieldName === expression.fieldName);
+            if (!myExpr && !maxExpr) {
+                // Expression with this fieldName is missing from the current and the max collection.
+                collection.push(expression);
+            } else if (!myExpr && maxExpr) {
+                // Expression with this fieldName is missing from the current and but the max collection has.
+                collection.push(maxExpr);
+                Object.assign(maxExpr, expression);
+            } else {
+                // The current collection has the expression so just update it.
+                Object.assign(myExpr, expression);
+            }
+        });
+    }
+
     public remove_grouping_expression(_fieldName) {
     }
 
@@ -476,6 +551,50 @@ export class GridBaseAPIService<T extends GridType> implements GridServiceType {
 
     public sortDataByExpressions(data: any[], expressions: ISortingExpression[]) {
         return DataUtil.sort(cloneArray(data), expressions, this.grid.sortStrategy, this.grid);
+    }
+
+    public pin_row(rowID: any, index?: number, row?: RowType): void {
+        const grid = (this.grid as any);
+        if (grid._pinnedRecordIDs.indexOf(rowID) !== -1) {
+            return;
+        }
+        const eventArgs = this.get_pin_row_event_args(rowID, index, row, true);
+        grid.rowPinning.emit(eventArgs);
+
+        if (eventArgs.cancel) {
+            return;
+        }
+        const insertIndex = typeof eventArgs.insertAtIndex === 'number' ? eventArgs.insertAtIndex : grid._pinnedRecordIDs.length;
+        grid._pinnedRecordIDs.splice(insertIndex, 0, rowID);
+    }
+
+    public unpin_row(rowID: any, row: RowType): void {
+        const grid = (this.grid as any);
+        const index = grid._pinnedRecordIDs.indexOf(rowID);
+        if (index === -1) {
+            return;
+        }
+        const eventArgs = this.get_pin_row_event_args(rowID, null , row, false);
+        grid.rowPinning.emit(eventArgs);
+
+        if (eventArgs.cancel) {
+            return;
+        }
+        grid._pinnedRecordIDs.splice(index, 1);
+    }
+
+    public get_pin_row_event_args(rowID: any, index?: number, row?: RowType, pinned?: boolean) {
+        const eventArgs: IPinRowEventArgs = {
+            isPinned: pinned ? true : false,
+            rowKey: rowID,
+            rowID,
+            row,
+            cancel: false
+        }
+        if (typeof index === 'number') {
+            eventArgs.insertAtIndex = index <= this.grid.pinnedRecords.length ? index : this.grid.pinnedRecords.length;
+        }
+        return eventArgs;
     }
 
     /**

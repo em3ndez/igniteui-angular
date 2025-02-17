@@ -2,26 +2,29 @@ import { Component, ViewChild } from '@angular/core';
 import { TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
-    IgxCardModule,
     IgxCardComponent,
-    IgxCardType,
     IgxCardThumbnailDirective,
     IgxCardHeaderTitleDirective,
     IgxCardHeaderSubtitleDirective,
     IgxCardActionsComponent,
     IgxCardMediaDirective,
+    IgxCardHeaderComponent,
+    IgxCardContentDirective,
 } from './card.component';
 
-import { IgxButtonModule } from '../directives/button/button.directive';
-import { IgxIconModule } from '../icon/public_api';
 import { configureTestSuite } from '../test-utils/configure-suite';
+import { IgxButtonDirective } from '../directives/button/button.directive';
+import { IgxIconComponent } from '../icon/icon.component';
+import { IgxIconButtonDirective } from '../directives/button/icon-button.directive';
 
 describe('Card', () => {
     configureTestSuite();
+    // TODO: Refactor card tests to reuse components
     const baseClass = 'igx-card';
 
     const classes = {
         outlined: `${baseClass}--outlined`,
+        elevated: `${baseClass}--elevated`,
         horizontal: `${baseClass}--horizontal`,
         header: {
             base: `${baseClass}-header`,
@@ -49,14 +52,11 @@ describe('Card', () => {
             get justify() {
                 return `${this.base}--justify`;
             },
-            get reverse() {
-                return `${this.base}--reverse`;
+            get end() {
+                return `${this.base}__end`;
             },
-            get icons() {
-                return `${this.base}__icons`;
-            },
-            get buttons() {
-                return `${this.base}__buttons`;
+            get start() {
+                return `${this.base}__start`;
             }
         },
         media: `${baseClass}__media`
@@ -64,17 +64,13 @@ describe('Card', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
                 InitCardComponent,
                 InitOutlinedCardComponent,
                 CardWithHeaderComponent,
+                CardContentIconComponent,
                 VerticalCardComponent,
                 HorizontalCardComponent
-            ],
-            imports: [
-                IgxCardModule,
-                IgxIconModule,
-                IgxButtonModule
             ]
         }).compileComponents();
     }));
@@ -89,21 +85,9 @@ describe('Card', () => {
         expect(card.getAttribute('role')).toEqual('group');
 
         expect(card).toHaveClass(`${baseClass}`);
-        expect(card).not.toHaveClass(classes.outlined);
+        expect(card).not.toHaveClass(classes.elevated);
         expect(card).not.toHaveClass(classes.horizontal);
         expect(card.id).toContain(`${baseClass}-`);
-    });
-
-    it('Initializes outlined card', () => {
-        const fixture = TestBed.createComponent(InitOutlinedCardComponent);
-        fixture.detectChanges();
-
-        const instance = fixture.componentInstance.card;
-        const card = fixture.debugElement.query(By.css(baseClass)).nativeElement;
-
-        expect(instance.type).toEqual(IgxCardType.OUTLINED);
-        expect(card).toHaveClass(classes.outlined);
-        expect(card).not.toHaveClass(classes.horizontal);
     });
 
     it('Initializes horizontal card', () => {
@@ -124,7 +108,9 @@ describe('Card', () => {
         const header = fixture.debugElement.query(By.css('igx-card-header')).nativeElement;
 
         expect(header).toBeDefined();
-        expect(header.getAttribute('role')).toEqual('header');
+        // K.D. March 20th, 2023 #12792 Card header should have no role
+        // expect(header.getAttribute('role')).toEqual('header');
+        expect(header.getAttribute('role')).toBeNull();
 
         expect(header).toHaveClass(classes.header.base);
         expect(header).not.toHaveClass(classes.header.vertical);
@@ -197,6 +183,16 @@ describe('Card', () => {
         expect(actions).not.toHaveClass(classes.actions.vertical);
     });
 
+    it('Should use Material Icons font-family for igx-icon in card content', () => {
+        const fixture = TestBed.createComponent(CardContentIconComponent);
+        fixture.detectChanges();
+
+        const iconElement = fixture.debugElement.query(By.css('igx-icon')).nativeElement;
+        const computedStyle = window.getComputedStyle(iconElement);
+
+        expect(computedStyle.fontFamily).toBe('"Material Icons"');
+    });
+
     it('Should automatically align actions vertically when in horizontal layout', () => {
         const fixture = TestBed.createComponent(HorizontalCardComponent);
         fixture.detectChanges();
@@ -228,44 +224,25 @@ describe('Card', () => {
 
         const actionsElement = fixture.debugElement.query(By.css('igx-card-actions'));
 
-        const buttons = actionsElement.query(By.css(`.${classes.actions.buttons}`)).nativeElement;
-        const icons = actionsElement.query(By.css(`.${classes.actions.icons}`)).nativeElement;
+        const buttons = actionsElement.query(By.css(`.${classes.actions.start}`)).nativeElement;
+        const icons = actionsElement.query(By.css(`.${classes.actions.end}`)).nativeElement;
 
         const buttonsOrder = window.getComputedStyle(buttons).getPropertyValue('order');
         const iconsOrder = window.getComputedStyle(icons).getPropertyValue('order');
 
-        expect(actionsElement.nativeElement).not.toHaveClass(classes.actions.reverse);
         expect(parseInt(buttonsOrder, 10)).toBeLessThan(parseInt(iconsOrder, 10));
-    });
-
-    it('Actions should display icon buttons before regular buttons with reverse set to true', () => {
-        const fixture = TestBed.createComponent(HorizontalCardComponent);
-        fixture.detectChanges();
-
-        const actionsInstance = fixture.componentInstance.actions;
-        const actionsElement = fixture.debugElement.query(By.css('igx-card-actions'));
-
-        const buttons = actionsElement.query(By.css(`.${classes.actions.buttons}`)).nativeElement;
-        const icons = actionsElement.query(By.css(`.${classes.actions.icons}`)).nativeElement;
-
-        actionsInstance.reverse = true;
-        fixture.detectChanges();
-
-        const buttonsOrder = window.getComputedStyle(buttons).getPropertyValue('order');
-        const iconsOrder = window.getComputedStyle(icons).getPropertyValue('order');
-
-        expect(actionsElement.nativeElement).toHaveClass(classes.actions.reverse);
-        expect(parseInt(buttonsOrder, 10)).toBeGreaterThan(parseInt(iconsOrder, 10));
     });
 });
 
 @Component({
-    template: `<igx-card></igx-card>`
+    template: `<igx-card></igx-card>`,
+    imports: [IgxCardComponent]
 })
 class InitCardComponent { }
 
 @Component({
-    template: `<igx-card type="outlined"></igx-card>`
+    template: `<igx-card type="outlined"></igx-card>`,
+    imports: [IgxCardComponent]
 })
 class InitOutlinedCardComponent {
     @ViewChild(IgxCardComponent, { static: true })
@@ -275,9 +252,20 @@ class InitOutlinedCardComponent {
 @Component({
     template: `<igx-card>
         <igx-card-header></igx-card-header>
-    <igx-card>`
+    <igx-card>`,
+    imports: [IgxCardComponent, IgxCardHeaderComponent]
 })
 class CardWithHeaderComponent { }
+
+@Component({
+    template: `<igx-card class="ig-typography">
+            <igx-card-content>
+                <igx-icon>face</igx-icon>
+            </igx-card-content>
+        <igx-card>`,
+    imports: [IgxCardComponent, IgxCardContentDirective, IgxIconComponent]
+})
+class CardContentIconComponent { }
 
 @Component({
     template: `<igx-card>
@@ -294,26 +282,41 @@ class CardWithHeaderComponent { }
         <igx-card-content>Test Content</igx-card-content>
 
         <igx-card-actions>
-            <button igxButton>Test</button>
-            <button igxButton="icon">
+            <button igxButton igxStart>Test</button>
+            <button igxIconButton="flat" igxEnd>
                 <igx-icon>home</igx-icon>
             </button>
         </igx-card-actions>
-    <igx-card>`
+    <igx-card>`,
+    imports: [
+        IgxCardComponent,
+        IgxCardMediaDirective,
+        IgxCardHeaderComponent,
+        IgxCardThumbnailDirective,
+        IgxCardHeaderTitleDirective,
+        IgxCardHeaderSubtitleDirective,
+        IgxCardContentDirective,
+        IgxCardActionsComponent,
+        IgxButtonDirective,
+        IgxIconComponent,
+        IgxIconButtonDirective
+    ]
 })
 class VerticalCardComponent {
     @ViewChild(IgxCardMediaDirective, { static: true }) public media: IgxCardMediaDirective;
 }
 
 @Component({
-    template: `<igx-card [horizontal]="true">
+    template: `
+    <igx-card [horizontal]="true">
         <igx-card-actions>
-            <button igxButton>Test</button>
-            <button igxButton="icon">
+            <button igxButton igxStart>Test</button>
+            <button igxIconButton="flat" igxEnd>
                 <igx-icon>home</igx-icon>
             </button>
         </igx-card-actions>
-    </igx-card>`
+    </igx-card>`,
+    imports: [IgxCardComponent, IgxCardActionsComponent, IgxButtonDirective, IgxIconComponent, IgxIconButtonDirective]
 })
 class HorizontalCardComponent {
     @ViewChild(IgxCardComponent, { static: true }) public card: IgxCardComponent;

@@ -1,0 +1,185 @@
+.dialog {
+    width: 100px;
+    height: 50px;
+    background-color: #ccc;
+    color: black;
+    display: flex;
+    cursor: move;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 200ms cubic-bezier(0, 0, .2, 1);
+    box-shadow: 0 0 3px -2px var(--ig-surface-500-contrast);
+}
+
+.dialog:active {
+    box-shadow: 0 5px 15px 3px var(--ig-surface-500-contrast);
+}
+
+.dragWithGhostDefault {
+    width: 100px;
+    height: 50px;
+    background-color: #ccc;
+    color: black;
+    display: flex;
+    cursor: move;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 200ms cubic-bezier(0, 0, .2, 1);
+    box-shadow: 0 0 3px -2px var(--ig-surface-500-contrast);
+}
+
+.dragWithGhostPlaceholder {
+    width: 100px;
+    height: 50px;
+    background-color: transparent;
+    color: black;
+    display: flex;
+    cursor: move;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 4px 0 var(--ig-surface-500-contrast);
+}
+
+.customGhost {
+    width: 100px;
+    height: 50px;
+    background-color: #ccc;
+    color: black;
+    display: flex;
+    cursor: move;
+    user-select: none;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 200ms cubic-bezier(0, 0, .2, 1);
+    box-shadow: 0 5px 15px 3px var(--ig-surface-500-contrast);
+}
+
+.dialogHeader {
+    display: flex;
+    flex-flow: row;
+    vertical-align: center;
+    font-size: 1.5em;
+    position: relative;
+}
+
+.dialogHandle {
+    margin: 10px;
+    cursor: move;
+    position: absolute;
+    right: 0;
+}
+
+.initialArea {
+    display: flex;
+    flex-flow: row;
+    height: 100px;
+    border: 1px var(--ig-surface-500-contrast) dotted;
+}
+
+.initialArea.dragOver {
+    background-color: rgba(0, 128, 0, .7);
+}
+
+.draggableElem {
+    width: 100px;
+    height: 50px;
+    line-height: 50px;
+    background-color: #1a8cff;
+    text-align: center;
+    margin: 10px;
+    box-shadow: grey 2px 2px 1px;
+}
+
+.draggableElem:hover {
+    background-color: #0080ff;
+}
+
+.cageArea {
+    width: 100%;
+    height: 100px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    background-color: #c1c1c1;
+    background-repeat: repeat-x;
+    background-size: 190px;
+}
+
+.cageArea.dragOver {
+    background-color: rgba(205, 67, 67, .7);
+}
+
+.listArea {
+    width: 300px;
+    min-height: 50px;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px 0 rgba(var(--ig-surface-500-contrast), .26), 0 3px 3px 0 rgba(var(--ig-surface-500-contrast), .12), 0 4px 2px -2px rgba(var(--ig-surface-500-contrast), .08);
+    background-color: #d4d4d4;
+}
+
+.listItem {
+    padding: 20px;
+    box-sizing: border-box;
+    border-bottom: 1px solid rgba(var(--ig-surface-500-contrast), .15);
+    background-color: #bebdbd;
+    color: black;
+    position: relative;
+    cursor: move;
+}
+
+.dragClickable {
+    cursor: pointer;
+    width: .5em;
+    font-size: 1.2em;
+    margin-left: .2em;
+}
+
+.dragRow {
+    display: flex;
+    flex-direction: row;
+}
+
+.dragScrollContainer {
+    width: 1000px;
+    height: 300px;
+    overflow: auto;
+}
+
+.dragScrollContent {
+    height: 1000px;
+    width: 2000px;
+    background-color: grey
+}
+
+.rootList {
+    width: 300px;
+    height: auto;
+}
+
+.movieListItem {
+    padding: 5px;
+    margin-top: 5px;
+    margin-left: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 6px 0 gray;
+    background-color: rgba(232, 232, 232, .5);
+}
+
+.white {
+    background-color: white;
+}
+
+.lightblue {
+    background-color: lightblue;
+}
+
+.rowsContainer {
+    margin: 1em;
+    height: 100px;
+    width: 50%;
+    border: 1px solid gray;
+}
+
+.scrollContainer{
+    overflow: auto;
+}
