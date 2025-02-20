@@ -1,12 +1,14 @@
 import { Component, ViewChild } from '@angular/core';
-import { IDimensionsChange, IgxPivotGridComponent, IgxPivotNumericAggregate, IPivotConfiguration, IPivotDimension } from 'igniteui-angular';
+import { FormsModule } from '@angular/forms';
+import { IgxComboComponent, IgxExcelExporterOptions, IgxExcelExporterService, IgxPivotGridComponent, IgxPivotNumericAggregate, IPivotConfiguration, IPivotDimension, IPivotUISettings, PivotRowLayoutType } from 'igniteui-angular';
 import { DATA } from '../shared/pivot-data';
 
 @Component({
     providers: [],
     selector: 'app-pivot-grid-hierarchy-sample',
     styleUrls: ['pivot-grid-hierarchy.sample.scss'],
-    templateUrl: 'pivot-grid-hierarchy.sample.html'
+    templateUrl: 'pivot-grid-hierarchy.sample.html',
+    imports: [IgxComboComponent, FormsModule, IgxPivotGridComponent]
 })
 
 export class PivotGridHierarchySampleComponent {
@@ -26,6 +28,7 @@ export class PivotGridHierarchySampleComponent {
         },
         {
             memberName: 'AllProduct',
+            displayName: "All My Products",
             memberFunction: () => 'All Products',
             enabled: true,
             childLevel:
@@ -46,7 +49,11 @@ export class PivotGridHierarchySampleComponent {
             enabled: true,
         }
     ];
+    public pivotUI: IPivotUISettings = { showRowHeaders: true, rowLayout: PivotRowLayoutType.Horizontal };
     public selected: IPivotDimension[] = [ this.dimensions[1], this.dimensions[2]];
+
+    constructor(private excelExportService: IgxExcelExporterService) {
+    }
 
     public handleChange(event) {
         let isColumnChange = false
@@ -101,9 +108,14 @@ export class PivotGridHierarchySampleComponent {
 
     public origData = DATA;
 
-    public dimensionChange(event: IDimensionsChange) {
+    public dimensionChange() {
         const allDims = this.pivotConfigHierarchy.rows.concat(this.pivotConfigHierarchy.columns).concat(this.pivotConfigHierarchy.filters);
         const allEnabled = allDims.filter(x => x && x.enabled);
         this.selected = allEnabled;
+    }
+
+
+    public exportButtonHandler() {
+        this.excelExportService.export(this.grid1, new IgxExcelExporterOptions('ExportedFile'));
     }
 }

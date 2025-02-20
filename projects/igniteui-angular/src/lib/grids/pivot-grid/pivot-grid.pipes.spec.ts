@@ -1,11 +1,12 @@
 import { NoopPivotDimensionsStrategy } from '../../data-operations/pivot-strategy';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { IgxPivotDateDimension } from './pivot-grid-dimensions';
-import { IgxPivotNumericAggregate } from './pivot-grid-aggregate';
+import { IgxPivotAggregate, IgxPivotDateAggregate, IgxPivotNumericAggregate, IgxPivotTimeAggregate } from './pivot-grid-aggregate';
 import { IPivotConfiguration } from './pivot-grid.interface';
 import { IgxPivotAutoTransform, IgxPivotColumnPipe, IgxPivotRowExpansionPipe, IgxPivotRowPipe } from './pivot-grid.pipes';
 import { PivotGridFunctions } from '../../test-utils/pivot-grid-functions.spec';
 import { DATA } from 'src/app/shared/pivot-data';
+import { DefaultDataCloneStrategy, IDataCloneStrategy } from '../../data-operations/data-clone-strategy';
 
 describe('Pivot pipes #pivotGrid', () => {
     let rowPipe: IgxPivotRowPipe;
@@ -15,6 +16,7 @@ describe('Pivot pipes #pivotGrid', () => {
     let expansionStates: Map<any, boolean>;
     let data: any[];
     let pivotConfig: IPivotConfiguration;
+    let cloneStrategy: IDataCloneStrategy;
 
     configureTestSuite();
     beforeEach(() => {
@@ -70,11 +72,12 @@ describe('Pivot pipes #pivotGrid', () => {
         rowStatePipe = new IgxPivotRowExpansionPipe();
         columnPipe = new IgxPivotColumnPipe();
         autoTransformPipe = new IgxPivotAutoTransform();
+        cloneStrategy = new DefaultDataCloneStrategy();
     });
 
     it('transforms flat data to pivot data', () => {
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, expansionStates);
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
         expect(dimensionValues).toEqual([
@@ -98,8 +101,8 @@ describe('Pivot pipes #pivotGrid', () => {
             memberName: 'ProductCategory',
             enabled: true
         }];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, expansionStates);
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
 
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -113,8 +116,8 @@ describe('Pivot pipes #pivotGrid', () => {
     it('allows setting expand/collapse state.', () => {
         const expanded = new Map<any, boolean>();
         expanded.set('All', false);
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expanded);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expanded);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, expansionStates);
         const rowPipeCollapseResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expanded, true);
         let dimensionValues = PivotGridFunctions.getDimensionValues(rowPipeCollapseResult);
         expect(dimensionValues).toEqual([
@@ -143,8 +146,8 @@ describe('Pivot pipes #pivotGrid', () => {
                 enabled: true
             }
         ];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, expansionStates);
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
         expect(dimensionValues).toEqual(
@@ -179,8 +182,8 @@ describe('Pivot pipes #pivotGrid', () => {
                 enabled: true
             }
         }];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, expansionStates);
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
         expect(dimensionValues).toEqual([
@@ -214,8 +217,8 @@ describe('Pivot pipes #pivotGrid', () => {
             memberName: 'Date',
             enabled: true
         }];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, new Map<any, boolean>());
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, new Map<any, boolean>());
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, new Map<any, boolean>(), true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
         expect(dimensionValues).toEqual([
@@ -248,8 +251,8 @@ describe('Pivot pipes #pivotGrid', () => {
             memberName: 'Date',
             enabled: true
         }];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, new Map<any, boolean>());
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, new Map<any, boolean>());
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const rowStateResult = rowStatePipe.transform(columnPipeResult, pivotConfig, new Map<any, boolean>(), true);
         const aggregations = PivotGridFunctions.getAggregationValues(rowStateResult);
         expect(aggregations).toEqual([
@@ -281,8 +284,8 @@ describe('Pivot pipes #pivotGrid', () => {
                 enabled: true
             }
         ];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, expansionStates);
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, new Map<any, boolean>(), true);
         const aggregations = PivotGridFunctions.getAggregationValues(rowStatePipeResult);
 
@@ -291,6 +294,36 @@ describe('Pivot pipes #pivotGrid', () => {
             { 'All-Bulgaria-UnitsSold': 774, 'All-Bulgaria-UnitPrice': 28.86, 'All-USA-UnitsSold': 296, 'All-USA-UnitPrice': 49.57, 'All-Uruguay-UnitsSold': 456, 'All-Uruguay-UnitPrice': 68.33, 'All-UnitsSold': 1526, 'All-UnitPrice': 146.76 },
             { 'All-Uruguay-UnitsSold': 68, 'All-Uruguay-UnitPrice': 3.56, 'All-UnitsSold': 68, 'All-UnitPrice': 3.56 }, { 'All-USA-UnitsSold': 293, 'All-USA-UnitPrice': 85.58, 'All-UnitsSold': 293, 'All-UnitPrice': 85.58 },
             { 'All-USA-UnitsSold': 240, 'All-USA-UnitPrice': 18.13, 'All-UnitsSold': 240, 'All-UnitPrice': 18.13 }]);
+    });
+
+    it('should return correct values for each pivot aggregation type', () => {
+        // check each aggregator has correct aggregations
+        expect(IgxPivotAggregate.aggregators().map(x => x.key)).toEqual(['COUNT']);
+        expect(IgxPivotNumericAggregate.aggregators().map(x => x.key)).toEqual(['COUNT', 'MIN', 'MAX', 'SUM', 'AVG']);
+        expect(IgxPivotDateAggregate.aggregators().map(x => x.key)).toEqual(['COUNT', 'LATEST', 'EARLIEST']);
+        expect(IgxPivotTimeAggregate.aggregators().map(x => x.key)).toEqual(['COUNT', 'LATEST', 'EARLIEST']);
+
+        // check aggregations are applied correctly
+        expect(IgxPivotAggregate.count([1, 2, 3])).toEqual(3);
+
+        expect(IgxPivotNumericAggregate.count([1, 2, 3])).toEqual(3);
+        expect(IgxPivotNumericAggregate.min([1, 2, 3])).toEqual(1);
+        expect(IgxPivotNumericAggregate.max([1, 2, 3])).toEqual(3);
+        expect(IgxPivotNumericAggregate.sum([1, 2, 3])).toEqual(6);
+        expect(IgxPivotNumericAggregate.average([1, 2, 3])).toEqual(2);
+
+        expect(IgxPivotDateAggregate.latest(['01/01/2021', '01/01/2022', '02/01/2021'])).toEqual('01/01/2022');
+        expect(IgxPivotDateAggregate.earliest(['01/01/2021', '01/01/2022', '02/01/2021'])).toEqual('01/01/2021');
+
+
+        expect(IgxPivotTimeAggregate.latestTime(['01/01/2021 8:00', '01/01/2021 1:00', '01/01/2021 22:00'])).toEqual(new Date('01/01/2021 22:00'));
+        expect(IgxPivotTimeAggregate.earliestTime(['01/01/2021 8:00', '01/01/2021 1:00', '01/01/2021 22:00'])).toEqual(new Date('01/01/2021 1:00'));
+
+        // check string can be changed
+        // This test no longer covers functionality that is provided. Overriding labels is done by extending the class.
+        // IgxPivotTimeAggregate.aggregators().find(x => x.key === 'EARLIEST').label = 'Earliest Custom Time';
+
+        // expect(IgxPivotTimeAggregate.aggregators().find(x => x.key === 'EARLIEST').label).toEqual('Earliest Custom Time');
     });
 
     it('allow setting NoopPivotDimensionsStrategy for rows/columns', () => {
@@ -308,8 +341,8 @@ describe('Pivot pipes #pivotGrid', () => {
         pivotConfig.rowStrategy = NoopPivotDimensionsStrategy.instance();
         pivotConfig.rows[0].memberName = 'AllCategory';
 
-        const rowPipeResult = rowPipe.transform(preprocessedData, pivotConfig, new Map<any, boolean>());
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(preprocessedData, pivotConfig, cloneStrategy, new Map<any, boolean>());
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const autoTransformResult = autoTransformPipe.transform(columnPipeResult, pivotConfig);
         const rowStateResult = rowStatePipe.transform(autoTransformResult, pivotConfig, new Map<any, boolean>(), true);
 
@@ -366,7 +399,7 @@ describe('Pivot pipes #pivotGrid', () => {
             )
         ];
 
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
         const rowStateResult = rowStatePipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>(), true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStateResult);
         expect(dimensionValues).toEqual(
@@ -440,8 +473,8 @@ describe('Pivot pipes #pivotGrid', () => {
             }
         ];
 
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
 
         const date_city_product = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -494,8 +527,8 @@ describe('Pivot pipes #pivotGrid', () => {
                 enabled: true
             }];
 
-        let rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        let rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         let rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(24);
 
@@ -547,8 +580,8 @@ describe('Pivot pipes #pivotGrid', () => {
             )
         ];
 
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(24);
         const product_date = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -613,8 +646,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[1],
             dims[2]
         ];
-        let rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        let rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         let rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
 
         const date_prod_seller =  PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -659,8 +692,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[0],
             dims[2]
         ];
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
 
         const prod_date_seller = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -711,8 +744,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[1],
             dims[0]
         ];
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(42);
         const seller_prod_date =  PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -766,8 +799,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[3]
         ];
 
-        let rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        let rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         let rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
 
         const date_prod_country_seller = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -814,8 +847,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[0]
         ];
 
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(42);
 
@@ -844,8 +877,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[3]
         ];
 
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(42);
 
@@ -955,8 +988,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[4] // Discontinued
         ];
 
-        let rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        let rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        let columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         let rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(84);
         const prod_country_date_seller_discontinued = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -1042,8 +1075,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[3]
         ];
 
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(84);
         const discontinued_prod_country_date_seller = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -1096,8 +1129,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[4] // Discontinued
         ];
 
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(84);
         const seller_country_date_prod_disc = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -1126,8 +1159,8 @@ describe('Pivot pipes #pivotGrid', () => {
             dims[3], // Seller
         ];
 
-        rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         expect(rowStatePipeResult.length).toBe(84);
         const date_prod_disc_seller = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
@@ -1223,8 +1256,8 @@ describe('Pivot pipes #pivotGrid', () => {
                 enabled: true
             }
         ];
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
         const sellers = dimensionValues.map(x => x['SellerName']);
@@ -1265,8 +1298,8 @@ describe('Pivot pipes #pivotGrid', () => {
             },
         ];
 
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
         const dimensionValues = PivotGridFunctions.getDimensionValues(rowStatePipeResult);
         const res = dimensionValues.filter(x => x['AllSeller'] === undefined).map(x => x['Seller']);
@@ -1303,8 +1336,8 @@ describe('Pivot pipes #pivotGrid', () => {
                 }
             )
         ]
-        const rowPipeResult = rowPipe.transform(data, pivotConfig, expansionStates);
-        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, new Map<any, boolean>());
+        const rowPipeResult = rowPipe.transform(data, pivotConfig, cloneStrategy, expansionStates);
+        const columnPipeResult = columnPipe.transform(rowPipeResult, pivotConfig, cloneStrategy, new Map<any, boolean>());
         const rowStatePipeResult = rowStatePipe.transform(columnPipeResult, pivotConfig, expansionStates, true);
 
         const dateData = PivotGridFunctions.getDimensionValues(rowStatePipeResult);

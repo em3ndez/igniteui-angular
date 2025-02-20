@@ -9,7 +9,10 @@ import { GridType, IGX_GRID_BASE } from '../common/grid.interface';
 interface ISkipRecord { skip?: boolean }
 
 /** @hidden */
-@Pipe({ name: 'gridSummary' })
+@Pipe({
+    name: 'gridSummary',
+    standalone: true
+})
 export class IgxGridSummaryPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -75,7 +78,7 @@ export class IgxGridSummaryPipe implements PipeTransform {
                 for (const groupRecord of groupRecords) {
                     const groupRecordId = this.grid.gridAPI.get_groupBy_record_id(groupRecord);
                     const records = this.removeDeletedRecord(this.grid, groupRecord.records.slice());
-                    const summaries = this.grid.summaryService.calculateSummaries(groupRecordId, records);
+                    const summaries = this.grid.summaryService.calculateSummaries(groupRecordId, records, groupRecord);
                     const summaryRecord: ISummaryRecord = {
                         summaries,
                         max: maxSummaryHeight
@@ -91,7 +94,7 @@ export class IgxGridSummaryPipe implements PipeTransform {
 
             if (summaryPosition === GridSummaryPosition.top) {
                 const records = this.removeDeletedRecord(this.grid, groupByRecord.records.slice());
-                const summaries = this.grid.summaryService.calculateSummaries(recordId, records);
+                const summaries = this.grid.summaryService.calculateSummaries(recordId, records, groupByRecord);
                 const summaryRecord: ISummaryRecord = {
                     summaries,
                     max: maxSummaryHeight

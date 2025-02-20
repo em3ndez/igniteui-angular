@@ -5,7 +5,8 @@ import { IgxColumnResizerDirective } from './resizer.directive';
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-grid-column-resizer',
-    templateUrl: './resizer.component.html'
+    templateUrl: './resizer.component.html',
+    imports: [IgxColumnResizerDirective]
 })
 export class IgxGridColumnResizerComponent {
     @Input()

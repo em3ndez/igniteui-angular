@@ -1,26 +1,42 @@
 import { Component, OnInit, ViewChildren, QueryList, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import {
-    ISelectionEventArgs, CancelableEventArgs,
-    HorizontalAlignment, VerticalAlignment, scaleInTop, scaleOutBottom, ConnectedPositioningStrategy,
-    AbsoluteScrollStrategy,
-    IgxSelectComponent,
-    IButtonGroupEventArgs
-} from 'igniteui-angular';
+import { UntypedFormBuilder, UntypedFormGroup, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NgFor } from '@angular/common';
+import { IgxButtonDirective, IgxSelectComponent, IgxLabelDirective, IgxPrefixDirective, IgxIconComponent, IgxSelectItemComponent, IgxSelectHeaderDirective, IgxSelectFooterDirective, IgxSuffixDirective, IgxHintDirective, IgxSelectGroupComponent, IgxSwitchComponent, ISelectionEventArgs, CancelableEventArgs, HorizontalAlignment, VerticalAlignment, ConnectedPositioningStrategy, AbsoluteScrollStrategy } from 'igniteui-angular';
+import { scaleInTop, scaleOutBottom } from 'igniteui-angular/animations';
+import { SizeSelectorComponent } from '../size-selector/size-selector.component';
+
+
 
 @Component({
-    // eslint-disable-next-line @angular-eslint/component-selector
     selector: 'app-select-sample',
     styleUrls: ['./select.sample.scss'],
-    templateUrl: './select.sample.html'
+    templateUrl: './select.sample.html',
+    imports: [
+        IgxButtonDirective,
+        IgxSelectComponent,
+        FormsModule,
+        IgxLabelDirective,
+        IgxPrefixDirective,
+        IgxIconComponent,
+        IgxSelectItemComponent,
+        NgFor,
+        IgxSelectHeaderDirective,
+        IgxSelectFooterDirective,
+        IgxSuffixDirective,
+        IgxHintDirective,
+        IgxSelectGroupComponent,
+        ReactiveFormsModule,
+        IgxSwitchComponent,
+        SizeSelectorComponent
+    ]
 })
 export class SelectSampleComponent implements OnInit {
     @ViewChild('selectReactive', { read: IgxSelectComponent, static: true })
     public select: IgxSelectComponent;
     @ViewChild('model', { read: IgxSelectComponent, static: true })
     public selectFruits: IgxSelectComponent;
-    @ViewChild('displayDensitySelect', { read: IgxSelectComponent, static: true })
-    public selectDisplayDensity: IgxSelectComponent;
+    @ViewChild('sizeSelect', { read: IgxSelectComponent, static: true })
+    public sizeSelect: IgxSelectComponent;
 
     @ViewChildren(IgxSelectComponent) private selectComponents: QueryList<IgxSelectComponent>;
 
@@ -33,7 +49,7 @@ export class SelectSampleComponent implements OnInit {
     public selected: string;
     public selectRequired = true;
 
-    public reactiveForm: FormGroup;
+    public reactiveForm: UntypedFormGroup;
     public cities: string[] = [
         'Sofia',
         'Varna',
@@ -47,7 +63,7 @@ export class SelectSampleComponent implements OnInit {
         citiesSelect: [Validators.required]
     };
 
-    constructor(fb: FormBuilder) {
+    constructor(fb: UntypedFormBuilder) {
         this.reactiveForm = fb.group({
             citiesSelect: ['', Validators.required]
         });
@@ -138,29 +154,11 @@ export class SelectSampleComponent implements OnInit {
         }
     }
 
-    public setDensity(event: IButtonGroupEventArgs) {
-        this.selectDisplayDensity.displayDensity = event.button.nativeElement.value;
-    }
-
     public btnClick() {
         // console.log('clicked');
     }
 
     public headerFootedClick(event) {
         console.log('Header/Footer clicked', event);
-    }
-
-    public btnAddBr() {
-        const brContainer = document.getElementsByClassName('sampleWrapper')[0];
-        const br = document.createElement('br');
-        brContainer.prepend(br);
-    }
-
-    public btnRemoveBr() {
-        const brContainer = document.getElementsByClassName('sampleWrapper')[0];
-        const firstEl =  brContainer.firstElementChild;
-        if (firstEl.tagName === 'BR') {
-            brContainer.removeChild(firstEl);
-        }
     }
 }

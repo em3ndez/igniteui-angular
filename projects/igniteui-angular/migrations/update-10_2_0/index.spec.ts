@@ -1,10 +1,10 @@
 import * as path from 'path';
 
-import { EmptyTree } from '@angular-devkit/schematics';
 import {
     SchematicTestRunner,
     UnitTestTree,
 } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update 10.2.0', () => {
     let appTree: UnitTestTree;
@@ -12,23 +12,9 @@ describe('Update 10.2.0', () => {
         'ig-migrate',
         path.join(__dirname, '../migration-collection.json')
     );
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc',
-            },
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix',
-            },
-        },
-    };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it('should remove the type property if the value is not a valid type', async () => {
@@ -39,20 +25,14 @@ describe('Update 10.2.0', () => {
         );
 
         const tree = await schematicRunner
-            .runSchematicAsync('migration-17', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-17', {}, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/test.component.html')
         // eslint-disable-next-line max-len
         ).toEqual(`<igx-input-group type="line"></igx-input-group><igx-input-group type="box"></igx-input-group><igx-input-group type="border"></igx-input-group><igx-input-group type="search"></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group><igx-input-group></igx-input-group>`);
     });
 
-    it('should replace selectedRows() with selectedRows in ts files', async () => {
-        pending('set up tests for migrations through lang service');
-    });
-
     it('Should remove references to deprecated `pane` property of `IExpansionPanelEventArgs`', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/expansion-test.component.ts',
             `import { Component, ViewChild } from '@angular/core';
@@ -74,8 +54,7 @@ export class ExpansionTestComponent {
 }`
         );
         const tree = await schematicRunner
-            .runSchematicAsync('migration-17', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-17', {}, appTree);
         const expectedContent =  `import { Component, ViewChild } from '@angular/core';
 import { IExpansionPanelEventArgs, IgxExpansionPanelComponent } from 'igniteui-angular';
 

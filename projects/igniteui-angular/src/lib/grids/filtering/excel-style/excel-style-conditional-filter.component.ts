@@ -4,13 +4,18 @@ import { takeUntil } from 'rxjs/operators';
 import { GridColumnDataType } from '../../../data-operations/data-util';
 import { IFilteringOperation } from '../../../data-operations/filtering-condition';
 import { IFilteringExpression } from '../../../data-operations/filtering-expression.interface';
-import { ISelectionEventArgs, IgxDropDownComponent } from '../../../drop-down/public_api';
 import { IgxExcelStyleCustomDialogComponent } from './excel-style-custom-dialog.component';
 import { PlatformUtil } from '../../../core/utils';
 import { BaseFilteringComponent } from './base-filtering.component';
 import { AutoPositionStrategy } from '../../../services/overlay/position/auto-position-strategy';
 import { AbsoluteScrollStrategy } from '../../../services/overlay/scroll/absolute-scroll-strategy';
 import { HorizontalAlignment, OverlaySettings, VerticalAlignment } from '../../../services/overlay/utilities';
+import { IgxDropDownItemComponent } from '../../../drop-down/drop-down-item.component';
+import { IgxDropDownComponent } from '../../../drop-down/drop-down.component';
+import { IgxIconComponent } from '../../../icon/icon.component';
+import { IgxDropDownItemNavigationDirective } from '../../../drop-down/drop-down-navigation.directive';
+import { NgIf, NgFor, NgClass } from '@angular/common';
+import { ISelectionEventArgs } from '../../../drop-down/drop-down.common';
 
 
 /**
@@ -18,7 +23,8 @@ import { HorizontalAlignment, OverlaySettings, VerticalAlignment } from '../../.
  */
 @Component({
     selector: 'igx-excel-style-conditional-filter',
-    templateUrl: './excel-style-conditional-filter.component.html'
+    templateUrl: './excel-style-conditional-filter.component.html',
+    imports: [NgIf, NgClass, IgxDropDownItemNavigationDirective, IgxIconComponent, IgxDropDownComponent, NgFor, IgxDropDownItemComponent, IgxExcelStyleCustomDialogComponent]
 })
 export class IgxExcelStyleConditionalFilterComponent implements OnDestroy {
     /**
@@ -32,6 +38,10 @@ export class IgxExcelStyleConditionalFilterComponent implements OnDestroy {
      */
     @ViewChild('subMenu', { read: IgxDropDownComponent })
     public subMenu: IgxDropDownComponent;
+
+    protected get filterNumber() {
+        return this.esf.expressionsList.filter(e => e.expression.condition).length;
+    }
 
     private shouldOpenSubMenu = true;
     private destroy$ = new Subject<boolean>();
@@ -47,7 +57,10 @@ export class IgxExcelStyleConditionalFilterComponent implements OnDestroy {
         scrollStrategy: new AbsoluteScrollStrategy()
     };
 
-    constructor(public esf: BaseFilteringComponent, protected platform: PlatformUtil) {
+    constructor(
+        public esf: BaseFilteringComponent,
+        protected platform: PlatformUtil,
+    ) {
         this.esf.columnChange.pipe(takeUntil(this.destroy$)).subscribe(() => {
             if (this.esf.grid) {
                 this.shouldOpenSubMenu = true;
@@ -71,6 +84,8 @@ export class IgxExcelStyleConditionalFilterComponent implements OnDestroy {
     public onTextFilterKeyDown(eventArgs: KeyboardEvent) {
         if (eventArgs.key === this.platform.KEYMAP.ENTER) {
             this.onTextFilterClick(eventArgs);
+        } else if (eventArgs.key === this.platform.KEYMAP.TAB) {
+            this.subMenu.close();
         }
     }
 
@@ -108,6 +123,14 @@ export class IgxExcelStyleConditionalFilterComponent implements OnDestroy {
         return this.esf.column.filters.condition(value);
     }
 
+    protected getSelectedCondition(condition: string): boolean {
+        const expressions = this.esf.expressionsList;
+        if (expressions.length < 1) {
+            return false;
+        }
+        return expressions.length === 1 ? expressions[0].expression.condition.name === condition : condition === 'custom';
+    }
+
     /**
      * @hidden @internal
      */
@@ -122,6 +145,8 @@ export class IgxExcelStyleConditionalFilterComponent implements OnDestroy {
         if (this.esf.expressionsList && this.esf.expressionsList.length &&
             this.esf.expressionsList[0].expression.condition.name !== 'in') {
             this.customDialog.expressionsList = this.esf.expressionsList;
+        } else {
+            this.customDialog.expressionsList = this.customDialog.expressionsList.filter(e => e.expression.fieldName === this.esf.column.field && e.expression.condition);
         }
 
         this.customDialog.selectedOperator = eventArgs.newSelection.value;

@@ -1,0 +1,13 @@
+:host {
+    .sample-content {
+        display: grid;
+        row-gap: 16px;
+        column-gap: 16px;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+}

@@ -5,26 +5,24 @@ import {
     EventEmitter,
     HostBinding,
     Input,
-    NgModule,
     Output,
     ViewChild
 } from '@angular/core';
-import { IgxExpansionPanelModule } from '../expansion-panel/expansion-panel.module';
-import { IgxExpansionPanelComponent } from '../expansion-panel/public_api';
-import { IgxIconModule, IgxIconComponent } from '../icon/public_api';
+
+import { IgxIconComponent } from '../icon/icon.component';
 import { IToggleView } from '../core/navigation';
-import { IgxButtonModule } from '../directives/button/button.directive';
-import { IgxRippleModule } from '../directives/ripple/ripple.directive';
+import { IgxButtonDirective } from '../directives/button/button.directive';
+import { IgxRippleDirective } from '../directives/ripple/ripple.directive';
 import { IgxBannerActionsDirective } from './banner.directives';
-import { CommonModule } from '@angular/common';
+import { NgIf } from '@angular/common';
 import { CancelableEventArgs, IBaseEventArgs } from '../core/utils';
 import { ToggleAnimationSettings } from '../expansion-panel/toggle-animation-component';
+import { IgxExpansionPanelBodyComponent } from '../expansion-panel/expansion-panel-body.component';
+import { IgxExpansionPanelComponent } from '../expansion-panel/expansion-panel.component';
+import { BannerResourceStringsEN, IBannerResourceStrings } from '../core/i18n/banner-resources';
+import { getCurrentResourceStrings } from '../core/i18n/resources';
 
 export interface BannerEventArgs extends IBaseEventArgs {
-    /**
-     * @deprecated in 12.1.0. To get a reference to the banner, use `owner` instead
-     */
-    banner: IgxBannerComponent;
     event?: Event;
 }
 
@@ -42,15 +40,16 @@ export interface BannerCancelEventArgs extends BannerEventArgs, CancelableEventA
  * <igx-banner #banner>
  *   Our privacy settings have changed.
  *  <igx-banner-actions>
- *      <button igxButton="raised">Read More</button>
- *      <button igxButton="raised">Accept and Continue</button>
+ *      <button type="button" igxButton="contained">Read More</button>
+ *      <button type="button" igxButton="contained">Accept and Continue</button>
  *  </igx-banner-actions>
  * </igx-banner>
  * ```
  */
 @Component({
     selector: 'igx-banner',
-    templateUrl: 'banner.component.html'
+    templateUrl: 'banner.component.html',
+    imports: [IgxExpansionPanelComponent, IgxExpansionPanelBodyComponent, NgIf, IgxButtonDirective, IgxRippleDirective]
 })
 export class IgxBannerComponent implements IToggleView {
     /**
@@ -121,6 +120,18 @@ export class IgxBannerComponent implements IToggleView {
     }
 
     /**
+     * Set the animation settings used by the banner open/close methods
+     * ```typescript
+     * import { slideInLeft, slideOutRight } from 'igniteui-angular';
+     * ...
+     * banner.animationSettings: ToggleAnimationSettings = { openAnimation: slideInLeft, closeAnimation: slideOutRight };
+     * ```
+     */
+    public set animationSettings(settings: ToggleAnimationSettings) {
+        this._animationSettings = settings;
+    }
+
+    /**
      * Get the animation settings used by the banner open/close methods
      * ```typescript
      * let currentAnimations: ToggleAnimationSettings = banner.animationSettings
@@ -132,24 +143,65 @@ export class IgxBannerComponent implements IToggleView {
     }
 
     /**
-     * Set the animation settings used by the banner open/close methods
-     * ```typescript
-     * import { slideInLeft, slideOutRight } from 'igniteui-angular';
-     * ...
-     * banner.animationSettings: ToggleAnimationSettings = { openAnimation: slideInLeft, closeAnimation: slideOutRight };
-     * ```
+     * Gets/Sets the resource strings.
+     *
+     * @remarks
+     * By default it uses EN resources.
      */
-    public set animationSettings(settings: ToggleAnimationSettings) {
-        this._animationSettings = settings;
+    @Input()
+    public set resourceStrings(value: IBannerResourceStrings) {
+        this._resourceStrings = Object.assign({}, this._resourceStrings, value);
     }
+
+    public get resourceStrings(): IBannerResourceStrings {
+        return this._resourceStrings;
+    }
+
     /**
-     * Gets whether banner is collapsed
+     * Gets/Sets whether the banner is expanded (visible) or collapsed (hidden).
+     * Defaults to `false`.
+     * Setting to `true` opens the banner, while `false` closes it.
+     *
+     * @example
+     * // Expand the banner
+     * banner.expanded = true;
+     *
+     * @example
+     * // Collapse the banner
+     * banner.expanded = false;
+     *
+     * @example
+     * // Check if the banner is expanded
+     * const isExpanded = banner.expanded;
+     */
+    @Input()
+    public get expanded(): boolean {
+        return this._expanded;
+    }
+
+    public set expanded(value: boolean) {
+        if (value === this._expanded) {
+            return;
+        }
+
+        this._expanded = value;
+        this._shouldFireEvent = true;
+
+        if (value) {
+            this._expansionPanel.open();
+        } else {
+            this._expansionPanel.close();
+        }
+    }
+
+    /**
+     * Gets whether the banner is collapsed.
      *
      * ```typescript
      * const isCollapsed: boolean = banner.collapsed;
      * ```
      */
-    public get collapsed() {
+    public get collapsed(): boolean {
         return this._expansionPanel.collapsed;
     }
 
@@ -162,6 +214,9 @@ export class IgxBannerComponent implements IToggleView {
     public get element() {
         return this.elementRef.nativeElement;
     }
+
+    @HostBinding('class')
+    public cssClass = 'igx-banner-host';
 
     /**
      * @hidden
@@ -177,8 +232,11 @@ export class IgxBannerComponent implements IToggleView {
     @ContentChild(IgxBannerActionsDirective)
     private _bannerActionTemplate: IgxBannerActionsDirective;
 
+    private _expanded: boolean = false;
+    private _shouldFireEvent: boolean = false;
     private _bannerEvent: BannerEventArgs;
     private _animationSettings: ToggleAnimationSettings;
+    private _resourceStrings = getCurrentResourceStrings(BannerResourceStringsEN);
 
     constructor(public elementRef: ElementRef<HTMLElement>) { }
 
@@ -193,13 +251,12 @@ export class IgxBannerComponent implements IToggleView {
      * <igx-banner #banner>
      * ...
      * </igx-banner>
-     * <button (click)="banner.open()">Open Banner</button>
+     * <button type="button" (click)="banner.open()">Open Banner</button>
      * ```
      */
     public open(event?: Event) {
-        this._bannerEvent = { banner: this, owner: this, event};
+        this._bannerEvent = { owner: this, event };
         const openingArgs: BannerCancelEventArgs = {
-            banner: this,
             owner: this,
             event,
             cancel: false
@@ -209,6 +266,8 @@ export class IgxBannerComponent implements IToggleView {
             return;
         }
         this._expansionPanel.open(event);
+        this._expanded = true;
+        this._shouldFireEvent = false;
     }
 
     /**
@@ -222,13 +281,12 @@ export class IgxBannerComponent implements IToggleView {
      * <igx-banner #banner>
      * ...
      * </igx-banner>
-     * <button (click)="banner.close()">Close Banner</button>
+     * <button type="button" (click)="banner.close()">Close Banner</button>
      * ```
      */
     public close(event?: Event) {
-        this._bannerEvent = { banner: this, owner: this, event};
+        this._bannerEvent = { owner: this, event};
         const closingArgs: BannerCancelEventArgs = {
-            banner: this,
             owner: this,
             event,
             cancel: false
@@ -238,6 +296,8 @@ export class IgxBannerComponent implements IToggleView {
             return;
         }
         this._expansionPanel.close(event);
+        this._expanded = false;
+        this._shouldFireEvent = false;
     }
 
     /**
@@ -251,7 +311,7 @@ export class IgxBannerComponent implements IToggleView {
      * <igx-banner #banner>
      * ...
      * </igx-banner>
-     * <button (click)="banner.toggle()">Toggle Banner</button>
+     * <button type="button" (click)="banner.toggle()">Toggle Banner</button>
      * ```
      */
     public toggle(event?: Event) {
@@ -264,21 +324,17 @@ export class IgxBannerComponent implements IToggleView {
 
     /** @hidden */
     public onExpansionPanelOpen() {
+        if (this._shouldFireEvent) {
+            return;
+        }
         this.opened.emit(this._bannerEvent);
     }
 
     /** @hidden */
     public onExpansionPanelClose() {
+        if (this._shouldFireEvent) {
+            return;
+        }
         this.closed.emit(this._bannerEvent);
     }
 }
-
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxBannerComponent, IgxBannerActionsDirective],
-    exports: [IgxBannerComponent, IgxBannerActionsDirective],
-    imports: [CommonModule, IgxExpansionPanelModule, IgxIconModule, IgxButtonModule, IgxRippleModule]
-})
-export class IgxBannerModule { }

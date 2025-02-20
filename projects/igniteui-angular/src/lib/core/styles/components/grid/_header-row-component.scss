@@ -1,13 +1,6 @@
 @use '../../base' as *;
 
-////
 /// @access private
-/// @group components
-/// @requires {mixin} bem-block
-/// @requires {mixin} bem-elem
-/// @requires {mixin} bem-mod
-////
-
 @mixin header-row {
     @include b(igx-grid-thead) {
         @extend %grid-thead-container !optional;
@@ -52,26 +45,6 @@
 
         @include e(thumb) {
             @extend %grid-thead-thumb !optional;
-        }
-
-        @include m(compact) {
-            @include e(wrapper) {
-                @extend %grid-thead--compact !optional;
-            }
-
-            @include e(title) {
-                @extend %grid-thead-title--compact !optional;
-            }
-        }
-
-        @include m(cosy) {
-            @include e(wrapper) {
-                @extend %grid-thead--cosy !optional;
-            }
-
-            @include e(title) {
-                @extend %grid-thead-title--cosy !optional;
-            }
         }
 
         @include m(pivot) {
@@ -181,30 +154,6 @@
 
         @include e(drop-indicator, $m: active) {
             @extend %igx-grid-th__drop-indicator--active !optional;
-        }
-
-        @include m(cosy) {
-            @extend %grid-cell-header--cosy !optional;
-
-            @include e(title) {
-                @extend %grid-cell-header-title--cosy !optional;
-            }
-
-            @include e(icons) {
-                @extend %grid-cell-header-icons--cosy !optional;
-            }
-        }
-
-        @include m(compact) {
-            @extend %grid-cell-header--compact !optional;
-
-            @include e(title) {
-                @extend %grid-cell-header-title--compact !optional;
-            }
-
-            @include e(icons) {
-                @extend %grid-cell-header-icons--compact !optional;
-            }
         }
     }
 }

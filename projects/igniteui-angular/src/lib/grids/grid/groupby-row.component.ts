@@ -11,21 +11,40 @@ import {
     OnDestroy,
     Inject
 } from '@angular/core';
+import { NgIf, NgTemplateOutlet, DecimalPipe, DatePipe, getLocaleCurrencyCode, PercentPipe, CurrencyPipe } from '@angular/common';
+
+import { takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+
 import { IGroupByRecord } from '../../data-operations/groupby-record.interface';
 import { GridColumnDataType } from '../../data-operations/data-util';
 import { IgxGridSelectionService } from '../selection/selection.service';
 import { GridType, IGX_GRID_BASE } from '../common/grid.interface';
 import { IgxFilteringService } from '../filtering/grid-filtering.service';
-import { takeUntil } from 'rxjs/operators';
-import { Subject } from 'rxjs';
 import { IgxGridRowComponent } from './grid-row.component';
 import { GridSelectionMode } from '../common/enums';
 import { ISelectionNode } from '../common/types';
+import { IgxCheckboxComponent } from '../../checkbox/checkbox.component';
+import { IgxBadgeComponent } from '../../badge/badge.component';
+import { IgxIconComponent } from '../../icon/icon.component';
+import { IgxColumnFormatterPipe } from '../common/pipes';
 
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-grid-groupby-row',
-    templateUrl: './groupby-row.component.html'
+    templateUrl: './groupby-row.component.html',
+    imports: [
+        NgIf,
+        NgTemplateOutlet,
+        DecimalPipe,
+        DatePipe,
+        PercentPipe,
+        CurrencyPipe,
+        IgxIconComponent,
+        IgxBadgeComponent,
+        IgxCheckboxComponent,
+        IgxColumnFormatterPipe
+    ]
 })
 export class IgxGridGroupByRowComponent implements OnDestroy {
     /**
@@ -41,7 +60,7 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
     public rowDraggable: boolean;
 
     /**
-     * An @Input property that sets the index of the row.
+     * Sets the index of the row.
      * ```html
      * <igx-grid-groupby-row [gridID]="id" [index]="rowIndex" [groupRow]="rowData" #row></igx-grid-groupby-row>
      * ```
@@ -50,7 +69,7 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
     public index: number;
 
     /**
-     * An @Input property that sets the id of the grid the row belongs to.
+     * Sets the id of the grid the row belongs to.
      * ```html
      * <igx-grid-groupby-row [gridID]="id" [index]="rowIndex" [groupRow]="rowData" #row></igx-grid-groupby-row>
      * ```
@@ -59,7 +78,7 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
     public gridID: string;
 
     /**
-     * An @Input property that specifies the group record the component renders for.
+     * The group record the component renders for.
      * ```typescript
      * <igx-grid-groupby-row [gridID]="id" [index]="rowIndex" [groupRow]="rowData" #row></igx-grid-groupby-row>
      * ```
@@ -97,7 +116,7 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
     /**
      * @hidden
      */
-    protected destroy$ = new Subject<any>();
+    protected destroy$ = new Subject<void>();
 
     /**
      * @hidden
@@ -119,6 +138,12 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
         return this.isActive();
     }
 
+    /** @hidden @internal */
+    public get currencyCode(): string {
+        return this.groupRow.column.pipeArgs.currencyCode ?
+            this.groupRow.column.pipeArgs.currencyCode : getLocaleCurrencyCode(this.grid.locale);
+    }
+
     constructor(
         @Inject(IGX_GRID_BASE) public grid: GridType,
         public gridSelection: IgxGridSelectionService,
@@ -134,6 +159,14 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
     @HostListener('pointerdown')
     public activate() {
         this.grid.navigation.setActiveNode({ row: this.index });
+    }
+
+    @HostListener('click', ['$event'])
+    public onClick(event: MouseEvent) {
+        this.grid.rowClick.emit({
+            row: this.grid.createRow(this.index),
+            event
+        });
     }
 
     /**
@@ -249,11 +282,19 @@ export class IgxGridGroupByRowComponent implements OnDestroy {
     }
 
     /**
-     * @hidden
-     */
+     * @hidden @internal
+    */
     public get dataType(): any {
         const column = this.groupRow.column;
         return (column && column.dataType) || GridColumnDataType.String;
+    }
+
+    /**
+     * @hidden @internal
+     */
+    public get formatter(): any {
+        const column = this.groupRow.column;
+        return (column && column.formatter) || null;
     }
 
     /**

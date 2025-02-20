@@ -1,21 +1,23 @@
 import { normalize } from '@angular-devkit/core';
 import * as path from 'path';
-import { SchematicContext, Tree } from '@angular-devkit/schematics';
-import { WorkspaceSchema, WorkspaceProject } from '@schematics/angular/utility/workspace-models';
+import type { SchematicContext, Tree } from '@angular-devkit/schematics';
+import type { WorkspaceSchema, WorkspaceProject } from '@schematics/angular/utility/workspace-models';
 import { execSync } from 'child_process';
-import {
+import type {
     Attribute,
+    Block,
+    BlockParameter,
     Comment,
     Element,
     Expansion,
     ExpansionCase,
     HtmlParser,
     HtmlTagDefinition,
+    LetDeclaration,
     Node,
     Text,
     Visitor
 } from '@angular/compiler';
-import { replaceMatch } from './tsUtils';
 
 const configPaths = ['/.angular.json', '/angular.json'];
 
@@ -56,6 +58,11 @@ export const getProjects = (config: WorkspaceSchema): WorkspaceProject[] => {
 
 export const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 
+export const replaceMatch = (content: string, toReplace: string, replaceWith: string, index: number): string =>
+    content.substring(0, index) +
+    replaceWith +
+    content.substring(index + toReplace.length, content.length);
+
 export const supports = (name: string): boolean => {
     try {
         execSync(`${name} --version`, { stdio: 'ignore' });
@@ -90,7 +97,9 @@ export const getPackageVersion = (pkg: string): string => {
     let version = null;
     try {
         version = require(path.posix.join(pkg, 'package.json'))?.version;
-    } catch { }
+    } catch {
+        return version;
+    }
 
     return version;
 };
@@ -100,7 +109,7 @@ export const tryInstallPackage = (context: SchematicContext, packageManager: str
         context.logger.debug(`Installing ${pkg} via ${packageManager}.`);
         switch (packageManager) {
             case 'yarn':
-                execSync(`${packageManager} add ${pkg} --no-lock-file`, { stdio: 'ignore' });
+                execSync(`${packageManager} add ${pkg}`, { stdio: 'ignore' });
                 break;
             case 'npm':
                 execSync(`${packageManager} i ${pkg} --no-save --no-audit`, { stdio: 'ignore' });
@@ -108,7 +117,7 @@ export const tryInstallPackage = (context: SchematicContext, packageManager: str
         }
         context.logger.debug(`${pkg} installed successfully.`);
     } catch (e) {
-        context.logger.warn(`Could not install ${pkg}.`, JSON.parse(e));
+        context.logger.warn(`Could not install ${pkg}.`, e);
     }
 };
 
@@ -126,7 +135,7 @@ export const tryUninstallPackage = (context: SchematicContext, packageManager: s
         context.logger.debug(`${pkg} uninstalled successfully.`);
     } catch (e) {
         context.logger
-            .warn(`Could not uninstall ${pkg}, you may want to uninstall it manually.`, JSON.parse(e));
+            .warn(`Could not uninstall ${pkg}, you may want to uninstall it manually.`, e);
     }
 };
 
@@ -170,7 +179,7 @@ export class FileChange {
  * @param filePath
  * @param encoding
  */
-export const parseFile = (parser: HtmlParser, host: Tree, filePath: string, encoding = 'utf8') =>
+export const parseFile = (parser: HtmlParser, host: Tree, filePath: string, encoding: BufferEncoding = 'utf8') =>
     parser.parse(host.read(filePath).toString(encoding), filePath).rootNodes;
 // export const parseFile = async (host: Tree, filePath: string, encoding = 'utf8') => {
 //     const { HtmlParser } = await import('@angular/compiler')
@@ -243,10 +252,10 @@ class SerializerVisitor implements Visitor {
 
     public visitElement(element: Element, _context: any): any {
         if (this.getHtmlTagDefinition(element.name).isVoid) {
-            return `<${element.name}${this._visitAll(element.attrs, ' ')}/>`;
+            return `<${element.name}${this._visitAll(element.attrs, ' ', ' ')}/>`;
         }
 
-        return `<${element.name}${this._visitAll(element.attrs, ' ')}>${this._visitAll(element.children)}</${element.name}>`;
+        return `<${element.name}${this._visitAll(element.attrs, ' ', ' ')}>${this._visitAll(element.children)}</${element.name}>`;
     }
 
     public visitAttribute(attribute: Attribute, _context: any): any {
@@ -269,11 +278,22 @@ class SerializerVisitor implements Visitor {
         return ` ${expansionCase.value} {${this._visitAll(expansionCase.expression)}}`;
     }
 
-    private _visitAll(nodes: Node[], join: string = ''): string {
-        if (nodes.length === 0) {
-            return '';
-        }
-        return join + nodes.map(a => a.visit(this, null)).join(join);
+    public visitBlock(block: Block, _context: any) {
+        const params =
+            block.parameters.length === 0 ? ' ' : ` (${this._visitAll(block.parameters, ';', ' ')}) `;
+        return `@${block.name}${params}{${this._visitAll(block.children)}}`;
+    }
+
+    public visitBlockParameter(parameter: BlockParameter, _context: any) {
+        return parameter.expression;
+    }
+
+    public visitLetDeclaration(decl: LetDeclaration, _context: any) {
+        return decl;
+    }
+
+    private _visitAll(nodes: Node[], separator = '', prefix = ''): string {
+        return nodes.length > 0 ? prefix + nodes.map(a => a.visit(this, null)).join(separator) : '';
     }
 }
 
@@ -284,7 +304,7 @@ export const serializeNodes = (nodes: Node[], getHtmlTagDefinition: (tagName: st
 
 export const makeNgIf = (name: string, value: string) => name.startsWith('[') && value !== 'true';
 
-export const stringifyAttriutes = (attributes: Attribute[]) => {
+export const stringifyAttributes = (attributes: Attribute[]) => {
     let stringAttributes = '';
     attributes.forEach(element => {
         // eslint-disable-next-line max-len

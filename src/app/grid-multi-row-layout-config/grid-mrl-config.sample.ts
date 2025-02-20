@@ -1,6 +1,8 @@
 import { Component, ViewChild, ElementRef, ChangeDetectorRef, ViewChildren, QueryList } from '@angular/core';
-import { IgxGridComponent, IDropBaseEventArgs, IgxDialogComponent, IDropDroppedEventArgs, GridSelectionMode} from 'igniteui-angular';
+import { NgFor, NgStyle, NgIf } from '@angular/common';
+
 import { SAMPLE_DATA } from '../shared/sample-data';
+import { GridSelectionMode, IDropBaseEventArgs, IDropDroppedEventArgs, IgxButtonDirective, IgxColumnComponent, IgxColumnLayoutComponent, IgxDialogComponent, IgxDragDirective, IgxDropDirective, IgxGridComponent } from 'igniteui-angular';
 
 interface ColumnConfig {
     key: string;
@@ -16,7 +18,8 @@ interface ColumnConfig {
 @Component({
     selector: 'app-grid-mrl-config-sample',
     templateUrl: 'grid-mrl-config.sample.html',
-    styleUrls: ['grid-mrl-config.sample.css']
+    styleUrls: ['grid-mrl-config.sample.scss'],
+    imports: [NgFor, IgxDragDirective, NgStyle, IgxDropDirective, NgIf, IgxButtonDirective, IgxGridComponent, IgxColumnLayoutComponent, IgxColumnComponent, IgxDialogComponent]
 })
 export class GridMRLConfigSampleComponent {
 
@@ -131,7 +134,6 @@ export class GridMRLConfigSampleComponent {
     }
 
     public updateCollectionLayout() {
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
         for (let rowIndex = 0; rowIndex < this.collection.length; rowIndex++) {
             let column = this.collection[rowIndex][0];
             for (let colIndex = 1; colIndex < this.collection[rowIndex].length; colIndex++) {

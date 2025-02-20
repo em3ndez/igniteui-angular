@@ -13,11 +13,15 @@ import {
 } from '@angular/core';
 import { IFilteringExpression } from '../../../data-operations/filtering-expression.interface';
 import { IgxFilteringService } from '../grid-filtering.service';
-import { DisplayDensity } from '../../../core/displayDensity';
 import { ExpressionUI } from '../excel-style/common';
 import { IgxChipsAreaComponent } from '../../../chips/chips-area.component';
 import { IBaseChipEventArgs, IgxChipComponent } from '../../../chips/chip.component';
 import { ColumnType } from '../../common/grid.interface';
+import { IgxBadgeComponent } from '../../../badge/badge.component';
+import { NgFor, NgIf, NgClass, NgTemplateOutlet } from '@angular/common';
+import { IgxPrefixDirective } from '../../../directives/prefix/prefix.directive';
+import { IgxIconComponent } from '../../../icon/icon.component';
+import { Size } from '../../common/enums';
 
 /**
  * @hidden
@@ -25,7 +29,18 @@ import { ColumnType } from '../../common/grid.interface';
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-grid-filtering-cell',
-    templateUrl: './grid-filtering-cell.component.html'
+    templateUrl: './grid-filtering-cell.component.html',
+    imports: [
+        IgxChipsAreaComponent,
+        IgxChipComponent,
+        IgxIconComponent,
+        IgxPrefixDirective,
+        NgFor,
+        NgIf,
+        NgClass,
+        IgxBadgeComponent,
+        NgTemplateOutlet
+    ]
 })
 export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoCheck {
     @Input()
@@ -55,19 +70,9 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
 
     @HostBinding('class')
     public get styleClasses(): string {
-        let classes = this.column && this.column.selected ?
+        return this.column && this.column.selected ?
             'igx-grid__filtering-cell--selected' :
             'igx-grid__filtering-cell';
-
-        switch (this.column.grid.displayDensity) {
-            case DisplayDensity.compact:
-                classes = classes + ' igx-grid__filtering-cell--compact';
-                break;
-            case DisplayDensity.cosy:
-                classes = classes + ' igx-grid__filtering-cell--cosy';
-                break;
-        }
-        return classes;
     }
 
     public expressionsList: ExpressionUI[];
@@ -75,7 +80,10 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
 
     private baseClass = 'igx-grid__filtering-cell-indicator';
 
-    constructor(public cdr: ChangeDetectorRef, public filteringService: IgxFilteringService) {
+    constructor(
+        public cdr: ChangeDetectorRef,
+        public filteringService: IgxFilteringService,
+    ) {
         this.filteringService.subscribeToEvents();
     }
 
@@ -107,10 +115,6 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
         this.updateVisibleFilters();
     }
 
-    public get displayDensity(): DisplayDensity {
-        return this.column.grid.displayDensity === DisplayDensity.comfortable ? DisplayDensity.cosy : this.column.grid.displayDensity;
-    }
-
     public get template(): TemplateRef<any> {
         if (!this.column.filterable) {
             return null;
@@ -134,7 +138,7 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
      * @memberof IgxGridFilteringCellComponent
      */
     public get context() {
-        return { column: this.column };
+        return { $implicit: this.column, column: this.column};
     }
 
     /**
@@ -184,6 +188,10 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
         };
     }
 
+    protected get filteringElementsSize(): Size {
+        return this.column.grid.gridSize === Size.Large ? Size.Medium : this.column.grid.gridSize;
+    }
+
     private removeExpression(indexToRemove: number) {
         if (indexToRemove === 0 && this.expressionsList.length === 1) {
             this.clearFiltering();
@@ -214,7 +222,7 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
             const chipsAreaElements = this.chipsArea.element.nativeElement.children;
             let visibleChipsCount = 0;
             const moreIconWidth = this.moreIcon.nativeElement.offsetWidth -
-                parseInt(document.defaultView.getComputedStyle(this.moreIcon.nativeElement)['margin-left'], 10);
+                parseInt(this.column?.grid.document.defaultView.getComputedStyle(this.moreIcon.nativeElement)['margin-left'], 10);
 
             for (let index = 0; index < chipsAreaElements.length - 1; index++) {
                 if (viewWidth + chipsAreaElements[index].offsetWidth < areaWidth) {
@@ -222,8 +230,8 @@ export class IgxGridFilteringCellComponent implements AfterViewInit, OnInit, DoC
                     if (index % 2 === 0) {
                         visibleChipsCount++;
                     } else {
-                        viewWidth += parseInt(document.defaultView.getComputedStyle(chipsAreaElements[index])['margin-left'], 10);
-                        viewWidth += parseInt(document.defaultView.getComputedStyle(chipsAreaElements[index])['margin-right'], 10);
+                        viewWidth += parseInt(this.column?.grid.document.defaultView.getComputedStyle(chipsAreaElements[index])['margin-left'], 10);
+                        viewWidth += parseInt(this.column?.grid.document.defaultView.getComputedStyle(chipsAreaElements[index])['margin-right'], 10);
                     }
                 } else {
                     if (index % 2 !== 0 && viewWidth + moreIconWidth > areaWidth) {

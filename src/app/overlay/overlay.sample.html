@@ -62,6 +62,10 @@
                     (change)="onSwitchChange($event)">Open in outlet</igx-switch>
             </div>
             <div>
+                <igx-switch class="settings" [(ngModel)]="hasAnimation" name="outlet" [value]="hasAnimation"
+                    (change)="onSwitchChange($event)">Has animation</igx-switch>
+            </div>
+            <div>
                 <igx-input-group>
                     <input igxInput name="dropDownItems" type="number" [(ngModel)]="itemsCount">
                     <label igxLabel for="dropDownItems">Drop down items</label>
@@ -79,7 +83,7 @@
         <div #outlet class="outlet column">
             Outlet
         </div>
-        <button #button igxButton="raised" igxRipple igxDrag (click)="toggleDropDown()" [style.position]="'absolute'"
+        <button #button igxButton="contained" igxRipple igxDrag (click)="toggleDropDown()" [style.position]="'absolute'"
             (dragEnd)="onDragEnd($event)" (dragStart)="onDragStart($event)">Toggle</button>
         <igx-drop-down width="{{dropDownWidth}}px">
             <igx-drop-down-item *ngFor="let item of items">

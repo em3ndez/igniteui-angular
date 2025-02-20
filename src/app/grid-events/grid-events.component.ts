@@ -1,19 +1,33 @@
 import { Component, ViewChild, ElementRef, Renderer2 } from '@angular/core';
-import { IgxGridComponent,
+import {
+    IgxGridComponent,
     ISortingExpression, IPinColumnEventArgs,
     IColumnResizeEventArgs, IColumnSelectionEventArgs, IPageEventArgs, ISortingEventArgs,
     IFilteringEventArgs, IgxStringFilteringOperand, IColumnMovingEndEventArgs,
     IColumnMovingEventArgs, IColumnMovingStartEventArgs, IPinColumnCancellableEventArgs,
     IColumnVisibilityChangingEventArgs,
     IFilteringExpressionsTree,
-    IColumnVisibilityChangedEventArgs
+    IColumnVisibilityChangedEventArgs,
+    IgxSwitchComponent,
+    IgxInputGroupComponent,
+    IgxInputDirective,
+    IgxGridToolbarComponent,
+    IgxGridToolbarActionsComponent,
+    IgxGridToolbarHidingComponent,
+    IgxGridToolbarPinningComponent,
+    IgxGridToolbarAdvancedFilteringComponent,
+    IgxColumnComponent,
+    IgxPaginatorComponent,
+    IgxButtonDirective,
+    IgxIconComponent
 } from 'igniteui-angular';
 import { data } from '../shared/data';
 
 @Component({
     selector: 'app-grid-events',
     styleUrls: ['grid-events.component.scss'],
-    templateUrl: 'grid-events.component.html'
+    templateUrl: 'grid-events.component.html',
+    imports: [IgxSwitchComponent, IgxInputGroupComponent, IgxInputDirective, IgxGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarHidingComponent, IgxGridToolbarPinningComponent, IgxGridToolbarAdvancedFilteringComponent, IgxColumnComponent, IgxPaginatorComponent, IgxButtonDirective, IgxIconComponent]
 })
 export class GridEventsComponent {
 
@@ -36,10 +50,6 @@ export class GridEventsComponent {
 
     public filter(term) {
         this.grid.filter('ProductName', term, IgxStringFilteringOperand.instance().condition('contains'));
-    }
-
-    public filterGlobal(term) {
-        this.grid.filterGlobal(term, IgxStringFilteringOperand.instance().condition('contains'));
     }
 
     public columnMovingStart(event: IColumnMovingStartEventArgs) {

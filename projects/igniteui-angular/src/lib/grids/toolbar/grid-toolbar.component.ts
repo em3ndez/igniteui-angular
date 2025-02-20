@@ -6,29 +6,41 @@ import {
     Inject,
     Input,
     OnDestroy,
-    Optional
+    booleanAttribute
 } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { IDisplayDensityOptions, DisplayDensityToken, DisplayDensityBase } from '../../core/displayDensity';
-import { IgxIconService } from '../../icon/public_api';
+import { IgxIconService } from '../../icon/icon.service';
 import { pinLeft, unpinLeft } from '@igniteui/material-icons-extended';
-import { IgxGridToolbarActionsDirective } from './common';
+import { IgxGridToolbarActionsComponent } from './common';
 import { GridServiceType, GridType, IGX_GRID_SERVICE_BASE } from '../common/grid.interface';
 import { IgxToolbarToken } from './token';
+import { IgxLinearProgressBarComponent } from '../../progressbar/progressbar.component';
+import { IgxGridToolbarAdvancedFilteringComponent } from './grid-toolbar-advanced-filtering.component';
+import { NgIf, NgTemplateOutlet } from '@angular/common';
 
-
+/* blazorElement */
+/* mustUseNGParentAnchor */
+/* wcElementTag: igc-grid-toolbar */
+/* blazorIndirectRender */
+/* singleInstanceIdentifier */
+/* contentParent: GridBaseDirective */
+/* contentParent: RowIsland */
+/* contentParent: HierarchicalGrid */
+/* jsonAPIManageItemInMarkup */
 /**
  * Provides a context-aware container component for UI operations for the grid components.
  *
  * @igxModule IgxGridToolbarModule
+ * @igxParent IgxGridComponent, IgxTreeGridComponent, IgxHierarchicalGridComponent, IgxPivotGridComponent
  *
  */
 @Component({
     selector: 'igx-grid-toolbar',
     templateUrl: './grid-toolbar.component.html',
-    providers: [{ provide: IgxToolbarToken, useExisting: IgxGridToolbarComponent }]
+    providers: [{ provide: IgxToolbarToken, useExisting: IgxGridToolbarComponent }],
+    imports: [NgIf, IgxGridToolbarActionsComponent, IgxGridToolbarAdvancedFilteringComponent, NgTemplateOutlet, IgxLinearProgressBarComponent]
 })
-export class IgxGridToolbarComponent extends DisplayDensityBase implements OnDestroy {
+export class IgxGridToolbarComponent implements OnDestroy {
 
     /**
      * When enabled, shows the indeterminate progress bar.
@@ -37,11 +49,13 @@ export class IgxGridToolbarComponent extends DisplayDensityBase implements OnDes
      * By default this will be toggled, when the default exporter component is present
      * and an exporting is in progress.
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public showProgress = false;
 
     /**
      * Gets/sets the grid component for the toolbar component.
+     *
+     * @deprecated since version 17.1.0. No longer required to be set for the Hierarchical Grid child grid template
      *
      * @remarks
      * Usually you should not set this property in the context of the default grid/tree grid.
@@ -69,8 +83,8 @@ export class IgxGridToolbarComponent extends DisplayDensityBase implements OnDes
      * @hidden
      * @internal
      */
-    @ContentChild(IgxGridToolbarActionsDirective)
-    public hasActions: IgxGridToolbarActionsDirective;
+    @ContentChild(IgxGridToolbarActionsComponent)
+    public hasActions: IgxGridToolbarActionsComponent;
 
     /**
      * @hidden
@@ -79,35 +93,14 @@ export class IgxGridToolbarComponent extends DisplayDensityBase implements OnDes
     @HostBinding('class.igx-grid-toolbar')
     public defaultStyle = true;
 
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('class.igx-grid-toolbar--cosy')
-    public get cosyStyle() {
-        return this.displayDensity === 'cosy';
-    }
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('class.igx-grid-toolbar--compact')
-    public get compactStyle() {
-        return this.displayDensity === 'compact';
-    }
-
-
     protected _grid: GridType;
     protected sub: Subscription;
 
     constructor(
-        @Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions: IDisplayDensityOptions,
         @Inject(IGX_GRID_SERVICE_BASE) private api: GridServiceType,
         private iconService: IgxIconService,
         private element: ElementRef<HTMLElement>
     ) {
-        super(_displayDensityOptions);
         this.iconService.addSvgIconFromText(pinLeft.name, pinLeft.value, 'imx-icons');
         this.iconService.addSvgIconFromText(unpinLeft.name, unpinLeft.value, 'imx-icons');
     }

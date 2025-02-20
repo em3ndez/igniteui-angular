@@ -1,4 +1,5 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, HostBinding, ViewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import {
     IgxPivotNumericAggregate,
     IgxPivotGridComponent,
@@ -6,12 +7,20 @@ import {
     PivotAggregation,
     IgxPivotDateDimension,
     IPivotDimension,
-    IDimensionsChange,
-    DisplayDensity,
+
     FilteringExpressionsTree,
     FilteringLogic,
     IgxStringFilteringOperand,
-    PivotDimensionType
+    PivotDimensionType,
+    IPivotGridRecord,
+    IPivotGridColumn,
+    IgxExcelExporterService,
+    IgxExcelExporterOptions,
+    IgxButtonDirective,
+    IgxButtonGroupComponent,
+    IgxComboComponent,
+    IgxPivotDataSelectorComponent,
+    IgxPivotValueChipTemplateDirective
 } from 'igniteui-angular';
 
 export class IgxTotalSaleAggregate {
@@ -35,7 +44,7 @@ export class IgxTotalSaleAggregate {
             max = data[0].UnitPrice * data[0].UnitsSold;
         } else if (data.length > 1) {
             const mappedData = data.map(x => x.UnitPrice * x.UnitsSold);
-            max = mappedData.reduce((a, b) => Math.max(a,b));
+            max = mappedData.reduce((a, b) => Math.max(a, b));
         }
         return max;
     };
@@ -45,15 +54,20 @@ export class IgxTotalSaleAggregate {
     providers: [],
     selector: 'app-tree-grid-sample',
     styleUrls: ['pivot-grid.sample.scss'],
-    templateUrl: 'pivot-grid.sample.html'
+    templateUrl: 'pivot-grid.sample.html',
+    imports: [IgxComboComponent, FormsModule, IgxButtonGroupComponent, IgxButtonDirective, IgxPivotGridComponent, IgxPivotValueChipTemplateDirective, IgxPivotDataSelectorComponent]
 })
 export class PivotGridSampleComponent {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return this.size === "superCompact" ? `var(--ig-size-small)` : `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { static: true }) public grid1: IgxPivotGridComponent;
-    public gridDensity = 'superCompact';
+    public size = 'superCompact';
 
     public filterExpTree = new FilteringExpressionsTree(FilteringLogic.And);
 
-    constructor() {
+    constructor(private excelExportService: IgxExcelExporterService) {
         this.filterExpTree.filteringOperands = [
             {
                 condition: IgxStringFilteringOperand.instance().condition('equals'),
@@ -66,11 +80,13 @@ export class PivotGridSampleComponent {
     public dimensions: IPivotDimension[] = [
         {
             memberName: 'Country',
+            displayName: 'Country',
             enabled: true
         },
         new IgxPivotDateDimension(
             {
                 memberName: 'Date',
+                displayName: 'Date',
                 enabled: true
             },
             {
@@ -81,21 +97,23 @@ export class PivotGridSampleComponent {
         {
             memberFunction: () => 'All',
             memberName: 'AllProducts',
+            displayName: "All Products",
             enabled: true,
-            width: '25%',
             childLevel: {
                 memberFunction: (data) => data.ProductCategory,
                 memberName: 'ProductCategory',
+                displayName: 'Product Category',
                 enabled: true
             }
         },
         {
             memberName: 'AllSeller',
-            memberFunction: () => 'All Sellers',
+            displayName: 'All Sellers',
             enabled: true,
             childLevel: {
                 enabled: true,
-                memberName: 'SellerName'
+                memberName: 'SellerName',
+                displayName: 'Seller Name'
             }
         },
     ];
@@ -104,35 +122,40 @@ export class PivotGridSampleComponent {
 
     public pivotConfigHierarchy: IPivotConfiguration = {
         columns: [
-            this.dimensions[1]
+            {
+                memberName: 'City',
+                displayName: 'City',
+                enabled: true,
+                width: 'auto'
+            },
         ],
         rows: [
             {
-                memberName: 'City',
-                enabled: true,
-            },
-            this.dimensions[2],
-            {
                 memberName: 'SellerName',
+                displayName: 'Seller Name',
                 enabled: true,
+                width: "auto"
                 //filter: this.filterExpTree
             }
         ],
         values: [
             {
                 member: 'UnitsSold',
+                displayName: 'Units Sold',
                 aggregate: {
                     key: 'SUM',
-                    aggregator: IgxPivotNumericAggregate.sum,
+                    aggregatorName: 'SUM',
                     label: 'Sum'
                 },
                 enabled: true,
                 styles: {
-                    upFont: (rowData: any, columnKey: any): boolean => rowData[columnKey] > 300,
-                    downFont: (rowData: any, columnKey: any): boolean => rowData[columnKey] <= 300
+                    upFont: (rowData: IPivotGridRecord, columnData: IPivotGridColumn): boolean => rowData.aggregationValues.get(columnData.field) > 300,
+                    downFont: (rowData: IPivotGridRecord, columnData: IPivotGridColumn): boolean => rowData.aggregationValues.get(columnData.field) <= 300
                 },
                 // dataType: 'currency',
-                formatter: (value) => value ? value + '$' : undefined
+                formatter: (value) => {
+                    return value ? value + '$' : undefined;
+                }
             },
             {
                 member: 'AmountOfSale',
@@ -266,8 +289,8 @@ export class PivotGridSampleComponent {
         this.selected = allEnabled;
     }
 
-    public setDensity(density: DisplayDensity) {
-        this.gridDensity = density;
+    public setDensity(density) {
+        this.size = density;
     }
 
     public autoSizeRow(ind) {
@@ -275,61 +298,113 @@ export class PivotGridSampleComponent {
     }
 
     public setRowDimWidth(rowDimIndex, widthValue) {
-        const newPivotConfig = {...this.pivotConfigHierarchy};
+        const newPivotConfig = { ...this.pivotConfigHierarchy };
         newPivotConfig.rows[rowDimIndex].width = widthValue;
 
         this.grid1.pivotConfiguration = newPivotConfig;
     }
 
-    public remove(){
-        this.grid1.removeDimension({memberName: 'test', enabled: true});
+    public remove() {
+        this.grid1.removeDimension({ memberName: 'test', enabled: true });
     }
 
-    public toggle(){
+    public toggle() {
         this.grid1.toggleDimension(this.pivotConfigHierarchy.filters[0]);
     }
 
-    public move(){
-        this.grid1.moveDimension({memberName: 'test', enabled: true}, PivotDimensionType.Filter, 0);
+    public move() {
+        this.grid1.moveDimension({ memberName: 'test', enabled: true }, PivotDimensionType.Filter, 0);
     }
 
-    public insert(){
+    public insert() {
         this.grid1.insertDimensionAt({
             memberName: 'Country',
+            displayName: 'Country',
             enabled: true
         }, PivotDimensionType.Filter, 0);
     }
 
 
-    public removeVal(){
-        this.grid1.removeValue({member: 'test', enabled: true, aggregate: {
-            key: 'SUM',
-            aggregator: IgxPivotNumericAggregate.sum,
-            label: 'Sum'
-        } });
+    public removeVal() {
+        this.grid1.removeValue({
+            member: 'test', enabled: true, aggregate: {
+                key: 'SUM',
+                aggregator: IgxPivotNumericAggregate.sum,
+                label: 'Sum'
+            }
+        });
     }
 
-    public toggleVal(){
-        this.grid1.toggleValue({member: 'test', enabled: true, aggregate: {
-            key: 'SUM',
-            aggregator: IgxPivotNumericAggregate.sum,
-            label: 'Sum'
-        } });
+    public toggleVal() {
+        this.grid1.toggleValue({
+            member: 'test', enabled: true, aggregate: {
+                key: 'SUM',
+                aggregator: IgxPivotNumericAggregate.sum,
+                label: 'Sum'
+            }
+        });
     }
 
-    public moveVal(){
-        this.grid1.moveValue({member: 'test', enabled: true, aggregate: {
-            key: 'SUM',
-            aggregator: IgxPivotNumericAggregate.sum,
-            label: 'Sum'
-        } }, 0);
+    public moveVal() {
+        this.grid1.moveValue({
+            member: 'test', enabled: true, aggregate: {
+                key: 'SUM',
+                aggregator: IgxPivotNumericAggregate.sum,
+                label: 'Sum'
+            }
+        }, 0);
     }
 
-    public insertVal(){
-        this.grid1.insertValueAt({member: 'test', enabled: true, aggregate: {
-            key: 'SUM',
-            aggregator: IgxPivotNumericAggregate.sum,
-            label: 'Sum'
-        } }, 0);
+    public insertVal() {
+        this.grid1.insertValueAt({
+            member: 'test', enabled: true, aggregate: {
+                key: 'SUM',
+                aggregator: IgxPivotNumericAggregate.sum,
+                label: 'Sum'
+            }
+        }, 0);
+    }
+
+    public filterDim() {
+        const set = new Set();
+        set.add('New York');
+        // for excel-style filters, condition is 'in' and value is a Set of values.
+        this.grid1.filterDimension(this.pivotConfigHierarchy.columns[0], set, IgxStringFilteringOperand.instance().condition('in'));
+    }
+
+    public newConfig() {
+        this.pivotConfigHierarchy = {
+            columns: [
+                {
+                    memberName: 'City',
+                    displayName: 'City',
+                    enabled: true,
+                },
+            ],
+            rows: [
+                {
+                    memberName: 'SellerName',
+                    displayName: 'Seller Name',
+                    enabled: true,
+                    filter: this.filterExpTree
+                }
+            ],
+            values: [
+                {
+                    member: 'UnitsSold',
+                    displayName: 'Units Sold',
+                    aggregate: {
+                        key: 'SUM',
+                        aggregatorName: 'SUM',
+                        label: 'Sum'
+                    },
+                    enabled: true,
+                }
+            ]
+        };
+    }
+
+    public exportButtonHandler() {
+        this.excelExportService.export(this.grid1, new IgxExcelExporterOptions('ExportedFile'));
     }
 }

@@ -1,4 +1,4 @@
-import { Directive, Input, Output, EventEmitter, ElementRef, OnDestroy, NgZone, OnInit } from '@angular/core';
+import { Directive, Input, Output, EventEmitter, ElementRef, OnDestroy, NgZone, OnInit, booleanAttribute } from '@angular/core';
 import { interval, Observable, Subscription, Subject, animationFrameScheduler } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
 
@@ -19,7 +19,10 @@ enum DragScrollDirection {
  *
  * @hidden @internal
  */
-@Directive({ selector: '[igxGridDragSelect]' })
+@Directive({
+    selector: '[igxGridDragSelect]',
+    standalone: true
+})
 export class IgxGridDragSelectDirective implements OnInit, OnDestroy {
 
     @Output()
@@ -28,7 +31,7 @@ export class IgxGridDragSelectDirective implements OnInit, OnDestroy {
     @Output()
     public dragScroll = new EventEmitter<{ left: number; top: number }>();
 
-    @Input('igxGridDragSelect')
+    @Input({ alias: 'igxGridDragSelect', transform: booleanAttribute })
     public get activeDrag(): boolean {
         return this._activeDrag;
     }

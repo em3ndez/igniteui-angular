@@ -2,20 +2,19 @@ import { TestBed, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ViewChild, Component } from '@angular/core';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxPaginatorComponent, IgxPaginatorModule } from './public_api';
+import { IgxPaginatorComponent, IgxPaginatorContentDirective } from './paginator.component';
 import { configureTestSuite } from '../test-utils/configure-suite';
 import { GridFunctions } from '../test-utils/grid-functions.spec';
 import { ControlsFunction } from '../test-utils/controls-functions.spec';
 import { first } from 'rxjs/operators';
+import { NgIf } from '@angular/common';
+import { IgxButtonDirective } from '../directives/button/button.directive';
 
 describe('IgxPaginator with default settings', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                DefaultPaginatorComponent
-            ],
-            imports: [IgxPaginatorModule, NoopAnimationsModule]
+            imports: [NoopAnimationsModule, DefaultPaginatorComponent]
         }).compileComponents();
     }));
     it('should calculate number of pages correctly', () => {
@@ -153,7 +152,7 @@ describe('IgxPaginator with default settings', () => {
 
         spyOn(paginator.paging, 'emit').and.callThrough();
         spyOn(paginator.pagingDone, 'emit').and.callThrough();
-        const allBtns = fix.debugElement.queryAll(By.css('.igx-button '));
+        const allBtns = fix.debugElement.queryAll(By.css('.igx-icon-button'));
 
         const prevBtn = allBtns[1];
         const nextBtn = allBtns[2];
@@ -187,7 +186,7 @@ describe('IgxPaginator with default settings', () => {
 
         const paginator = fix.componentInstance.paginator;
         spyOn(paginator.pageChange, 'emit').and.callThrough();
-        const allBtns = fix.debugElement.queryAll(By.css('.igx-button '));
+        const allBtns = fix.debugElement.queryAll(By.css('.igx-icon-button '));
         const nextBtn = allBtns[2];
 
         nextBtn.nativeElement.click();
@@ -217,16 +216,31 @@ describe('IgxPaginator with default settings', () => {
         expect(paginator.perPageChange.emit).toHaveBeenCalledTimes(1);
     });
 
+    it('should display "1 of 1" when there are no records to show', () => {
+        const fix = TestBed.createComponent(DefaultPaginatorComponent);
+        fix.detectChanges();
+
+        const totalPages = fix.debugElement.query(By.css('.igx-page-nav__text > span:last-child')).nativeElement;
+        const paginator = fix.componentInstance.paginator;
+
+        paginator.totalRecords = null;
+        fix.detectChanges();
+
+        expect(totalPages.innerText).toBe('1');
+
+        paginator.totalRecords = 0;
+        fix.detectChanges();
+
+        expect(totalPages.innerText).toBe('1');
+    });
+
 });
 
 describe('IgxPaginator with custom settings', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                CustomizedPaginatorComponent
-            ],
-            imports: [IgxPaginatorModule, NoopAnimationsModule]
+            imports: [NoopAnimationsModule, CustomizedPaginatorComponent]
         }).compileComponents();
     }));
 
@@ -273,16 +287,17 @@ describe('IgxPaginator with custom settings', () => {
         <igx-paginator #pg [totalRecords]="42">
             <igx-paginator-content *ngIf="customContent">
                 <div id="numberPager" class="igx-paginator" style="justify-content: center;">
-                    <button class="customPrev" [disabled]="pg.isFirstPageDisabled" (click)="pg.previousPage()" igxButton="flat">
+                    <button type="button" class="customPrev" [disabled]="pg.isFirstPage" (click)="pg.previousPage()" igxButton="flat">
                         PREV
                     </button>
                     <span class="currPage" style="margin-left:10px; margin-right: 10px"> {{pg.page}} </span>
-                    <button class="customNext" [disabled]="pg.isLastPageDisabled" (click)="pg.nextPage()" igxButton="flat">
+                    <button type="button" class="customNext" [disabled]="pg.isLastPage" (click)="pg.nextPage()" igxButton="flat">
                         NEXT
                     </button>
                 </div>
             </igx-paginator-content>
-        </igx-paginator>`
+        </igx-paginator>`,
+    imports: [IgxPaginatorComponent, IgxPaginatorContentDirective, NgIf, IgxButtonDirective]
 })
 export class DefaultPaginatorComponent {
     @ViewChild(IgxPaginatorComponent, { static: true }) public paginator: IgxPaginatorComponent;
@@ -298,7 +313,8 @@ export class DefaultPaginatorComponent {
         [selectOptions]="[3,10,25,40]"
         [perPage]="7"
         >
-        </igx-paginator>`
+        </igx-paginator>`,
+    imports: [IgxPaginatorComponent]
 })
 export class CustomizedPaginatorComponent {
     @ViewChild(IgxPaginatorComponent, { static: true }) public paginator: IgxPaginatorComponent;

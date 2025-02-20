@@ -1,15 +1,13 @@
-﻿import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+﻿import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxGridModule } from './public_api';
 import { IgxStringFilteringOperand } from '../../data-operations/filtering-condition';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { ColumnPinningPosition, GridSelectionMode } from '../common/enums';
-import { IPinningConfig } from '../grid.common';
 import { wait, UIInteractions } from '../../test-utils/ui-interactions.spec';
 import {
     CELL_PINNED_CLASS,
-    GRID_MRL_BLOCK_CLASS,
+    GRID_MRL_BLOCK,
     GRID_SCROLL_CLASS,
     GridFunctions,
     GridSelectionFunctions,
@@ -26,27 +24,28 @@ import {
 } from '../../test-utils/grid-samples.spec';
 import { IgxGridComponent } from './grid.component';
 import { DropPosition } from '../moving/moving.service';
-import { setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
+import { clearGridSubs, setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
 import { SortingDirection } from '../../data-operations/sorting-strategy';
-/* eslint-disable @typescript-eslint/no-use-before-define */
+import { IPinningConfig } from '../public_api';
 
 describe('IgxGrid - Column Pinning #grid', () => {
 
     const DEBOUNCETIME = 30;
 
-    configureTestSuite((() => {
+    configureTestSuite();
+
+    beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 PinningComponent,
                 PinOnInitAndSelectionComponent,
                 GridFeaturesComponent,
                 MultiColumnHeadersWithGroupingComponent,
                 GridPinningMRLComponent
-
-            ],
-            imports: [NoopAnimationsModule, IgxGridModule]
-        });
-    }));
+            ]
+        }).compileComponents();
+    }))
 
     describe('To Start', () => {
 
@@ -54,12 +53,11 @@ describe('IgxGrid - Column Pinning #grid', () => {
 
             let fix;
             let grid: IgxGridComponent;
-            beforeEach(fakeAsync(() => {
+            beforeEach(() => {
                 fix = TestBed.createComponent(PinOnInitAndSelectionComponent);
-                fix.detectChanges();
                 grid = fix.componentInstance.grid;
                 fix.detectChanges();
-            }));
+            });
 
             it('should correctly initialize when there are initially pinned columns.', () => {
 
@@ -186,6 +184,17 @@ describe('IgxGrid - Column Pinning #grid', () => {
                 expect(thirdHeader.context.column.field).toEqual('ContactName');
                 expect(GridFunctions.isHeaderPinned(thirdHeader)).toBe(false);
 
+            });
+
+            it('should pin the column on the last position if the index for the last position is provided', () => {
+                grid.pinColumn('CompanyName');
+                fix.detectChanges();
+
+                grid.pinColumn('City', 2);
+                fix.detectChanges();
+
+                expect(grid.pinnedColumns.length).toEqual(3);
+                expect(grid.pinnedColumns[2].field).toEqual('City');
             });
 
             it('should correctly initialize pinned columns z-index values.', () => {
@@ -445,7 +454,7 @@ describe('IgxGrid - Column Pinning #grid', () => {
 
             it('should not reject pinning a column if unpinned area width is less than 20% of the grid width', () => {
 
-                grid.columnList.forEach((column) => {
+                grid.columns.forEach((column) => {
                     switch (column.index) {
                         case 0:
                         case 1:
@@ -457,7 +466,7 @@ describe('IgxGrid - Column Pinning #grid', () => {
 
                 fix.detectChanges();
 
-                grid.columnList.forEach((column) => {
+                grid.columns.forEach((column) => {
                     switch (column.index) {
                         case 0:
                         case 1:
@@ -575,9 +584,9 @@ describe('IgxGrid - Column Pinning #grid', () => {
                 expect(row.children[3].getAttribute('aria-describedby')).toBe(grid.id + '_ContactName');
 
                 // check scrollbar DOM
-                const scrBarStartSection = fix.debugElement.query(By.css(`.${GRID_SCROLL_CLASS}-start`));
-                const scrBarMainSection = fix.debugElement.query(By.css(`.${GRID_SCROLL_CLASS}-main`));
-                const scrBarEndSection = fix.debugElement.query(By.css(`.${GRID_SCROLL_CLASS}-end`));
+                const scrBarStartSection = fix.debugElement.query(By.css(`${GRID_SCROLL_CLASS}-start`));
+                const scrBarMainSection = fix.debugElement.query(By.css(`${GRID_SCROLL_CLASS}-main`));
+                const scrBarEndSection = fix.debugElement.query(By.css(`${GRID_SCROLL_CLASS}-end`));
 
                 // The default pinned-border-width in px
                 expect(scrBarStartSection.nativeElement.offsetWidth).toEqual(grid.featureColumnsWidth());
@@ -586,10 +595,11 @@ describe('IgxGrid - Column Pinning #grid', () => {
                 GridFunctions.verifyUnpinnedAreaWidth(grid, scrBarMainSection.nativeElement.offsetWidth, false);
             });
 
-            it('should pin an unpinned column when drag/drop it among pinned columns.', () => {
+            it('should pin an unpinned column when drag/drop it among pinned columns.', fakeAsync(() => {
 
                 // move 'ID' column to the pinned area
                 grid.moveColumn(grid.getColumnByName('ID'), grid.getColumnByName('ContactName'), DropPosition.BeforeDropTarget);
+                tick();
                 fix.detectChanges();
 
                 // verify column is pinned at the correct place
@@ -597,11 +607,11 @@ describe('IgxGrid - Column Pinning #grid', () => {
                 expect(grid.pinnedColumns[1].field).toEqual('ID');
                 expect(grid.pinnedColumns[2].field).toEqual('ContactName');
                 expect(grid.getColumnByName('ID').pinned).toBeTruthy();
-            });
+            }));
 
             it('should correctly pin columns with their summaries to end.', () => {
 
-                grid.columnList.forEach(col => {
+                grid.columns.forEach(col => {
                     if (col.field === 'CompanyName' || col.field === 'ContactName') {
                         col.hasSummary = true;
                     }
@@ -642,6 +652,7 @@ describe('IgxGrid - Column Pinning #grid', () => {
                 fix.detectChanges();
                 expect(cellFax.active).toBe(false);
                 expect(cellCompanyName.active).toBe(true);
+                clearGridSubs();
             }));
 
             it('should allow navigating to/from pinned area using Ctrl+Left/Right', (async () => {
@@ -707,13 +718,13 @@ describe('IgxGrid - Column Pinning #grid', () => {
                 expect(GridFunctions.getRowDisplayContainer(fix, 0)).toBeTruthy();
 
                 expect(row.children[1].classList.contains(`${CELL_PINNED_CLASS}-first`)).toBeTruthy();
-                expect(row.children[1].classList.contains(GRID_MRL_BLOCK_CLASS)).toBeTruthy();
+                expect(row.children[1].classList.contains(GRID_MRL_BLOCK)).toBeTruthy();
                 expect(parseInt((row.children[1] as any).style.left, 10)).toEqual(-408);
 
                 // check correct headers have left border
                 const firstPinnedHeader = grid.headerGroupsList.find(group => group.isPinned);
                 // The first child of the header is the <div> wrapping the MRL block
-                expect(firstPinnedHeader.nativeElement.firstElementChild.classList.contains(GRID_MRL_BLOCK_CLASS)).toBeTrue();
+                expect(firstPinnedHeader.nativeElement.firstElementChild.classList.contains(GRID_MRL_BLOCK)).toBeTrue();
                 expect(firstPinnedHeader.nativeElement.firstElementChild.classList.contains(`${HEADER_PINNED_CLASS}-first`)).toBeTrue();
             }));
 

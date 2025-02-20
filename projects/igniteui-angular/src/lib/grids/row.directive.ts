@@ -1,5 +1,6 @@
 import {
     AfterViewInit,
+    booleanAttribute,
     ChangeDetectorRef,
     Directive,
     DoCheck,
@@ -22,11 +23,14 @@ import { TransactionType } from '../services/transaction/transaction';
 import { IgxGridSelectionService } from './selection/selection.service';
 import { IgxAddRow, IgxEditRow } from './common/crud.service';
 import { CellType, ColumnType, GridType, IGX_GRID_BASE } from './common/grid.interface';
-import mergeWith from 'lodash.mergewith';
+import { mergeWith } from 'lodash-es';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-@Directive({ selector: '[igxRowBaseComponent]' })
+@Directive({
+    selector: '[igxRowBaseComponent]',
+    standalone: true
+})
 export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
     /**
      * @hidden
@@ -82,7 +86,7 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
      * this.grid.selectedRows[0].pinned = true;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     @HostBinding('attr.aria-disabled')
     @HostBinding('class.igx-grid__tr--disabled')
     public disabled = false;
@@ -149,10 +153,6 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
         return this.addRowUI ? height : null;
     }
 
-    public get cellHeight() {
-        return this.addRowUI && !this.inEditMode ? null : this.grid.rowHeight || 32;
-    }
-
     /**
      * @hidden
      */
@@ -163,9 +163,10 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
      * @hidden
      */
     @ViewChildren('igxDirRef', { read: IgxGridForOfDirective })
-    public _virtDirRow: QueryList<IgxGridForOfDirective<any>>;
+    public _virtDirRow: QueryList<IgxGridForOfDirective<ColumnType, ColumnType[]>>;
 
-    public get virtDirRow(): IgxGridForOfDirective<any> {
+    /* blazorSuppress */
+    public get virtDirRow(): IgxGridForOfDirective<ColumnType, ColumnType[]> {
         return this._virtDirRow ? this._virtDirRow.first : null;
     }
 
@@ -223,7 +224,7 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
     /**
      * @hidden
      */
-     public get columns(): ColumnType[] {
+    public get columns(): ColumnType[] {
         return this.grid.visibleColumns;
     }
 
@@ -385,6 +386,11 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
      */
     @HostListener('click', ['$event'])
     public onClick(event: MouseEvent) {
+        this.grid.rowClick.emit({
+            row: this,
+            event
+        });
+
         if (this.grid.rowSelection === 'none' || this.deleted || !this.grid.selectRowOnClick) {
             return;
         }
@@ -393,9 +399,26 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
             return;
         }
 
-        // eslint-disable-next-line no-bitwise
         const clearSelection = !(+event.ctrlKey ^ +event.metaKey);
-        this.selectionService.selectRowById(this.key, clearSelection, event);
+        if (this.selected && !clearSelection) {
+            this.selectionService.deselectRow(this.key, event);
+        } else {
+            this.selectionService.selectRowById(this.key, clearSelection, event);
+        }
+    }
+
+    /**
+     * @hidden
+     * @internal
+     */
+    @HostListener('contextmenu', ['$event'])
+    public onContextMenu(event: MouseEvent) {
+        const cell = (event.target as HTMLElement).closest('.igx-grid__td');
+        this.grid.contextMenu.emit({
+            row: this,
+            cell: this.cells.find(c => c.nativeElement === cell),
+            event
+        });
     }
 
     /**
@@ -406,6 +429,17 @@ export class IgxRowDirective implements DoCheck, AfterViewInit, OnDestroy {
     public showActionStrip() {
         if (this.grid.actionStrip) {
             this.grid.actionStrip.show(this);
+        }
+    }
+
+    /**
+     * @hidden
+     * @internal
+     */
+    @HostListener('mouseleave')
+    public hideActionStrip() {
+        if (this.grid.actionStrip && this.grid.actionStrip.hideOnRowLeave) {
+            this.grid.actionStrip.hide();
         }
     }
 

@@ -1,17 +1,18 @@
-import { Component, Input, HostBinding, HostListener, ChangeDetectionStrategy, ElementRef, TemplateRef } from '@angular/core';
+import { Component, Input, HostBinding, HostListener, ChangeDetectionStrategy, ElementRef, TemplateRef, booleanAttribute } from '@angular/core';
 import {
     IgxSummaryOperand,
     IgxSummaryResult
 } from './grid-summary';
 import { GridColumnDataType } from '../../data-operations/data-util';
-import { getLocaleCurrencyCode } from '@angular/common';
+import { formatCurrency, formatDate, formatNumber, formatPercent, getLocaleCurrencyCode, getLocaleCurrencySymbol, NgIf, NgTemplateOutlet, NgFor } from '@angular/common';
 import { ISelectionNode } from '../common/types';
 import { ColumnType } from '../common/grid.interface';
 
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-grid-summary-cell',
-    templateUrl: './summary-cell.component.html'
+    templateUrl: './summary-cell.component.html',
+    imports: [NgIf, NgTemplateOutlet, NgFor]
 })
 export class IgxSummaryCellComponent {
 
@@ -24,11 +25,8 @@ export class IgxSummaryCellComponent {
     @Input()
     public firstCellIndentation = 0;
 
-    @Input()
+    @Input({ transform: booleanAttribute })
     public hasSummary = false;
-
-    @Input()
-    public density;
 
     @Input()
     public summaryFormatter: (summaryResult: IgxSummaryResult, summaryOperand: IgxSummaryOperand) => any;
@@ -108,6 +106,14 @@ export class IgxSummaryCellComponent {
             this.column.pipeArgs.currencyCode : getLocaleCurrencyCode(this.grid.locale);
     }
 
+    /**
+     * @hidden @internal
+     */
+    public get currencySymbol(): string {
+        return this.column.pipeArgs.display ?
+            this.column.pipeArgs.display : getLocaleCurrencySymbol(this.grid.locale);
+    }
+
     public translateSummary(summary: IgxSummaryResult): string {
         return this.grid.resourceStrings[`igx_grid_summary_${summary.key}`] || summary.label;
     }
@@ -115,30 +121,36 @@ export class IgxSummaryCellComponent {
     /**
      * @hidden @internal
      */
-    public isNumberColumn(): boolean {
-        return this.column.dataType === GridColumnDataType.Number;
-    }
+    public formatSummaryResult(summary: IgxSummaryResult): string {
+        if (summary.summaryResult === undefined || summary.summaryResult === null || summary.summaryResult === '') {
+            return '';
+        }
 
-    /**
-     * @hidden @internal
-     */
-    public isDateKindColumn(): boolean {
-        return this.column.dataType === GridColumnDataType.Date ||
-               this.column.dataType === GridColumnDataType.DateTime ||
-               this.column.dataType === GridColumnDataType.Time;
-    }
+        if (this.summaryFormatter) {
+            return this.summaryFormatter(summary, this.column.summaries);
+        }
 
-    /**
-     * @hidden @internal
-     */
-    public isCurrencyColumn(): boolean {
-        return this.column.dataType === GridColumnDataType.Currency;
-    }
+        const args = this.column.pipeArgs;
+        const locale = this.grid.locale;
 
-    /**
-     * @hidden @internal
-     */
-    public isPercentColumn(): boolean {
-        return this.column.dataType === GridColumnDataType.Percent;
+        if (summary.key === 'count') {
+            return formatNumber(summary.summaryResult, locale)
+        }
+
+        if (summary.defaultFormatting) {
+            switch (this.column.dataType) {
+                case GridColumnDataType.Number:
+                    return formatNumber(summary.summaryResult, locale, args.digitsInfo);
+                case GridColumnDataType.Date:
+                case GridColumnDataType.DateTime:
+                case GridColumnDataType.Time:
+                    return formatDate(summary.summaryResult, args.format, locale, args.timezone);
+                case GridColumnDataType.Currency:
+                    return formatCurrency(summary.summaryResult, locale, this.currencySymbol, this.currencyCode, args.digitsInfo);
+                case GridColumnDataType.Percent:
+                    return formatPercent(summary.summaryResult, locale, args.digitsInfo);
+            }
+        }
+        return summary.summaryResult;
     }
 }

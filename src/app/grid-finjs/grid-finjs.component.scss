@@ -4,10 +4,7 @@
         align-items: center;
 
         igx-icon {
-            font-size: 16px;
-            width: 16px;
-            height: 16px;
-            margin-left: 4px;
+            --igx-icon-size: 16px;
         }
     }
 
@@ -178,7 +175,7 @@
         font-size: .8125rem;
     }
 
-    .igx-button--icon {
+    .igx-icon-button {
         width: 2rem;
         height: 2rem;
     }
@@ -186,4 +183,5 @@
 
 igx-grid {
     flex: 1 0 0%;
+    --ig-size: var(--ig-size-small);
 }

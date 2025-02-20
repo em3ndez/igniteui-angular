@@ -1,7 +1,7 @@
 
-import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
+import { TestBed, waitForAsync, ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { IgxTreeGridModule, IgxTreeGridComponent } from './public_api';
+import { IgxTreeGridComponent } from './public_api';
 import { IgxTreeGridSimpleComponent, IgxTreeGridPrimaryForeignKeyComponent } from '../../test-utils/tree-grid-components.spec';
 import { TreeGridFunctions } from '../../test-utils/tree-grid-functions.spec';
 import { first } from 'rxjs/operators';
@@ -17,34 +17,30 @@ const CELL_CSS_CLASS = '.igx-grid__td';
 
 describe('IgxTreeGrid - CRUD #tGrid', () => {
     configureTestSuite();
-    let fix;
     let treeGrid: IgxTreeGridComponent;
     let gridContent: DebugElement;
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 IgxTreeGridSimpleComponent,
                 IgxTreeGridPrimaryForeignKeyComponent
-            ],
-            imports: [IgxTreeGridModule, NoopAnimationsModule]
-        })
-            .compileComponents();
+            ]
+        }).compileComponents();
     }));
 
     describe('Create', () => {
         describe('Child Collection', () => {
-            // configureTestSuite();
 
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridSimpleComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridSimpleComponent);
-                fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
                 treeGrid.height = '800px';
                 fix.detectChanges();
-                tick(16);
-            }));
+            });
 
             it('should support adding root row through treeGrid API', () => {
                 verifyRowsCount(fix, 3, 10);
@@ -177,15 +173,14 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
         });
 
         describe('Primary/Foreign key', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridPrimaryForeignKeyComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridPrimaryForeignKeyComponent);
                 fix.detectChanges();
                 treeGrid = fix.componentInstance.treeGrid;
                 treeGrid.height = '800px';
-                fix.detectChanges();
-                tick(16);
-            }));
+            });
 
             it('should support adding root row through treeGrid API', () => {
                 verifyRowsCount(fix, 8, 8);
@@ -305,15 +300,15 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
 
     describe('Update API', () => {
         describe('Child Collection', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridSimpleComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridSimpleComponent);
                 fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
-            }));
+            });
 
-            it('should support updating a root row through the treeGrid API', fakeAsync(() => {
+            it('should support updating a root row through the treeGrid API', () => {
                 verifyCellValue(fix, 0, 'Name', 'John Winchester');
                 verifyRowsCount(fix, 3, 10);
 
@@ -326,11 +321,10 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
                 };
                 treeGrid.updateRow(newRow, 147);
                 fix.detectChanges();
-                tick(16);
 
                 verifyCellValue(fix, 0, 'Name', 'New Name');
                 verifyRowsCount(fix, 3, 4);
-            }));
+            });
 
             it('should support updating a child row through the treeGrid API', () => {
                 verifyCellValue(fix, 6, 'Name', 'Peter Lewis');
@@ -406,13 +400,12 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
         });
 
         describe('Primary/Foreign key', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridPrimaryForeignKeyComponent>;
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridPrimaryForeignKeyComponent);
                 fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
-            }));
+            });
 
             it('should support updating a root row through the treeGrid API', () => {
                 verifyCellValue(fix, 0, 'Name', 'Casey Houston');
@@ -554,17 +547,17 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
 
     describe('Update UI', () => {
         describe('Child Collection', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridSimpleComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridSimpleComponent);
                 fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
                 for (const col of treeGrid.columnList) {
                     col.editable = true;
                 }
                 gridContent = GridFunctions.getGridContent(fix);
-            }));
+            });
 
             it('should be able to enter edit mode of a tree-grid column on dblclick, enter and F2', () => {
                 const cell = treeGrid.getCellByColumn(0, 'ID');
@@ -695,17 +688,17 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
         });
 
         describe('Primary/Foreign key', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridPrimaryForeignKeyComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridPrimaryForeignKeyComponent);
                 fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
                 for (const col of treeGrid.columnList) {
                     col.editable = true;
                 }
                 gridContent = GridFunctions.getGridContent(fix);
-            }));
+            });
 
             it('should be able to enter edit mode of a tree-grid column on dblclick, enter and F2', () => {
                 const cell = treeGrid.getCellByColumn(0, 'ID');
@@ -850,13 +843,13 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
 
     describe('Delete', () => {
         describe('Child Collection', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridSimpleComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridSimpleComponent);
                 fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
-            }));
+            });
 
             it('should delete a root level row by ID', () => {
                 let someRow = treeGrid.getRowByIndex(0);
@@ -933,16 +926,18 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
         });
 
         describe('Primary/Foreign key', () => {
-            // configureTestSuite();
-            beforeEach(fakeAsync(/** height/width setter rAF */() => {
+            let fix: ComponentFixture<IgxTreeGridPrimaryForeignKeyComponent>;
+
+            beforeEach(() => {
                 fix = TestBed.createComponent(IgxTreeGridPrimaryForeignKeyComponent);
                 fix.detectChanges();
-                tick(16);
                 treeGrid = fix.componentInstance.treeGrid;
                 treeGrid.cascadeOnDelete = false;
-            }));
+            });
 
             it('should delete a root level row by ID', () => {
+                spyOn(treeGrid.rowDelete, 'emit').and.callThrough();
+                spyOn(treeGrid.rowDeleted, 'emit').and.callThrough();
                 let someRow = treeGrid.getRowByIndex(0);
                 expect(someRow.key).toBe(1);
 
@@ -950,14 +945,76 @@ describe('IgxTreeGrid - CRUD #tGrid', () => {
                 verifyTreeGridRecordsCount(fix, 3, 8);
                 verifyProcessedTreeGridRecordsCount(fix, 3, 8);
 
+                const rowDeleteArgs = {
+                    rowID: someRow.key,
+                    primaryKey: someRow.key,
+                    rowKey: someRow.key,
+                    cancel: false,
+                    rowData: treeGrid.getRowData(someRow.key),
+                    data: treeGrid.getRowData(someRow.key),
+                    oldValue: null,
+                    owner: treeGrid
+                };
+
+                const rowDeletedArgs = {
+                    data: treeGrid.getRowData(someRow.key),
+                    rowData: treeGrid.getRowData(someRow.key),
+                    primaryKey: someRow.key,
+                    owner: treeGrid,
+                    rowKey: someRow.key,
+                };
+
                 treeGrid.deleteRow(someRow.key);
                 fix.detectChanges();
+
+                expect(treeGrid.rowDelete.emit).toHaveBeenCalledOnceWith(rowDeleteArgs);
+                expect(treeGrid.rowDeleted.emit).toHaveBeenCalledOnceWith(rowDeletedArgs);
+
                 someRow = treeGrid.getRowByIndex(0);
                 expect(someRow.key).toBe(2);
 
                 verifyRowsCount(fix, 7, 7);
                 verifyTreeGridRecordsCount(fix, 4, 7);
                 verifyProcessedTreeGridRecordsCount(fix, 4, 7);
+            });
+
+            it('should cancel rowDelete event', () => {
+                spyOn(treeGrid.rowDelete, 'emit').and.callThrough();
+                spyOn(treeGrid.rowDeleted, 'emit').and.callThrough();
+                let someRow = treeGrid.getRowByIndex(0);
+                expect(someRow.key).toBe(1);
+
+                verifyRowsCount(fix, 8, 8);
+                verifyTreeGridRecordsCount(fix, 3, 8);
+                verifyProcessedTreeGridRecordsCount(fix, 3, 8);
+
+                treeGrid.rowDelete.subscribe((e: any) => {
+                    e.cancel = true;
+                });
+
+                const rowDeleteArgs = {
+                    rowID: someRow.key,
+                    primaryKey: someRow.key,
+                    rowKey: someRow.key,
+                    cancel: true,
+                    rowData: treeGrid.getRowData(someRow.key),
+                    data: treeGrid.getRowData(someRow.key),
+                    oldValue: null,
+                    owner: treeGrid,
+                };
+
+                treeGrid.deleteRow(someRow.key);
+                fix.detectChanges();
+
+                expect(treeGrid.rowDelete.emit).toHaveBeenCalledOnceWith(rowDeleteArgs);
+                expect(treeGrid.rowDeleted.emit).toHaveBeenCalledTimes(0);
+
+                someRow = treeGrid.getRowByIndex(0);
+                expect(someRow.key).toBe(1);
+
+                verifyRowsCount(fix, 8, 8);
+                verifyTreeGridRecordsCount(fix, 3, 8);
+                verifyProcessedTreeGridRecordsCount(fix, 3, 8);
             });
 
             it('should delete a child level row by ID', () => {

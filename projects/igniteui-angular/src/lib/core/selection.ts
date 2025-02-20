@@ -43,6 +43,14 @@ export class IgxSelectionAPIService {
     }
 
     /**
+     * Removes selection for a component.
+     * @param componentID
+     */
+      public delete(componentID: string) {
+        this.selection.delete(componentID);
+    }
+
+    /**
      * Get current component selection length.
      *
      * @param componentID ID of the component.
@@ -70,9 +78,6 @@ export class IgxSelectionAPIService {
         }
         if (sel === undefined) {
             sel = this.get_empty();
-        }
-        if (!itemID && itemID !== 0) {
-            throw Error('Invalid value for item id!');
         }
         sel.add(itemID);
         return sel;
@@ -180,7 +185,7 @@ export class IgxSelectionAPIService {
      * @param componentID ID of the component, which we add new items to.
      * @param itemIDs Array of IDs of the items to add to component selection.
      */
-    public deselect_items(componentID: string, itemID: any[], clearSelection?: boolean) {
+    public deselect_items(componentID: string, itemID: any[], _clearSelection?: boolean) {
         this.set(componentID, this.delete_items(componentID, itemID));
     }
 

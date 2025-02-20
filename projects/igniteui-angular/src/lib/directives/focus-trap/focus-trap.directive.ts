@@ -1,10 +1,11 @@
-import { AfterViewInit, Directive, ElementRef, Input, NgModule, OnDestroy } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, Input, OnDestroy, booleanAttribute } from '@angular/core';
 import { fromEvent, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PlatformUtil } from '../../core/utils';
 
 @Directive({
-    selector: '[igxFocusTrap]'
+    selector: '[igxFocusTrap]',
+    standalone: true
 })
 export class IgxFocusTrapDirective implements AfterViewInit, OnDestroy {
     /** @hidden */
@@ -29,7 +30,7 @@ export class IgxFocusTrapDirective implements AfterViewInit, OnDestroy {
      * <div igxFocusTrap="true"></div>
      * ```
      */
-    @Input('igxFocusTrap')
+    @Input({ alias: 'igxFocusTrap', transform: booleanAttribute })
     public set focusTrap(focusTrap: boolean) {
         this._focusTrap = focusTrap;
     }
@@ -41,13 +42,13 @@ export class IgxFocusTrapDirective implements AfterViewInit, OnDestroy {
 
     /** @hidden */
     public ngAfterViewInit(): void {
-            fromEvent(this.element, 'keydown')
-                .pipe(takeUntil(this.destroy$))
-                .subscribe((event: KeyboardEvent) => {
-                    if (this._focusTrap && event.key === this.platformUtil.KEYMAP.TAB) {
-                        this.handleTab(event);
-                    }
-                });
+        fromEvent(this.element, 'keydown')
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((event: KeyboardEvent) => {
+                if (this._focusTrap && event.key === this.platformUtil.KEYMAP.TAB) {
+                    this.handleTab(event);
+                }
+            });
     }
 
     /** @hidden */
@@ -100,12 +101,3 @@ export class IgxFocusTrapDirective implements AfterViewInit, OnDestroy {
         return activeElement;
     }
 }
-
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxFocusTrapDirective],
-    exports: [IgxFocusTrapDirective]
-})
-export class IgxFocusTrapModule { }

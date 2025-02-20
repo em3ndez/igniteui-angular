@@ -1,13 +1,14 @@
 <ng-container *ngTemplateOutlet='addRowUI ? addTemp : defaultTemp'></ng-container>
 <ng-template #defaultExpandedTemplate>
-    <igx-icon [active]='!added'>expand_more</igx-icon>
+    <igx-icon family="default" name="tree_collapse" [active]='!added'></igx-icon>
 </ng-template>
 
 <ng-template #defaultCollapsedTemplate>
-    <igx-icon [active]='!added'>chevron_right</igx-icon>
+    <igx-icon family="default" name="tree_expand" [active]='!added'></igx-icon>
 </ng-template>
 
 <ng-template #defaultEmptyTemplate>
+    <!-- Empty icon used as spacer for size matching-->
     <igx-icon></igx-icon>
 </ng-template>
 
@@ -54,7 +55,7 @@
         <igx-hierarchical-grid-cell
             class="igx-grid__td igx-grid__td--fw"
             [class.igx-grid__td--edited]="key | transactionState:col.field:grid.rowEditable:grid.transactions:grid.pipeTrigger:grid.gridAPI.crudService.cell:grid.gridAPI.crudService.row"
-            [attr.aria-describedby]="gridID + '_' + col.field | igxStringReplace:'.':'_'"
+
             [class.igx-grid__td--number]="col.dataType === 'number' || col.dataType === 'percent' || col.dataType === 'currency'"
             [class.igx-grid__td--bool]="col.dataType === 'boolean'"
             [ngClass]="col.cellClasses | igxCellStyleClasses:data[col.field]:data:col.field:viewIndex:grid.pipeTrigger"
@@ -64,15 +65,15 @@
             [formatter]="col.formatter"
             [intRow]="this"
             [active]="isCellActive(col.visibleIndex)"
-            [style.min-height.px]="cellHeight"
             [rowData]="data"
-            [style.min-width]="col.width"
-            [style.max-width]="col.width"
-            [style.flex-basis]="col.width"
+            [style.min-width]="col.resolvedWidth"
+            [style.max-width]="col.resolvedWidth"
+            [style.flex-basis]="col.resolvedWidth"
             [width]="col.getCellWidth()"
             [visibleColumnIndex]="col.visibleIndex"
             [value]="data | dataMapper:col.field:grid.pipeTrigger:data[col.field]:col.hasNestedPath"
             [cellTemplate]="col.bodyTemplate"
+            [cellValidationErrorTemplate]="col.errorTemplate"
             [lastSearchInfo]="grid.lastSearchInfo"
             [cellSelectionMode]="grid.cellSelection"
             [displayPinnedChip]="shouldDisplayPinnedChip(col.visibleIndex)">
@@ -101,7 +102,7 @@
         <igx-hierarchical-grid-cell *ngFor="let col of pinnedColumns | igxNotGrouped"
             class="igx-grid__td igx-grid__td--fw igx-grid__td--pinned"
             [class.igx-grid__td--edited]="key | transactionState:col.field:grid.rowEditable:grid.transactions:grid.pipeTrigger:grid.gridAPI.crudService.cell:grid.gridAPI.crudService.row"
-            [attr.aria-describedby]="gridID + '_' + col.field | igxStringReplace:'.':'_'"
+
             [class.igx-grid__td--number]="col.dataType === 'number' || col.dataType === 'percent' || col.dataType === 'currency'"
             [ngClass]="col.cellClasses | igxCellStyleClasses:data[col.field]:data:col.field:viewIndex:grid.pipeTrigger"
             [ngStyle]="col.cellStyles | igxCellStyles:data[col.field]:data:col.field:viewIndex:grid.pipeTrigger"
@@ -112,16 +113,16 @@
             [active]="isCellActive(col.visibleIndex)"
             [firstPinned]="col.isFirstPinned"
             [lastPinned]="col.isLastPinned"
-            [style.min-height.px]="cellHeight"
             [rowData]="data"
-            [style.min-width]="col.width"
-            [style.max-width]="col.width"
-            [style.flex-basis]="col.width"
+            [style.min-width]="col.resolvedWidth"
+            [style.max-width]="col.resolvedWidth"
+            [style.flex-basis]="col.resolvedWidth"
             [style.left]="col.rightPinnedOffset"
             [width]="col.getCellWidth()"
             [visibleColumnIndex]="col.visibleIndex"
             [value]="data | dataMapper:col.field:grid.pipeTrigger:data[col.field]:col.hasNestedPath"
             [cellTemplate]="col.bodyTemplate"
+            [cellValidationErrorTemplate]="col.errorTemplate"
             [lastSearchInfo]="grid.lastSearchInfo"
             [cellSelectionMode]="grid.cellSelection"
             [displayPinnedChip]="shouldDisplayPinnedChip(col.visibleIndex)">

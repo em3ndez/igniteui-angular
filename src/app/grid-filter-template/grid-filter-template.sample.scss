@@ -1,0 +1,16 @@
+.sample-buttons {
+    margin-top: 24px;
+}
+
+[igxButton]+[igxButton] {
+    margin-left: 8px;
+}
+
+.filter-input {
+    margin-left: -20px;
+    margin-right: -20px;
+}
+
+.size {
+    --ig-size: var(--ig-size-small);
+}

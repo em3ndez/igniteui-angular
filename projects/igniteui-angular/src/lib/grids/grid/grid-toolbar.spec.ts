@@ -1,14 +1,25 @@
 import { Component, ViewChild } from '@angular/core';
-import { TestBed, fakeAsync, ComponentFixture } from '@angular/core/testing';
+import { TestBed, fakeAsync, ComponentFixture, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AbsoluteScrollStrategy, GlobalPositionStrategy, IgxCsvExporterService, IgxExcelExporterService } from '../../services/public_api';
-import { IgxGridModule } from './public_api';
+import { IgxGridComponent } from './public_api';
 import { configureTestSuite } from '../../test-utils/configure-suite';
-
+import { GridFunctions } from "../../test-utils/grid-functions.spec";
+import { By } from "@angular/platform-browser";
+import { IgxGridToolbarComponent } from '../toolbar/grid-toolbar.component';
+import { NgIf } from '@angular/common';
+import { IgxGridToolbarActionsComponent, IgxGridToolbarTitleComponent } from '../toolbar/common';
+import { IgxGridToolbarPinningComponent } from '../toolbar/grid-toolbar-pinning.component';
+import { IgxGridToolbarHidingComponent } from '../toolbar/grid-toolbar-hiding.component';
+import { IgxGridToolbarAdvancedFilteringComponent } from '../toolbar/grid-toolbar-advanced-filtering.component';
+import { IgxGridToolbarExporterComponent } from '../toolbar/grid-toolbar-exporter.component';
 
 const TOOLBAR_TAG = 'igx-grid-toolbar';
 const TOOLBAR_TITLE_TAG = 'igx-grid-toolbar-title';
 const TOOLBAR_ACTIONS_TAG = 'igx-grid-toolbar-actions';
+const TOOLBAR_PINNING_TAG = 'igx-grid-toolbar-pinning';
+const TOOLBAR_HIDING_TAG = 'igx-grid-toolbar-hiding';
+const TOOLBAR_ADVANCED_FILTERING_TAG = 'igx-grid-toolbar-advanced-filtering';
 const TOOLBAR_EXPORTER_TAG = 'igx-grid-toolbar-exporter';
 
 const DATA = [
@@ -26,14 +37,11 @@ const DATA = [
 
 describe('IgxGrid - Grid Toolbar #grid - ', () => {
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
+        return TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
                 DefaultToolbarComponent,
                 ToolbarActionsComponent
-            ],
-            imports: [
-                IgxGridModule,
-                NoopAnimationsModule
             ],
             providers: [
                 IgxExcelExporterService,
@@ -113,6 +121,23 @@ describe('IgxGrid - Grid Toolbar #grid - ', () => {
             instance = fixture.componentInstance;
         }));
 
+        it('the buttons type should be set to "button"', fakeAsync(() => {
+            tick();
+            fixture.detectChanges();
+
+            const pinningButtonType = $(TOOLBAR_PINNING_TAG).querySelector('button').getAttributeNode('type').value;
+            const hidingButtonType = $(TOOLBAR_HIDING_TAG).querySelector('button').getAttributeNode('type').value;
+            const advancedFilteringButtonType = $(TOOLBAR_ADVANCED_FILTERING_TAG).querySelector('button').getAttributeNode('type').value;
+            const exporterButtonType = $(TOOLBAR_EXPORTER_TAG).querySelector('button').getAttributeNode('type').value;
+
+            const expectedButtonType = 'button';
+
+            expect(pinningButtonType).toBe(expectedButtonType);
+            expect(hidingButtonType).toBe(expectedButtonType);
+            expect(advancedFilteringButtonType).toBe(expectedButtonType);
+            expect(exporterButtonType).toBe(expectedButtonType);
+        }));
+
         it('toolbar exporter props', () => {
             const exporterButton = $(TOOLBAR_EXPORTER_TAG).querySelector('button');
 
@@ -170,6 +195,61 @@ describe('IgxGrid - Grid Toolbar #grid - ', () => {
             expect(defaultFiltSettings).not.toEqual(instance.advancedFiltAction.overlaySettings);
             expect(defaultExportSettings).not.toEqual(instance.exporterAction.overlaySettings);
         });
+
+        it('should initialize input property columnsAreaMaxHeight properly', fakeAsync(() => {
+            expect(instance.pinningAction.columnsAreaMaxHeight).toEqual('100%');
+
+            instance.pinningAction.columnsAreaMaxHeight = '10px';
+            fixture.detectChanges();
+
+            expect(instance.pinningAction.columnsAreaMaxHeight).toEqual('10px');
+
+            const pinningButton = GridFunctions.getColumnPinningButton(fixture);
+            pinningButton.click();
+            tick();
+            fixture.detectChanges()
+            const element = fixture.debugElement.query(By.css('.igx-column-actions__columns'));
+            expect(element.attributes.style).toBe('max-height: 10px;');
+
+            expect(instance.pinningAction.columnsAreaMaxHeight).toEqual('10px');
+        }));
+
+        it('should emit columnToggle event when a column is shown/hidden via the column hiding action', fakeAsync(() => {
+            const spy = spyOn(instance.hidingAction.columnToggle, 'emit');
+            const hidingUI = $(TOOLBAR_HIDING_TAG);
+            const grid = fixture.componentInstance.grid;
+            fixture.detectChanges();
+            const hidingActionButton = hidingUI.querySelector('button');
+            const columnChooserElement = GridFunctions.getColumnHidingElement(fixture);
+
+            hidingActionButton.click();
+            tick();
+            fixture.detectChanges();
+
+            GridFunctions.clickColumnChooserItem(columnChooserElement, 'ProductID');
+            fixture.detectChanges();
+
+            expect(instance.hidingAction.columnToggle.emit).toHaveBeenCalledTimes(1);
+            expect(instance.hidingAction.columnToggle.emit).toHaveBeenCalledWith(
+                { column: grid.getColumnByName('ProductID'), checked: false });
+
+            // test after closing and reopening the hiding UI
+            spy.calls.reset();
+            hidingActionButton.click();
+            tick();
+            fixture.detectChanges();
+
+            hidingActionButton.click();
+            tick();
+            fixture.detectChanges();
+
+            GridFunctions.clickColumnChooserItem(columnChooserElement, 'ProductID');
+            fixture.detectChanges();
+
+            expect(instance.hidingAction.columnToggle.emit).toHaveBeenCalledTimes(1);
+            expect(instance.hidingAction.columnToggle.emit).toHaveBeenCalledWith(
+                { column: grid.getColumnByName('ProductID'), checked: true });
+        }));
     });
 });
 
@@ -182,7 +262,8 @@ describe('IgxGrid - Grid Toolbar #grid - ', () => {
             <igx-grid-toolbar-actions *ngIf="toolbarActionsEnabled"></igx-grid-toolbar-actions>
         </igx-grid-toolbar>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarTitleComponent, NgIf]
 })
 export class DefaultToolbarComponent {
     public toolbarEnabled = true;
@@ -201,7 +282,7 @@ export class DefaultToolbarComponent {
 
 @Component({
     template: `
-    <igx-grid [data]="data" [autoGenerate]="true">
+    <igx-grid #grid [data]="data" [autoGenerate]="true">
         <igx-grid-toolbar>
             <igx-grid-toolbar-actions>
                 <igx-grid-toolbar-pinning #pinningAction></igx-grid-toolbar-pinning>
@@ -217,9 +298,22 @@ export class DefaultToolbarComponent {
             </igx-grid-toolbar-actions>
         </igx-grid-toolbar>
     </igx-grid>
-    `
+    `,
+    imports: [
+        IgxGridComponent,
+        IgxGridToolbarComponent,
+        IgxGridToolbarActionsComponent,
+        IgxGridToolbarTitleComponent,
+        IgxGridToolbarPinningComponent,
+        IgxGridToolbarHidingComponent,
+        IgxGridToolbarAdvancedFilteringComponent,
+        IgxGridToolbarExporterComponent
+    ]
 })
 export class ToolbarActionsComponent {
+    @ViewChild(IgxGridComponent, { static: true })
+    public grid: IgxGridComponent;
+
     @ViewChild('pinningAction', {static: true})
     public pinningAction;
 

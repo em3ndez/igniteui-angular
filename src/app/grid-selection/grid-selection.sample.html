@@ -1,52 +1,50 @@
-<div class="sample-container">
-    <div class="sample-actions">
-        <igx-switch [(ngModel)]="grid1.hideRowSelectors">Hide row selectors</igx-switch>
+<div class="sample-actions">
+    <igx-switch [(ngModel)]="grid1.hideRowSelectors">Hide row selectors</igx-switch>
 
-        <button igxButton="raised" [igxToggleAction]="dropDownComfortable" [igxDropDownItemNavigation]="dropDownComfortable" displayDensity="comfortable">Cell Selection: {{grid1.cellSelection}}</button>
-            <igx-drop-down #dropDownComfortable (selectionChanging)="onSelection($event)"  displayDensity="comfortable">
-                <igx-drop-down-item *ngFor="let item of selectionModes">
-                        {{ item }}
-                </igx-drop-down-item>
-            </igx-drop-down>
-        <button igxButton="raised" [igxToggleAction]="dropDownRowSelection" [igxDropDownItemNavigation]="dropDownRowSelection" displayDensity="comfortable">Row Selection: {{grid1.rowSelection}}</button>
-        <igx-drop-down #dropDownRowSelection (selectionChanging)="onRowSelection($event)"  displayDensity="comfortable">
-            <igx-drop-down-item *ngFor="let item of selectionModes">
-                    {{ item }}
-            </igx-drop-down-item>
-        </igx-drop-down>
-    </div>
+    <igx-select [(ngModel)]="grid1.cellSelection" type="border">
+        <label igxLabel>Cell Selection</label>
+        <igx-select-item *ngFor="let item of selectionModes" [value]="item">{{ item }}</igx-select-item>
+    </igx-select>
 
-    <igx-grid #grid1 [data]="remote | async" [allowFiltering]="true" [primaryKey]="'ProductID'" (selected)="handleRowSelection()"
-            [width]="'800px'" [height]="'600px'"  (rowSelectionChanging)="log($event)">
-        <igx-column [field]="'ProductID'" [editable]="true" [width]="'80%'"></igx-column>
-        <igx-column [field]="'ProductName'"></igx-column>
-        <igx-column [field]="'UnitsInStock'"></igx-column>
+    <igx-select [(ngModel)]="grid1.rowSelection" type="border">
+        <label igxLabel>Row Selection</label>
+        <igx-select-item *ngFor="let item of selectionModes" [value]="item">{{ item }}</igx-select-item>
+    </igx-select>
+</div>
 
-        <!-- <ng-template igxRowSelector let-rowContext>
-            <span class="rowNumberChild">{{ rowContext.key }}</span>
-            <igx-checkbox (click)="handleRowSelectorClick(rowContext)" [checked]="rowContext.selected">
-            </igx-checkbox>
-        </ng-template> -->
-    </igx-grid>
+<igx-grid [data]="data" allowFiltering primaryKey="ProductID" rowSelection="single" height="550px"
+    (selected)="log($event)" (rowSelectionChanging)="log($event)">
+    <igx-column field="ProductName" dataType="string" sortable></igx-column>
+    <igx-column field="SupplierID" dataType="string" sortable></igx-column>
+    <igx-column field="OrderDate" dataType="date" sortable></igx-column>
+    <igx-column field="ProductID" dataType="number" sortable width="15%"></igx-column>
+    <igx-column field="UnitsInStock" dataType="number" sortable width="15%"></igx-column>
+    <igx-column field="Discontinued" dataType="boolean" sortable width="15%"></igx-column>
+</igx-grid>
 
-    <div class="sample-actions">
-        <button (click)="selectRow()">Non Existing row</button>
-        <button (click)="deleteSelectedRow()">Delete Selected Row</button>
-        <button (click)="selectCells()">Select Range through API</button>
+<div class="sample-actions">
+    <button igxButton="contained" (click)="selectRow()">Non Existing row</button>
+    <button igxButton="contained" (click)="deleteSelectedRow()">Delete Selected Row</button>
+    <button igxButton="contained" (click)="selectCells()">Select Range through API</button>
+    <button igxButton="contained" (click)="toggleData()">Toggle half data</button>
+</div>
 
-        <div><input type='number' #input/><button (click)='scrScrollTo(input.value)'>Go To Index</button></div>
-        <button (click)='log(grid1.selectedCells)'>Selected Cells</button>
-        <button (click)='log(grid1.getSelectedRanges())'>Selected Ranges</button>
-        <button (click)='log(grid1.getSelectedData())'>Selected Data</button>
-        <button (click)="grid1.paging = true">Enable Paging</button>
-        <button (click)="selectCell()">Select (1.1)</button>
-        <button (click)="selectThirdRow()">Select Third row</button>
-        <button (click)="log(grid1.selectedRows)">Selected Rows</button>
-
-        <ng-container *ngIf="selection">
-            <button igxButton="flat" class="igx-button--flat" (click)="toggle()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C" >Toggle rows with ID 1,2,5 </button>
-            <button igxButton="flat" class="igx-button--flat" (click)="toggleAll()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C" >Toggle All rows</button>
-            <button igxButton="flat" class="igx-button--flat" (click)="callSelectAll()" igxButtonColor="#FBB13C" igxButtonBackground="#340068" igxRipple="#FBB13C" >Select All Rows</button>
-        </ng-container>
-    </div>
+<div class="sample-actions">
+    <igx-input-group type="border">
+        <input igxInput type="number" #input />
+    </igx-input-group>
+    <button igxButton="contained" (click)="scrScrollTo(input.valueAsNumber)">Go To Index</button>
+</div>
+<div class="sample-actions">
+    <button igxButton="contained" (click)="log(grid1.selectedCells)">Selected Cells</button>
+    <button igxButton="contained" (click)="log(grid1.getSelectedRanges())">Selected Ranges</button>
+    <button igxButton="contained" (click)="log(grid1.getSelectedData())">Selected Data</button>
+    <button igxButton="contained" (click)="log(grid1.selectedRows)">Selected Rows</button>
+</div>
+<div class="sample-actions">
+    <button igxButton="contained" (click)="toggleCell()">Toggle (1.1)</button>
+    <button igxButton="contained" (click)="toggleThirdRow()">Toggle Third row</button>
+    <button igxButton="contained" (click)="toggle()">Toggle rows with ID 1,2,5 </button>
+    <button igxButton="contained" (click)="toggleAll()">Toggle All rows</button>
+    <button igxButton="contained" (click)="callSelectAll()">Select All Rows</button>
 </div>

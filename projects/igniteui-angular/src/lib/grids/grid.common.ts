@@ -1,14 +1,14 @@
 import { Directive } from '@angular/core';
 import { ConnectedPositioningStrategy } from '../services/public_api';
 import { VerticalAlignment, PositionSettings, Point } from '../services/overlay/utilities';
-import { scaleInVerBottom, scaleInVerTop } from '../animations/main';
 import { IgxForOfSyncService } from '../directives/for-of/for_of.sync.service';
-import { ColumnPinningPosition, RowPinningPosition } from './common/enums';
+import { scaleInVerBottom, scaleInVerTop } from 'igniteui-angular/animations';
 
 
 @Directive({
     selector: '[igxGridBody]',
-    providers: [IgxForOfSyncService]
+    providers: [IgxForOfSyncService],
+    standalone: true
 })
 export class IgxGridBodyDirective {}
 
@@ -21,24 +21,16 @@ export interface RowEditPositionSettings extends PositionSettings {
 }
 
 /**
- * An interface describing settings for row/column pinning position.
- */
-export interface IPinningConfig {
-    columns?: ColumnPinningPosition;
-    rows?: RowPinningPosition;
-}
-
-/**
  * @hidden
  */
 export class RowEditPositionStrategy extends ConnectedPositioningStrategy {
     public isTop = false;
     public isTopInitialPosition = null;
-    public settings: RowEditPositionSettings;
-    public position(contentElement: HTMLElement, size: { width: number; height: number }, document?: Document, initialCall?: boolean,
+    public override settings: RowEditPositionSettings;
+    public override position(contentElement: HTMLElement, size: { width: number; height: number }, document?: Document, initialCall?: boolean,
             target?: Point | HTMLElement): void {
         const container = this.settings.container; // grid.tbody
-        const targetElement: HTMLElement = target as HTMLElement || this.settings.target as HTMLElement; // current grid.row
+        const targetElement: HTMLElement = target as HTMLElement; // current grid.row
 
         // Position of the overlay depends on the available space in the grid.
         // If the bottom space is not enough then the the row overlay will show at the top of the row.

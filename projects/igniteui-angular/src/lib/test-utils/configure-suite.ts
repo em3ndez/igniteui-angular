@@ -1,5 +1,4 @@
-import { TestBed, getTestBed, ComponentFixture } from '@angular/core/testing';
-import { resizeObserverIgnoreError } from './helper-utils.spec';
+import { TestBed, getTestBed, ComponentFixture, waitForAsync } from '@angular/core/testing';
 
 /**
  * Per https://github.com/angular/angular/issues/12409#issuecomment-391087831
@@ -8,10 +7,9 @@ import { resizeObserverIgnoreError } from './helper-utils.spec';
  * @hidden
  */
 
-export const configureTestSuite = (configureAction?: () => void) => {
-
-    const testBedApi: any = getTestBed();
-    const originReset = TestBed.resetTestingModule;
+export const configureTestSuite = (configureAction?: () => TestBed) => {
+    const testBed = getTestBed();
+    const originReset = testBed.resetTestingModule;
 
     const clearStyles = () => {
         document.querySelectorAll('style').forEach(tag => tag.remove());
@@ -22,30 +20,34 @@ export const configureTestSuite = (configureAction?: () => void) => {
     };
 
     beforeAll(() => {
-        TestBed.resetTestingModule();
-        TestBed.resetTestingModule = () => TestBed;
-        resizeObserverIgnoreError();
+        testBed.resetTestingModule();
+        testBed.resetTestingModule = () => testBed;
+        jasmine.getEnv().allowRespy(true);
     });
 
     if (configureAction) {
-        beforeAll((done: DoneFn) => (async () => {
-            configureAction();
-            await TestBed.compileComponents();
-        })().then(done).catch(done.fail));
+        beforeAll(waitForAsync(() => {
+            configureAction().compileComponents();
+        }));
     }
 
     afterEach(() => {
         clearStyles();
         clearSVGContainer();
-        testBedApi._activeFixtures.forEach((fixture: ComponentFixture<any>) => fixture.destroy());
+        (testBed as any)._activeFixtures.forEach((fixture: ComponentFixture<any>) => {
+            const element = fixture.debugElement.nativeElement as HTMLElement;
+            fixture.destroy();
+            // If the fixture element ID changes, then it's not properly disposed
+            element?.remove();
+        });
         // reset ViewEngine TestBed
-        testBedApi._instantiated = false;
+        (testBed as any)._instantiated = false;
         // reset Ivy TestBed
-        testBedApi._testModuleRef = null;
+        (testBed as any)._testModuleRef = null;
     });
 
     afterAll(() => {
-        TestBed.resetTestingModule = originReset;
-        TestBed.resetTestingModule();
+        testBed.resetTestingModule = originReset;
+        testBed.resetTestingModule();
     });
 };

@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsBG_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Bulgarian resource strings for IgxGrid
+ */
+export const GridResourceStringsBG = {
     igx_grid_groupByArea_message: 'Плъзнете заглавката на колоната и я пуснете тук, за да извършите групиране по тази колона.',
     igx_grid_groupByArea_select_message: 'Избери всички редове в групата с име на поле {0} и стойност {1}.',
     igx_grid_groupByArea_deselect_message: 'Отмаркирай всички редове в групата с име на поле {0} и стойност {1}.',
@@ -89,7 +92,8 @@ const GridResourceStringsBG_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Булев филтър',
     igx_grid_excel_currency_filter: 'Филтър по валута',
     igx_grid_excel_custom_filter: 'Персонализиран филтър...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Няма съвпадения',
+    igx_grid_excel_matches_count: '{0} съвпадения.',
     igx_grid_advanced_filter_title: 'Разширено филтриране',
     igx_grid_advanced_filter_and_group: '"And" група',
     igx_grid_advanced_filter_or_group: '"Or" група',
@@ -112,6 +116,7 @@ const GridResourceStringsBG_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Разкачи всички',
     igx_grid_row_edit_btn_done: 'Запази',
     igx_grid_row_edit_btn_cancel: 'Откажи',
+    igx_grid_row_edit_text: 'Имате {0} промени на този ред и {1} скрити колони',
     igx_grid_toolbar_actions_filter_prompt: 'Филтрирай списъка с колони...',
     igx_grid_toolbar_pinning_button_tooltip: 'Отвори списъка със закачени колони.',
     igx_grid_toolbar_hiding_button_tooltip: 'Отвори списъка със скрити колони.',
@@ -134,33 +139,35 @@ const GridResourceStringsBG_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Откачи',
     igx_grid_actions_jumpUp_label: 'Придвижи се нагоре',
     igx_grid_actions_jumpDown_label: 'Придвижи се надолу',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
-    igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
+    igx_grid_pivot_date_dimension_total: 'Всички периоди',
+    igx_grid_pivot_aggregate_count: 'Брой',
+    igx_grid_pivot_aggregate_min: 'Минимум',
+    igx_grid_pivot_aggregate_max: 'Максимум',
+    igx_grid_pivot_aggregate_sum: 'Сума',
+    igx_grid_pivot_aggregate_avg: 'Средно',
+    igx_grid_pivot_aggregate_date_latest: 'Най-късна дата',
+    igx_grid_pivot_aggregate_date_earliest: 'Най-ранна дата',
+    igx_grid_pivot_aggregate_time_latest: 'Най-късен час',
+    igx_grid_pivot_aggregate_time_earliest: 'Най-ранен час',
+    igx_grid_pivot_empty_row_drop_area: 'Пуснете поле за редове тук.',
+    igx_grid_pivot_empty_column_drop_area: 'Пуснете поле за колони тук.',
+    igx_grid_pivot_empty_filter_drop_area: 'Пуснете поле за филтри тук.',
+    igx_grid_pivot_empty_value_drop_area: 'Пуснете поле за стойности тук.',
+    igx_grid_pivot_row_drop_chip: 'Пуснете тук, за да използвате като ред',
+    igx_grid_pivot_column_drop_chip: 'Пуснете тук, за да използвате като ред',
+    igx_grid_pivot_filter_drop_chip: 'Пуснете тук, за да използвате като филтър',
+    igx_grid_pivot_value_drop_chip: 'Пуснете тук, за да използвате като стойност',
     igx_grid_pivot_selector_filters: 'Филтри',
     igx_grid_pivot_selector_rows: 'Редове',
     igx_grid_pivot_selector_columns: 'Колони',
     igx_grid_pivot_selector_values: 'Стойнoсти',
     igx_grid_pivot_selector_panel_empty: 'Привлачи тук',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Bulgarian resource strings for IgxGrid
- */
-export const GridResourceStringsBG = GridResourceStringsBG_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_empty_message: 'Обобщената таблица няма размери и стойности.',
+    igx_grid_required_validation_error: 'Това поле е задължително',
+    igx_grid_min_validation_error: 'Моля попълнете стойност по-голяма или равна на {0}',
+    igx_grid_max_validation_error: 'Моля попълнете стойност по-малка или равна на {0}',
+    igx_grid_min_length_validation_error: 'Входните данни трябва да са дълги поне {0} знака.',
+    igx_grid_max_length_validation_error: 'Входните данни не трябва да са дълги повече от {0} знака.',
+    igx_grid_email_validation_error: 'Трябва да бъде въведен валиден имейл адрес.',
+    igx_grid_pattern_validation_error: 'Въведените данни не спазват зададения образец.'
+} satisfies MakeRequired<IGridResourceStrings>;

@@ -1,25 +1,36 @@
-import { Component, ViewChild, ChangeDetectorRef, AfterViewInit } from '@angular/core';
+import { Component, ViewChild, ChangeDetectorRef, AfterViewInit, HostBinding } from '@angular/core';
+import { NgIf, NgFor } from '@angular/common';
+import { GridSearchBoxComponent } from '../grid-search-box/grid-search-box.component';
 import {
     IgxRowIslandComponent,
     IgxHierarchicalGridComponent,
     IGridCellEventArgs,
     GridSelectionMode,
-    DisplayDensity,
-    RowType
+    RowType,
+    IGX_HIERARCHICAL_GRID_DIRECTIVES,
+    IgxIconComponent,
+    IGX_BUTTON_GROUP_DIRECTIVES
 } from 'igniteui-angular';
+
 
 @Component({
     selector: 'app-hierarchical-grid-sample',
-    styleUrls: ['hierarchical-grid.sample.css'],
-    templateUrl: 'hierarchical-grid.sample.html'
+    styleUrls: ['hierarchical-grid.sample.scss'],
+    templateUrl: 'hierarchical-grid.sample.html',
+    imports: [NgIf, NgFor, GridSearchBoxComponent, IGX_HIERARCHICAL_GRID_DIRECTIVES, IgxIconComponent, IGX_BUTTON_GROUP_DIRECTIVES]
 })
 export class HierarchicalGridSampleComponent implements AfterViewInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
+    public columnsReady = false;
+    public layoutsReady = false;
     @ViewChild('layout1', { static: true })
     private layout1: IgxRowIslandComponent;
 
     @ViewChild('hGrid2', { static: true })
     private hGrid2: IgxHierarchicalGridComponent;
-
     public localData = [];
     public localData1 = [];
     public data1 = [];
@@ -27,18 +38,24 @@ export class HierarchicalGridSampleComponent implements AfterViewInit {
     public selectionMode;
     public firstLevelExpanded = false;
     public rootExpanded = false;
-    public density: DisplayDensity = 'comfortable';
-    public displayDensities;
+    public size = 'large';
+    public sizes;
     public riToggle = true;
     public hgridState = [];
     public columns;
     public childColumns;
+    public toolbarTitle = 'Child Grid 1';
+
+    public evenCondition = (row: RowType) =>  parseInt(row.data['ID'], 0) % 2 === 0;
+    public rowClasses = {
+        activeRow: this.evenCondition,
+    };
 
     constructor(private cdr: ChangeDetectorRef) {
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }
+        this.sizes = [
+            { label: 'small', selected: this.size === 'small', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'large', selected: this.size === 'large', togglable: true }
         ];
         this.localData = this.generateDataUneven(10, 3);
         this.data1 = this.localData.slice(0, 10);
@@ -144,7 +161,7 @@ export class HierarchicalGridSampleComponent implements AfterViewInit {
     public testApis() {}
 
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public cellClick($evt: IGridCellEventArgs) {

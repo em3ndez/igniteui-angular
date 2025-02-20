@@ -1,4 +1,8 @@
 import { Component, Pipe, PipeTransform } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { IGX_INPUT_GROUP_DIRECTIVES, IgxMaskDirective, IgxSnackbarComponent, IgxTextSelectionDirective } from 'igniteui-angular';
+
+
 
 interface IPerson {
   name: string;
@@ -9,8 +13,9 @@ interface IPerson {
 
 @Component({
     selector: 'app-mask-sample',
-    styleUrls: ['mask.sample.css'],
-    templateUrl: './mask.sample.html'
+    styleUrls: ['mask.sample.scss'],
+    templateUrl: './mask.sample.html',
+    imports: [FormsModule, IGX_INPUT_GROUP_DIRECTIVES, IgxMaskDirective, IgxTextSelectionDirective, IgxSnackbarComponent]
 })
 export class MaskSampleComponent {
     public person: IPerson;
@@ -46,7 +51,7 @@ export class MaskSampleComponent {
     }
 
     public isSSNValid(ssn) {
-        const ssnPattern = /^[0-9]{3}\-?[0-9]{2}\-?[0-9]{4}$/;
+        const ssnPattern = /^[0-9]{3}-?[0-9]{2}-?[0-9]{4}$/;
         return (ssn.match(ssnPattern));
     }
 
@@ -57,7 +62,10 @@ export class MaskSampleComponent {
     }
 }
 
-@Pipe({ name: 'displayFormat' })
+@Pipe({
+    name: 'displayFormat',
+    standalone: true
+})
 export class DisplayFormatPipe implements PipeTransform {
     public transform(value: any): string {
         let val = value;
@@ -82,7 +90,10 @@ export class DisplayFormatPipe implements PipeTransform {
     }
 }
 
-@Pipe({ name: 'inputFormat' })
+@Pipe({
+    name: 'inputFormat',
+    standalone: true
+})
 export class InputFormatPipe implements PipeTransform {
     public transform(value: any): string {
         let val = value;

@@ -23,7 +23,6 @@ import {
 import { IgxToggleDirective } from '../../../directives/toggle/toggle.directive';
 import { ILogicOperatorChangedArgs, IgxExcelStyleDefaultExpressionComponent } from './excel-style-default-expression.component';
 import { IgxExcelStyleDateExpressionComponent } from './excel-style-date-expression.component';
-import { DisplayDensity } from '../../../core/density';
 import { PlatformUtil } from '../../../core/utils';
 import { ExpressionUI } from './common';
 import { ColumnType } from '../../common/grid.interface';
@@ -31,17 +30,23 @@ import { HorizontalAlignment, OverlaySettings, PositionSettings, VerticalAlignme
 import { AutoPositionStrategy } from '../../../services/overlay/position/auto-position-strategy';
 import { AbsoluteScrollStrategy } from '../../../services/overlay/scroll/absolute-scroll-strategy';
 import { IgxOverlayService } from '../../../services/overlay/overlay';
+import { IgxIconComponent } from '../../../icon/icon.component';
+import { IgxButtonDirective } from '../../../directives/button/button.directive';
+import { NgClass, NgIf, NgFor } from '@angular/common';
+import { BaseFilteringComponent } from './base-filtering.component';
 
 /**
  * @hidden
  */
 @Component({
     selector: 'igx-excel-style-custom-dialog',
-    templateUrl: './excel-style-custom-dialog.component.html'
+    templateUrl: './excel-style-custom-dialog.component.html',
+    imports: [IgxToggleDirective, NgClass, NgIf, NgFor, IgxExcelStyleDateExpressionComponent, IgxExcelStyleDefaultExpressionComponent, IgxButtonDirective, IgxIconComponent]
 })
 export class IgxExcelStyleCustomDialogComponent implements AfterViewInit {
     @Input()
     public expressionsList = new Array<ExpressionUI>();
+
     @Input()
     public column: ColumnType;
 
@@ -53,9 +58,6 @@ export class IgxExcelStyleCustomDialogComponent implements AfterViewInit {
 
     @Input()
     public overlayComponentId: string;
-
-    @Input()
-    public displayDensity: DisplayDensity;
 
     @ViewChild('toggle', { read: IgxToggleDirective, static: true })
     public toggle: IgxToggleDirective;
@@ -93,7 +95,8 @@ export class IgxExcelStyleCustomDialogComponent implements AfterViewInit {
     constructor(
         protected overlayService: IgxOverlayService,
         private cdr: ChangeDetectorRef,
-        protected platform: PlatformUtil
+        protected platform: PlatformUtil,
+        public esf:BaseFilteringComponent
     ) { }
 
     public ngAfterViewInit(): void {
@@ -130,10 +133,12 @@ export class IgxExcelStyleCustomDialogComponent implements AfterViewInit {
                 this.grid.rootGrid ? this.grid.rootGrid.nativeElement : this.grid.nativeElement :
                 esf;
         this.toggle.open(this._customDialogOverlaySettings);
+        this.overlayComponentId = this.toggle.overlayId;
     }
 
     public onClearButtonClick() {
         this.filteringService.clearFilter(this.column.field);
+        this.selectedOperator = null;
         this.createInitialExpressionUIElement();
         this.cdr.detectChanges();
     }
@@ -141,9 +146,15 @@ export class IgxExcelStyleCustomDialogComponent implements AfterViewInit {
     public closeDialog() {
         if (this.overlayComponentId) {
             this.overlayService.hide(this.overlayComponentId);
+            this.overlayComponentId = null;
         } else {
             this.toggle.close();
         }
+    }
+
+    public cancelDialog() {
+        this.esf.cancel();
+        this.closeDialog();
     }
 
     public onApplyButtonClick() {
@@ -242,17 +253,20 @@ export class IgxExcelStyleCustomDialogComponent implements AfterViewInit {
     }
 
     private createInitialExpressionUIElement() {
-        this.expressionsList = [];
-        const firstExprUI = new ExpressionUI();
+        let firstExprUI = new ExpressionUI();
+        if (this.expressionsList.length == 1 && this.expressionsList[0].expression.condition.name === this.selectedOperator) {
+            firstExprUI = this.expressionsList.pop();
+        } else {
+            this.expressionsList = [];
+            firstExprUI.expression = {
+                condition: this.createCondition(this.selectedOperator),
+                fieldName: this.column.field,
+                ignoreCase: this.column.filteringIgnoreCase,
+                searchVal: null
+            };
+        }
 
-        firstExprUI.expression = {
-            condition: this.createCondition(this.selectedOperator),
-            fieldName: this.column.field,
-            ignoreCase: this.column.filteringIgnoreCase,
-            searchVal: null
-        };
         firstExprUI.afterOperator = FilteringLogic.And;
-
         this.expressionsList.push(firstExprUI);
 
         const secondExprUI = new ExpressionUI();

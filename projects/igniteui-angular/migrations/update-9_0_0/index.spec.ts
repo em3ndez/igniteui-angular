@@ -1,28 +1,14 @@
 import * as path from 'path';
 
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update 9.0.0', () => {
     let appTree: UnitTestTree;
     const schematicRunner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-      };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it('should update base class names.', async () => {
@@ -32,8 +18,7 @@ describe('Update 9.0.0', () => {
                 IgxRowComponent, IgxHierarchicalGridBaseComponent } from 'igniteui-angular';
             `);
 
-        const tree = await schematicRunner.runSchematicAsync('migration-13', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-13', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.ts'))
             .toEqual(
             `import { IgxDropDownBaseDirective, IgxDropDownItemBaseDirective, IgxGridBaseDirective,
@@ -47,8 +32,7 @@ describe('Update 9.0.0', () => {
             `import { AvatarType, Size, Type, SliderType } from 'igniteui-angular';
             `);
 
-        const tree = await schematicRunner.runSchematicAsync('migration-13', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-13', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/enum.component.ts'))
             .toEqual(
             `import { IgxAvatarType, IgxAvatarSize, IgxBadgeType, IgxSliderType } from 'igniteui-angular';
@@ -61,8 +45,7 @@ describe('Update 9.0.0', () => {
             '<igx-tabs tabsType="fixed"></igx-tabs>'
         );
 
-        const tree = await schematicRunner.runSchematicAsync('migration-13', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-13', {}, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/tabs.component.html'))
             .toEqual('<igx-tabs type="fixed"></igx-tabs>');

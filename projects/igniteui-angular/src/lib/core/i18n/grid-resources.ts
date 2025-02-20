@@ -87,6 +87,7 @@ export interface IGridResourceStrings {
     igx_grid_excel_currency_filter?: string;
     igx_grid_excel_custom_filter?: string;
     igx_grid_excel_no_matches?: string;
+    igx_grid_excel_matches_count?: string;
     igx_grid_advanced_filter_title?: string;
     igx_grid_advanced_filter_and_group?: string;
     igx_grid_advanced_filter_or_group?: string;
@@ -109,6 +110,7 @@ export interface IGridResourceStrings {
     igx_grid_pinning_uncheck_all_label?: string;
     igx_grid_row_edit_btn_done?: string;
     igx_grid_row_edit_btn_cancel?: string;
+    igx_grid_row_edit_text?: string;
     igx_grid_toolbar_actions_filter_prompt?: string;
     igx_grid_toolbar_pinning_button_tooltip?: string;
     igx_grid_toolbar_hiding_button_tooltip?: string;
@@ -155,6 +157,13 @@ export interface IGridResourceStrings {
     igx_grid_pivot_selector_columns?: string;
     igx_grid_pivot_selector_values?: string;
     igx_grid_pivot_selector_panel_empty?: string;
+    igx_grid_required_validation_error?: string;
+    igx_grid_min_validation_error?: string;
+    igx_grid_max_validation_error?: string;
+    igx_grid_min_length_validation_error?: string;
+    igx_grid_max_length_validation_error?: string;
+    igx_grid_email_validation_error?: string;
+    igx_grid_pattern_validation_error?: string;
 }
 
 export const GridResourceStringsEN: IGridResourceStrings = {
@@ -226,8 +235,8 @@ export const GridResourceStringsEN: IGridResourceStrings = {
     igx_grid_excel_custom_dialog_add: 'add filter',
     igx_grid_excel_custom_dialog_clear: 'Clear filter',
     igx_grid_excel_custom_dialog_header: 'Custom auto-filter on column: ',
-    igx_grid_excel_cancel: 'cancel',
-    igx_grid_excel_apply: 'apply',
+    igx_grid_excel_cancel: 'Cancel',
+    igx_grid_excel_apply: 'Apply',
     igx_grid_excel_search_placeholder: 'Search',
     igx_grid_excel_select_all: 'Select All',
     igx_grid_excel_select_all_search_results: 'Select all search results',
@@ -246,6 +255,7 @@ export const GridResourceStringsEN: IGridResourceStrings = {
     igx_grid_excel_currency_filter: 'Currency filter',
     igx_grid_excel_custom_filter: 'Custom filter...',
     igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_matches_count: '{0} matches.',
     igx_grid_advanced_filter_title: 'Advanced Filtering',
     igx_grid_advanced_filter_and_group: '"And" Group',
     igx_grid_advanced_filter_or_group: '"Or" Group',
@@ -268,6 +278,7 @@ export const GridResourceStringsEN: IGridResourceStrings = {
     igx_grid_pinning_uncheck_all_label: 'Unpin All',
     igx_grid_row_edit_btn_done: 'Done',
     igx_grid_row_edit_btn_cancel: 'Cancel',
+    igx_grid_row_edit_text: 'You have {0} changes in this row and {1} hidden columns',
     igx_grid_toolbar_actions_filter_prompt: 'Filter columns list ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Open column pinning dropdown',
     igx_grid_toolbar_hiding_button_tooltip: 'Open column hiding dropdown',
@@ -314,4 +325,11 @@ export const GridResourceStringsEN: IGridResourceStrings = {
     igx_grid_pivot_selector_columns: 'Columns',
     igx_grid_pivot_selector_values: 'Values',
     igx_grid_pivot_selector_panel_empty: 'Drop Items Here',
+    igx_grid_required_validation_error: 'This field is required',
+    igx_grid_min_validation_error: 'A value of at least {0} should be entered',
+    igx_grid_max_validation_error: 'A value no more than {0} should be entered',
+    igx_grid_min_length_validation_error: 'Entry should be at least {0} character(s) long',
+    igx_grid_max_length_validation_error: 'Entry should be no more than {0} character(s) long',
+    igx_grid_email_validation_error: 'A valid email address should be entered',
+    igx_grid_pattern_validation_error: 'Entry does not match the required pattern'
 };

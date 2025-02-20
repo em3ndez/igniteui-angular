@@ -1,11 +1,8 @@
 @use '../../base' as *;
 @use 'sass:string';
 
-////
-/// @group components
+/// @access private
 /// @author <a href="https://github.com/simeonoff" target="_blank">Simeon Simeonoff</a>
-////
-
 @mixin component {
     @include b(igx-paginator) {
         $this: bem--selector-to-string(&);
@@ -13,22 +10,13 @@
             $name: string.slice($this, 2, -1),
             $deps: (
                 igx-button,
-                igx-icon,
+                igx-icon-button,
                 igx-input-group,
             )
         );
 
         @extend %igx-paginator !optional;
-
-        @include m(cosy) {
-            @extend %igx-paginator !optional;
-            @extend %igx-paginator--cosy !optional;
-        }
-
-        @include m(compact) {
-            @extend %igx-paginator !optional;
-            @extend %igx-paginator--compact !optional;
-        }
+        @extend %igx-paginator--sizable !optional;
     }
 
     @include b(igx-page-nav) {

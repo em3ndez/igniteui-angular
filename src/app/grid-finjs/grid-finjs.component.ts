@@ -1,14 +1,25 @@
 import {
     Component,
     Input,
-    ViewChild } from '@angular/core';
+    ViewChild
+} from '@angular/core';
+import { NgIf, NgFor, CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import {
     DefaultSortingStrategy,
     GridSelectionMode,
+    IGX_GRID_DIRECTIVES,
+    IGX_SELECT_DIRECTIVES,
     IGroupingExpression,
+    IgxFocusDirective,
     IgxGridComponent,
+    IgxIconButtonDirective,
+    IgxIconComponent,
+    IgxRippleDirective,
     SortingDirection
 } from 'igniteui-angular';
+
 import { Contract, REGIONS } from '../shared/financialData';
 
 const GROUPING_EXPRESSIONS: IGroupingExpression[] = [{
@@ -34,7 +45,8 @@ const GROUPING_EXPRESSIONS: IGroupingExpression[] = [{
 @Component({
     selector: 'app-finjs-grid',
     styleUrls: ['./grid-finjs.component.scss'],
-    templateUrl: './grid-finjs.component.html'
+    templateUrl: './grid-finjs.component.html',
+    imports: [NgIf, FormsModule, NgFor, CurrencyPipe, IGX_GRID_DIRECTIVES, IGX_SELECT_DIRECTIVES, IgxFocusDirective, IgxIconComponent, IgxRippleDirective, IgxIconButtonDirective]
 })
 export class GridFinJSComponent {
     @ViewChild('grid1', { static: true }) public grid: IgxGridComponent;
@@ -63,7 +75,6 @@ export class GridFinJSComponent {
     private strongPositive = (rowData: any): boolean => rowData['Change(%)'] >= 1;
     private strongNegative = (rowData: any): boolean => rowData['Change(%)'] <= -1;
 
-    // eslint-disable-next-line @typescript-eslint/member-ordering
     public trends = {
         changeNeg: this.changeNegative,
         changePos: this.changePositive,
@@ -72,7 +83,6 @@ export class GridFinJSComponent {
         strongNegative: this.strongNegative,
         strongPositive: this.strongPositive
     };
-    // eslint-disable-next-line @typescript-eslint/member-ordering
     public trendsChange = {
         changeNeg2: this.changeNegative,
         changePos2: this.changePositive,

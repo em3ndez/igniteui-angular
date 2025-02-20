@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { FinancialData } from './financialData';
 
@@ -24,7 +24,7 @@ export class LocalService {
         });
     }
 
-    public getFinancialData(count: number = 10) {
+    public getFinancialData(count = 10) {
         this._records.next(FinancialData.generateData(count));
     }
 

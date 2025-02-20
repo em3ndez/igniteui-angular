@@ -3,7 +3,6 @@ import { fakeAsync, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { IgxCheckboxComponent } from "../../checkbox/checkbox.component";
-import { DisplayDensity } from "../../core/displayDensity";
 import { SortingDirection } from "../../data-operations/sorting-strategy";
 import { IgxExpansionPanelHeaderComponent } from '../../expansion-panel/expansion-panel-header.component';
 import { IgxExpansionPanelComponent } from '../../expansion-panel/expansion-panel.component';
@@ -18,18 +17,36 @@ import {
     IPivotValue,
     PivotDimensionType
 } from "./pivot-grid.interface";
-import { IgxPivotGridModule } from "./pivot-grid.module";
+import { Size } from '../common/enums';
+import { setElementSize } from '../../test-utils/helper-utils.spec';
 
 describe("Pivot data selector", () => {
+
+    configureTestSuite(() => {
+        return TestBed.configureTestingModule({
+            imports: [NoopAnimationsModule, IgxPivotDataSelectorComponent],
+        });
+    });
+
+    it("should initialize standalone before a grid is set ", () => {
+        const fixture = TestBed.createComponent(IgxPivotDataSelectorComponent);
+        fixture.detectChanges();
+        expect(fixture.componentInstance).toBeDefined();
+    });
+});
+
+describe("Pivot data selector integration", () => {
     let fixture;
     let grid: PivotGridType;
     let selector: IgxPivotDataSelectorComponent;
     let pivotItems: (IPivotDimension | IPivotValue)[];
 
     configureTestSuite(() => {
-        TestBed.configureTestingModule({
-            declarations: [IgxPivotGridTestBaseComponent],
-            imports: [NoopAnimationsModule, IgxPivotGridModule],
+        return TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                IgxPivotGridTestBaseComponent
+            ]
         });
     });
 
@@ -46,10 +63,10 @@ describe("Pivot data selector", () => {
         ];
     }));
 
-    it("should set its display density based on the passed grid instance", () => {
-        grid.displayDensity = DisplayDensity.compact;
+    it("should set its size based on the passed grid instance size", () => {
+        setElementSize(grid.nativeElement, Size.Small)
         fixture.detectChanges();
-        expect(selector.displayDensity).toEqual(DisplayDensity.compact);
+        expect((selector as any).size).toEqual(Size.Small);
     });
 
     it("should set through API expand states for panels with two way data binding", () => {
@@ -301,7 +318,7 @@ describe("Pivot data selector", () => {
 
     it("should fire event handlers on reorder in a panel using drag and drop gestures", () => {
         // Get all value items
-        let items = getPanelItemsByDimensionType(null);
+        const items = getPanelItemsByDimensionType(null);
 
         spyOn(selector, "ghostCreated");
         spyOn(selector, "onItemDragMove");
@@ -310,8 +327,7 @@ describe("Pivot data selector", () => {
 
         // Get the drag handle of the last item in the panel
         const dragHandle = items[0].parentNode
-            .querySelectorAll("igx-list-item")
-            [items.length - 1].querySelector("[igxDragHandle]");
+            .querySelectorAll("igx-list-item")[items.length - 1].querySelector("[igxDragHandle]");
 
         dragHandle.scrollIntoView();
         fixture.detectChanges();
@@ -340,17 +356,16 @@ describe("Pivot data selector", () => {
         expect(selector.onItemDropped).toHaveBeenCalled();
     });
 
-    it("should reorder items in a panel using drag and drop gestures", () => {        
+    it("should reorder items in a panel using drag and drop gestures", () => {
         // Get all value items
-        let items = getPanelItemsByDimensionType(null);
+        const items = getPanelItemsByDimensionType(null);
 
         expect(fixture.componentInstance.pivotGrid.pivotConfiguration.values[0].member).toEqual('UnitsSold');
         expect(fixture.componentInstance.pivotGrid.pivotConfiguration.values[1].member).toEqual('UnitPrice');
 
         // Get the drag handle of the last item in the panel
         const dragHandle = items[0].parentNode
-            .querySelectorAll("igx-list-item")
-            [items.length - 1].querySelector("[igxDragHandle]");
+            .querySelectorAll("igx-list-item")[items.length - 1].querySelector("[igxDragHandle]");
 
         dragHandle.scrollIntoView();
         fixture.detectChanges();
@@ -381,10 +396,10 @@ describe("Pivot data selector", () => {
     it("should call filtering menu on column and row filter click", () => {
         spyOn(grid.filteringService, "toggleFilterDropdown");
 
-        let columnItems = getPanelItemsByDimensionType(
+        const columnItems = getPanelItemsByDimensionType(
             PivotDimensionType.Column
         );
-        let rowItems = getPanelItemsByDimensionType(PivotDimensionType.Row);
+        const rowItems = getPanelItemsByDimensionType(PivotDimensionType.Row);
 
         const getFilteringIcon = (item: Node) =>
             item.parentNode
@@ -456,8 +471,7 @@ describe("Pivot data selector", () => {
         return Array.from(
             fixture.debugElement
                 .query(By.directive(IgxPivotDataSelectorComponent))
-                .nativeElement.querySelectorAll("igx-expansion-panel-body")
-                [panelIndex].querySelectorAll("igx-list-item") as NodeList
+                .nativeElement.querySelectorAll("igx-expansion-panel-body")[panelIndex].querySelectorAll("igx-list-item") as NodeList
         );
     };
 });

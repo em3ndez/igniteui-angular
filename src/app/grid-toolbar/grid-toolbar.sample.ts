@@ -1,10 +1,13 @@
 import { Component } from '@angular/core';
-import { IgxCsvExporterService, IgxExcelExporterService, IgxColumnComponent, DisplayDensity } from 'igniteui-angular';
+import { NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IgxCSVTextDirective, IgxColumnComponent, IgxCsvExporterService, IgxExcelExporterService, IgxExcelTextDirective, IgxGridComponent, IgxGridToolbarActionsComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarComponent, IgxGridToolbarExporterComponent, IgxGridToolbarHidingComponent, IgxGridToolbarPinningComponent, IgxGridToolbarTitleComponent, IgxSwitchComponent } from 'igniteui-angular';
 
 @Component({
     selector: 'app-grid-toolbar-sample',
-    styleUrls: ['grid-toolbar.sample.css'],
-    templateUrl: 'grid-toolbar.sample.html'
+    styleUrls: ['grid-toolbar.sample.scss'],
+    templateUrl: 'grid-toolbar.sample.html',
+    imports: [IgxGridComponent, NgIf, IgxGridToolbarComponent, IgxGridToolbarTitleComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarExporterComponent, IgxExcelTextDirective, IgxCSVTextDirective, IgxSwitchComponent, FormsModule]
 })
 export class GridToolbarSampleComponent {
     public showToolbar = true;
@@ -15,8 +18,6 @@ export class GridToolbarSampleComponent {
     public pinningEnabled = true;
     public csv = true;
     public excel = true;
-
-    public _displayDensity = [DisplayDensity.comfortable, DisplayDensity.cosy, DisplayDensity.compact];
 
     public data = [
         {

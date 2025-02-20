@@ -2,24 +2,27 @@ import { Pipe, PipeTransform, Inject } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { IGX_TIME_PICKER_COMPONENT, IgxTimePickerBase } from './time-picker.common';
 import { DatePart } from '../directives/date-time-editor/public_api';
+import { DateTimeUtil } from '../date-common/util/date-time.util';
 
 const ITEMS_COUNT = 7;
 
 @Pipe({
-    name: 'timeFormatPipe'
+    name: 'timeFormatPipe',
+    standalone: true
 })
 export class TimeFormatPipe implements PipeTransform {
     constructor(@Inject(IGX_TIME_PICKER_COMPONENT) private timePicker: IgxTimePickerBase) { }
 
     public transform(value: Date): string {
-        const format = this.timePicker.inputFormat.replace('tt', 'aa');
+        const format = this.timePicker.appliedFormat.replace('tt', 'aa');
         const datePipe = new DatePipe(this.timePicker.locale);
         return datePipe.transform(value, format);
     }
 }
 
 @Pipe({
-    name: 'timeItemPipe'
+    name: 'timeItemPipe',
+    standalone: true
 })
 export class TimeItemPipe implements PipeTransform {
     constructor(@Inject(IGX_TIME_PICKER_COMPONENT) private timePicker: IgxTimePickerBase) { }
@@ -46,8 +49,8 @@ export class TimeItemPipe implements PipeTransform {
                 part = DatePart.Seconds;
                 break;
             case 'ampm':
-                list = this.generateAmPm(min, max);
                 const selectedAmPm = this.timePicker.getPartValue(selectedDate, 'ampm');
+                list = this.generateAmPm(min, max, selectedAmPm);
                 list = this.scrollListItem(selectedAmPm, list);
                 part = DatePart.AmPm;
                 break;
@@ -66,10 +69,10 @@ export class TimeItemPipe implements PipeTransform {
         if (item === null) {
             item = '';
         } else if (dateType && typeof (item) !== 'string') {
-            const leadZeroHour = (item < 10 && (this.timePicker.inputFormat.indexOf('hh') !== -1
-                || this.timePicker.inputFormat.indexOf('HH') !== -1));
-            const leadZeroMinute = (item < 10 && this.timePicker.inputFormat.indexOf('mm') !== -1);
-            const leadZeroSeconds = (item < 10 && this.timePicker.inputFormat.indexOf('ss') !== -1);
+            const leadZeroHour = (item < 10 && (this.timePicker.appliedFormat?.indexOf('hh') !== -1
+                || this.timePicker.appliedFormat?.indexOf('HH') !== -1));
+            const leadZeroMinute = (item < 10 && this.timePicker.appliedFormat?.indexOf('mm') !== -1);
+            const leadZeroSeconds = (item < 10 && this.timePicker.appliedFormat?.indexOf('ss') !== -1);
 
             const leadZero = {
                 hours: leadZeroHour,
@@ -178,17 +181,17 @@ export class TimeItemPipe implements PipeTransform {
         return secondsItems;
     }
 
-    private generateAmPm(min: Date, max: Date): any[] {
+    private generateAmPm(min: Date, max: Date, selectedAmPm: string): any[] {
         const ampmItems = [];
         const minHour = min.getHours();
         const maxHour = max.getHours();
 
         if (minHour < 12) {
-            ampmItems.push('AM');
+            ampmItems.push(DateTimeUtil.getAmPmValue(selectedAmPm.length, true));
         }
 
         if (minHour >= 12 || maxHour >= 12) {
-            ampmItems.push('PM');
+            ampmItems.push(DateTimeUtil.getAmPmValue(selectedAmPm.length, false));
         }
 
         for (let i = 0; i < 5; i++) {

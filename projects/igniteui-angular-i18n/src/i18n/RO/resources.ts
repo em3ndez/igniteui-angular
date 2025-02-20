@@ -9,6 +9,10 @@ import { CalendarResourceStringsRO } from './calendar-resources';
 import { TreeResourceStringsRO } from './tree-resources';
 import { InputResourceStringsRO } from './input-resources';
 import { ChipResourceStringsRO } from './chip-resources';
+import { ComboResourceStringsRO } from './combo-resources';
+import { QueryBuilderResourceStringsRO } from './query-builder-resources';
+import { BannerResourceStringsRO } from './banner-resources';
+import { ActionStripResourceStringsRO } from './action-strip-resources';
 
 /**
  * Romanian resource strings for all components
@@ -24,5 +28,9 @@ export const IgxResourceStringsRO = {
     ...CalendarResourceStringsRO,
     ...TreeResourceStringsRO,
     ...InputResourceStringsRO,
-    ...ChipResourceStringsRO
+    ...ChipResourceStringsRO,
+    ...ComboResourceStringsRO,
+    ...QueryBuilderResourceStringsRO,
+    ...BannerResourceStringsRO,
+    ...ActionStripResourceStringsRO,
 };

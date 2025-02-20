@@ -1,35 +1,60 @@
 import { Directive, ElementRef, HostListener, Inject } from '@angular/core';
-import { GridType, IGX_GRID_BASE } from './common/grid.interface';
+import { GridType, IgxGridEmptyTemplateContext, IgxGridRowEditActionsTemplateContext, IgxGridRowEditTemplateContext, IgxGridRowEditTextTemplateContext, IGX_GRID_BASE } from './common/grid.interface';
 
 /** @hidden @internal */
 @Directive({
-    selector: '[igxRowEdit]'
+    selector: '[igxRowEdit]',
+    standalone: true
 })
-export class IgxRowEditTemplateDirective { }
+export class IgxRowEditTemplateDirective {
+    public static ngTemplateContextGuard(_directive: IgxRowEditTemplateDirective,
+        context: unknown): context is IgxGridRowEditTemplateContext { 
+        return true;
+    }
+ }
 
 /** @hidden @internal */
 @Directive({
-    selector: '[igxRowEditText]'
+    selector: '[igxRowEditText]',
+    standalone: true
 })
-export class IgxRowEditTextDirective { }
+export class IgxRowEditTextDirective {
+    public static ngTemplateContextGuard(_directive: IgxRowEditTextDirective,
+        context: unknown): context is IgxGridRowEditTextTemplateContext { 
+        return true;
+    }
+ }
 
 /** @hidden @internal */
 @Directive({
-    selector: '[igxRowAddText]'
+    selector: '[igxRowAddText]',
+    standalone: true
 })
-export class IgxRowAddTextDirective { }
+export class IgxRowAddTextDirective {
+    public static ngTemplateContextGuard(_directive: IgxRowAddTextDirective,
+        context: unknown): context is IgxGridEmptyTemplateContext { 
+        return true;
+    }
+ }
 
 /** @hidden @internal */
 @Directive({
-    selector: '[igxRowEditActions]'
+    selector: '[igxRowEditActions]',
+    standalone: true
 })
-export class IgxRowEditActionsDirective { }
+export class IgxRowEditActionsDirective {
+    public static ngTemplateContextGuard(_directive: IgxRowEditActionsDirective,
+        context: unknown): context is IgxGridRowEditActionsTemplateContext { 
+        return true;
+    }
+ }
 
 
 // TODO: Refactor circular ref, deps and logic
 /** @hidden @internal */
 @Directive({
-    selector: `[igxRowEditTabStop]`
+    selector: `[igxRowEditTabStop]`,
+    standalone: true
 })
 export class IgxRowEditTabStopDirective {
     private currentCellIndex: number;

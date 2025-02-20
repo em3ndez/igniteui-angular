@@ -1,6 +1,5 @@
 import { TestBed, ComponentFixture, fakeAsync, tick } from '@angular/core/testing';
 import { configureTestSuite } from '../../test-utils/configure-suite';
-import { IgxGridModule } from './grid.module';
 import { IgxGridComponent } from './grid.component';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ProductsComponent, ColumnSelectionGroupTestComponent } from '../../test-utils/grid-samples.spec';
@@ -33,12 +32,8 @@ describe('IgxGrid - Column Selection #grid', () => {
     let grid: IgxGridComponent;
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                ProductsComponent,
-                ColumnSelectionGroupTestComponent
-            ],
-            imports: [IgxGridModule, NoopAnimationsModule]
+        return TestBed.configureTestingModule({
+            imports: [ProductsComponent, ColumnSelectionGroupTestComponent, NoopAnimationsModule]
         });
     }));
 
@@ -46,7 +41,7 @@ describe('IgxGrid - Column Selection #grid', () => {
         let colProductName: IgxColumnComponent;
         let colProductID: IgxColumnComponent;
         let colInStock: IgxColumnComponent;
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ProductsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
@@ -55,7 +50,7 @@ describe('IgxGrid - Column Selection #grid', () => {
             colInStock = grid.getColumnByName('InStock');
             grid.columnSelection = GridSelectionMode.multiple;
             fix.detectChanges();
-        }));
+        });
 
         it('setting selected and selectable properties ', () => {
             spyOn(grid.columnSelectionChanging, 'emit').and.callThrough();
@@ -350,7 +345,7 @@ describe('IgxGrid - Column Selection #grid', () => {
         let colProductName: IgxColumnComponent;
         let colProductID: IgxColumnComponent;
         let colInStock: IgxColumnComponent;
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ProductsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
@@ -359,7 +354,7 @@ describe('IgxGrid - Column Selection #grid', () => {
             colInStock = grid.getColumnByName('InStock');
             grid.columnSelection = GridSelectionMode.multiple;
             fix.detectChanges();
-        }));
+        });
 
         it('selecting a column with ctrl + mouse click', () => {
             spyOn(grid.columnSelectionChanging, 'emit').and.callThrough();
@@ -540,7 +535,7 @@ describe('IgxGrid - Column Selection #grid', () => {
         let colProductName: IgxColumnComponent;
         let colProductID: IgxColumnComponent;
         let colInStock: IgxColumnComponent;
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ProductsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
@@ -549,7 +544,7 @@ describe('IgxGrid - Column Selection #grid', () => {
             colInStock = grid.getColumnByName('InStock');
             grid.columnSelection = GridSelectionMode.single;
             fix.detectChanges();
-        }));
+        });
 
         it('selecting a column', () => {
             // Click on column to select it.
@@ -625,11 +620,11 @@ describe('IgxGrid - Column Selection #grid', () => {
     });
 
     describe('Multi column headers tests: ', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(ColumnSelectionGroupTestComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
-        }));
+        });
 
         it('setting selected on a column group', () => {
             const personDetails = GridFunctions.getColGroup(grid, 'Person Details');
@@ -947,9 +942,9 @@ describe('IgxGrid - Column Selection #grid', () => {
     });
 
     describe('Integration tests: ', () => {
-        let colProductID;
-        let colProductName;
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        let colProductID: IgxColumnComponent;
+        let colProductName: IgxColumnComponent;
+        beforeEach(() => {
             fix = TestBed.createComponent(ProductsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
@@ -957,7 +952,7 @@ describe('IgxGrid - Column Selection #grid', () => {
             fix.detectChanges();
             colProductID = grid.getColumnByName('ProductID');
             colProductName = grid.getColumnByName('ProductName');
-        }));
+        });
 
         it('Filtering: Verify column selection when filter row is opened ', fakeAsync(() => {
             grid.allowFiltering = true;
@@ -1090,23 +1085,25 @@ describe('IgxGrid - Column Selection #grid', () => {
             GridSelectionFunctions.verifyColumnAndCellsSelected(colProductID);
         });
 
-        it('Moving: Verify that when move a column, it stays selected', () => {
+        it('Moving: Verify that when move a column, it stays selected', fakeAsync(() => {
             colProductID.selected = true;
             fix.detectChanges();
 
             grid.moveColumn(colProductID, colProductName);
+            tick();
             fix.detectChanges();
 
             GridSelectionFunctions.verifyColumnAndCellsSelected(colProductID);
             GridSelectionFunctions.verifyColumnAndCellsSelected(colProductName, false);
             expect(colProductID.visibleIndex).toEqual(1);
-        });
+        }));
 
         it('Paging: Verify column stays selected when change page', fakeAsync(() => {
             colProductName.selected = true;
             colProductID.selected = true;
-            grid.paging = true;
-            grid.perPage = 3;
+            fix.componentInstance.paging = true;
+            fix.detectChanges();
+            fix.componentInstance.paginator.perPage = 3;
             fix.detectChanges();
             tick(30);
 
@@ -1114,7 +1111,7 @@ describe('IgxGrid - Column Selection #grid', () => {
             GridSelectionFunctions.verifyColumnAndCellsSelected(colProductName);
             expect(grid.getSelectedColumnsData()).toEqual(selectedData());
 
-            grid.paginate(1);
+            fix.componentInstance.paginator.paginate(1);
             fix.detectChanges();
             tick(16);
 

@@ -1,0 +1,17 @@
+<div class="sample-content">
+    <div class="sample-column">
+        <size-selector #sizeSelector></size-selector>
+
+        <igx-query-builder #queryBuilder
+            [style.--ig-size]="'var(--ig-size-' + sizeSelector.size + ')'"
+            [fields]="this.fields"
+            [expressionTree]="this.expressionTree">
+            <!-- Custom header -->
+            <igx-query-builder-header [title]="'Builder'" [showLegend]="false"><span>Custom Title</span></igx-query-builder-header>
+        </igx-query-builder>
+
+        <div class="sample-buttons">
+            <button igxButton="contained" igxRipple (click)="changeLocale('fr')">Change locale to France</button>
+        </div>
+    </div>
+</div>

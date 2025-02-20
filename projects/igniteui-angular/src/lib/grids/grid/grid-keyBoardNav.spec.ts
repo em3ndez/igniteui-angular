@@ -1,11 +1,10 @@
-import { TestBed, fakeAsync } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxGridModule } from './public_api';
 import { IgxGridComponent } from './grid.component';
 import { IGridCellEventArgs, IActiveNodeChangeEventArgs } from '../common/events';
 import { DefaultSortingStrategy, SortingDirection } from '../../data-operations/sorting-strategy';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
-import { setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
+import { clearGridSubs, setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import {
     VirtualGridComponent,
@@ -27,20 +26,17 @@ describe('IgxGrid - Keyboard navigation #grid', () => {
         let grid: IgxGridComponent;
         let gridContent: DebugElement;
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    NoScrollsComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [NoScrollsComponent, NoopAnimationsModule]
             });
         }));
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(NoScrollsComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fix);
-        }));
+        });
 
         it('should move selected cell with arrow keys', () => {
             let selectedCell: CellType;
@@ -211,22 +207,23 @@ describe('IgxGrid - Keyboard navigation #grid', () => {
         let grid: IgxGridComponent;
         let gridContent: DebugElement;
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    VirtualGridComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [NoopAnimationsModule, VirtualGridComponent]
             });
         }));
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(VirtualGridComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
             setupGridScrollDetection(fix, grid);
             fix.detectChanges();
             gridContent = GridFunctions.getGridContent(fix);
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('should focus the first cell when focus the grid body', async () => {
             GridFunctions.getGridHeader(grid).nativeElement.focus();
@@ -517,6 +514,8 @@ describe('IgxGrid - Keyboard navigation #grid', () => {
             fix.detectChanges();
 
             fix.componentInstance.columns = fix.componentInstance.generateCols(100);
+            await wait(DEBOUNCETIME);
+            fix.detectChanges();
             fix.componentInstance.data = fix.componentInstance.generateData(1000);
             fix.detectChanges();
 
@@ -688,25 +687,27 @@ describe('IgxGrid - Keyboard navigation #grid', () => {
 
     describe('Group By navigation ', () => {
         configureTestSuite((() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    IgxGridGroupByComponent
-                ],
-                imports: [NoopAnimationsModule, IgxGridModule],
+            return TestBed.configureTestingModule({
+                imports: [IgxGridGroupByComponent, NoopAnimationsModule]
             });
         }));
 
         let fix;
         let grid: IgxGridComponent;
         let gridContent;
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxGridGroupByComponent);
             fix.detectChanges();
             grid = fix.componentInstance.grid;
             gridContent = GridFunctions.getGridContent(fix);
             setupGridScrollDetection(fix, grid);
             fix.detectChanges();
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('should focus the first cell when focus the grid body and there is a grouped column', async () => {
             GridFunctions.getGridHeader(grid).nativeElement.focus();

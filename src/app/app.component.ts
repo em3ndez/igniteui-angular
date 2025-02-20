@@ -1,19 +1,52 @@
-import { Component, OnInit, ViewChild, HostBinding } from '@angular/core';
-import { Router, NavigationStart, NavigationEnd } from '@angular/router';
+import {
+    Component,
+    OnInit,
+    ViewChild,
+    HostBinding,
+    inject,
+    signal,
+} from '@angular/core';
+import { Router, NavigationStart, NavigationEnd, RouterLinkActive, RouterLink, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { IgxNavigationDrawerComponent, IgxIconService } from 'igniteui-angular';
+import { IgxNavigationDrawerComponent, IgxIconService, IgxRippleDirective, IGX_NAVIGATION_DRAWER_DIRECTIVES } from 'igniteui-angular';
+import { DocumentDirection, PageHeaderComponent } from './pageHeading/pageHeading.component';
+import { IgxIconComponent } from '../../projects/igniteui-angular/src/lib/icon/icon.component';
+import { CommonModule } from '@angular/common';
+import { PropertiesPanelComponent } from './properties-panel/properties-panel.component';
+import { PropertyChangeService } from './properties-panel/property-change.service';
 
 @Component({
     selector: 'app-root',
     templateUrl: './app.component.html',
-    styleUrls: ['./app.component.css']
+    styleUrls: ['./app.component.scss'],
+    imports: [
+        IgxNavigationDrawerComponent,
+        IGX_NAVIGATION_DRAWER_DIRECTIVES,
+        CommonModule,
+        RouterLinkActive,
+        RouterLink,
+        IgxIconComponent,
+        PageHeaderComponent,
+        RouterOutlet,
+        IgxRippleDirective,
+        PropertiesPanelComponent
+    ]
 })
 export class AppComponent implements OnInit {
     @HostBinding('attr.id')
     public appId = 'igniteui-demo-app';
 
     @ViewChild('navdrawer', { read: IgxNavigationDrawerComponent, static: true })
-    public navdrawer;
+    public navdrawer: IgxNavigationDrawerComponent;
+
+    public dirMode = signal<'ltr' | 'rtl'>('ltr');
+
+    // This method will be triggered by PageHeaderComponent's toggleDirection event
+    public onDirectionToggle(dir: DocumentDirection): void {
+        this.dirMode.set(dir);
+    }
+
+    protected propertyChangeService = inject(PropertyChangeService);
 
     public urlString: string;
 
@@ -100,15 +133,30 @@ export class AppComponent implements OnInit {
             name: 'Chips'
         },
         {
+            link: '/circular-progress',
+            icon: 'poll',
+            name: 'Progress (Circular)'
+        },
+        {
             link: '/combo',
             icon: 'arrow_drop_down_circle',
             name: 'Combo'
+        },
+        {
+            link: '/combo-showcase',
+            icon: 'arrow_drop_down_circle',
+            name: 'Combo (showcase)'
         },
         {
             link: '/datePicker',
             icon: 'date_range',
             name: 'DatePicker'
         },
+		{
+			link: '/divider',
+			icon: 'safety_divider',
+			name: 'Divider'
+		},
         {
             link: '/dialog',
             icon: 'all_out',
@@ -120,6 +168,11 @@ export class AppComponent implements OnInit {
             name: 'Drag and Drop'
         },
         {
+            link: '/hound',
+            icon: 'horizontal_split',
+            name: 'Hound sample'
+        },
+        {
             link: '/dropDown',
             icon: 'view_list',
             name: 'DropDown'
@@ -128,11 +181,6 @@ export class AppComponent implements OnInit {
             link: '/virtual-dropdown',
             icon: 'horizontal_split',
             name: 'DropDown - Virtual'
-        },
-        {
-            link: '/dropDown-density',
-            icon: 'horizontal_split',
-            name: 'DropDown - Density'
         },
         {
             link: '/expansionPanel',
@@ -264,6 +312,11 @@ export class AppComponent implements OnInit {
             name: 'Grid Auto Size'
         },
         {
+            link: '/gridDockManager',
+            icon: 'view_column',
+            name: 'Grid in DockManager'
+        },
+        {
             link: '/gridFlex',
             icon: 'view_column',
             name: 'Grid Flex'
@@ -314,6 +367,11 @@ export class AppComponent implements OnInit {
             name: 'Grid Row Editing'
         },
         {
+            link: '/gridValidation',
+            icon: 'view_column',
+            name: 'Grid Validation'
+        },
+        {
             link: '/gridLocalization',
             icon: 'view_column',
             name: 'Grid Localization'
@@ -329,6 +387,11 @@ export class AppComponent implements OnInit {
             name: 'Grid Row Drag'
         },
         {
+            link: '/gridRowReorder',
+            icon: 'view_column',
+            name: 'Grid Row Reorder'
+        },
+        {
             link: '/gridSummary',
             icon: 'view_column',
             name: 'Grid Summary'
@@ -339,9 +402,19 @@ export class AppComponent implements OnInit {
             name: 'Grid Toolbar'
         },
         {
+            link: '/gridReCreate',
+            icon: 'view_column',
+            name: 'Grid ReCreate'
+        },
+        {
             link: '/gridToolbarCustom',
             icon: 'view_column',
             name: 'Grid Toolbar Custom Content'
+        },
+        {
+            link: '/gridExport',
+            icon: 'view_column',
+            name: 'Grid Export'
         },
         {
             link: '/gridSearch',
@@ -369,6 +442,21 @@ export class AppComponent implements OnInit {
             name: 'Icon'
         },
         {
+            link: '/icon-button',
+            icon: 'favorite',
+            name: 'Icon Button'
+        },
+        {
+            link: '/input-controls',
+            icon: 'check_box',
+            name: 'Input Controls'
+        },
+        {
+            link: '/linear-progress',
+            icon: 'poll',
+            name: 'Progress (Linear)'
+        },
+        {
             link: '/list',
             icon: 'list',
             name: 'List'
@@ -382,6 +470,11 @@ export class AppComponent implements OnInit {
             link: '/listPerformance',
             icon: 'list',
             name: 'List Performance'
+        },
+        {
+            link: '/monthPicker',
+            icon: 'event',
+            name: 'Month Picker',
         },
         {
             link: '/navbar',
@@ -410,11 +503,6 @@ export class AppComponent implements OnInit {
             name: 'Overlay Animation'
         },
         {
-            link: '/progressbar',
-            icon: 'poll',
-            name: 'Progress Indicators'
-        },
-        {
             link: '/pagination',
             icon: 'menu',
             name: 'Paginator'
@@ -425,19 +513,29 @@ export class AppComponent implements OnInit {
             name: 'Radio Group'
         },
         {
+            link: '/rating',
+            icon: 'star',
+            name: 'Rating'
+        },
+        {
             link: '/reactive',
             icon: 'web',
             name: 'Reactive Form'
         },
         {
-            link: '/select',
-            icon: 'arrow_drop_down_circle',
-            name: 'Select'
-        },
-        {
             link: '/slider',
             icon: 'tab',
             name: 'Slider'
+        },
+        {
+            link: '/range-slider',
+            icon: 'open_in_full',
+            name: 'Slider (Range)'
+        },
+        {
+            link: '/slider-showcase',
+            icon: 'tune',
+            name: 'Slider (showcase)'
         },
         {
             link: '/splitter',
@@ -471,9 +569,10 @@ export class AppComponent implements OnInit {
         },
         {
             link: '/toast',
-            icon: 'android',
+            icon: 'notifications',
             name: 'Toast'
-        }, {
+        },
+        {
             link: '/hierarchicalGrid',
             icon: 'view_column',
             name: 'Hierarchical Grid'
@@ -499,6 +598,11 @@ export class AppComponent implements OnInit {
             link: '/tree',
             icon: 'account_tree',
             name: 'Tree'
+        },
+        {
+            link: '/tree-showcase',
+            icon: 'account_tree',
+            name: 'Tree (showcase)'
         },
         {
             link: '/treeGrid',
@@ -549,6 +653,17 @@ export class AppComponent implements OnInit {
             link: '/pivot-noop',
             icon: 'view_column',
             name: 'Noop Pivot Grid'
+        },
+        {
+            link: '/query-builder',
+            icon: 'view_column',
+            name: 'Query Builder'
+        },
+        {
+            link: '/pivot-state',
+            icon: 'view_column',
+            name: 'Pivot Grid State Persistance'
+
         }
     ].sort((componentLink1, componentLink2) => componentLink1.name > componentLink2.name ? 1 : -1);
 
@@ -592,6 +707,11 @@ export class AppComponent implements OnInit {
             link: '/virtualForDirective',
             icon: 'view_column',
             name: 'Virtual-For Directive'
+        },
+        {
+            link: '/labelDirective',
+            icon: 'label',
+            name: 'Label Directive'
         }
     ].sort((componentLink1, componentLink2) => componentLink1.name > componentLink2.name ? 1 : -1);
 
@@ -619,8 +739,8 @@ export class AppComponent implements OnInit {
     ].sort((componentLink1, componentLink2) => componentLink1.name > componentLink2.name ? 1 : -1);
 
     constructor(private router: Router, private iconService: IgxIconService) {
-        iconService.registerFamilyAlias('fa-solid', 'fa');
-        iconService.registerFamilyAlias('fa-brands', 'fab');
+        iconService.setFamily('fa-solid', { className: 'fa', type: 'font', prefix: 'fa-'});
+        iconService.setFamily('fa-brands', { className: 'fab', type: 'font' });
 
         router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe(() => {
             for (const component of this.componentLinks) {
@@ -642,6 +762,8 @@ export class AppComponent implements OnInit {
             });
 
         // register custom SVG icons
+        this.iconService.addSvgIcon('rain', '../assets/images/card/icons/rain.svg', 'material');
+        this.iconService.addSvgIcon('fa-breeze', '../assets/images/card/icons/breeze.svg', 'fa-solid');
         this.iconService.addSvgIcon('rain', '../assets/images/card/icons/rain.svg', 'weather-icons');
         this.iconService.addSvgIcon('breeze', '../assets/images/card/icons/breeze.svg', 'weather-icons');
     }

@@ -1,13 +1,14 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
-import { IgxTreeGridComponent, IgxExcelExporterService, IgxCsvExporterService,
-         IgxExcelExporterOptions, IgxCsvExporterOptions, CsvFileTypes, IgxSummaryOperand, IgxSummaryResult,
-         GridSelectionMode,
-         GridSummaryCalculationMode,
-         DisplayDensity} from 'igniteui-angular';
+import { Component, ViewChild, OnInit, HostBinding } from '@angular/core';
+import { NgFor, NgIf } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import { TreeGridLoadOnDemandService } from './tree-grid-load-on-demand.service';
+import { GridSearchBoxComponent } from '../grid-search-box/grid-search-box.component';
+import { IgxSummaryOperand, IgxSummaryResult, IgxButtonGroupComponent, IgxTreeGridComponent, IgxGridToolbarComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarExporterComponent, IgxExcelTextDirective, IgxCSVTextDirective, IgxColumnComponent, IgxSwitchComponent, IgxButtonDirective, GridSummaryCalculationMode, IgxExcelExporterService, IgxCsvExporterService, GridSelectionMode, IgxExcelExporterOptions, IgxCsvExporterOptions, CsvFileTypes, IgxPaginatorComponent } from 'igniteui-angular';
+
 
 export class MySummaryOperand extends IgxSummaryOperand {
-    public operate(data: any[] = []): IgxSummaryResult[] {
+    public override operate(data: any[] = []): IgxSummaryResult[] {
         return [{
             key: 'count',
             label: 'Count',
@@ -22,10 +23,15 @@ export class MySummaryOperand extends IgxSummaryOperand {
 
 @Component({
     selector: 'app-tree-grid-load-on-demand-sample',
-    styleUrls: ['tree-grid-load-on-demand.sample.css'],
-    templateUrl: 'tree-grid-load-on-demand.sample.html'
+    styleUrls: ['tree-grid-load-on-demand.sample.scss'],
+    templateUrl: 'tree-grid-load-on-demand.sample.html',
+    imports: [IgxButtonGroupComponent, IgxTreeGridComponent, IgxGridToolbarComponent, GridSearchBoxComponent, IgxGridToolbarActionsComponent, IgxGridToolbarPinningComponent, IgxGridToolbarHidingComponent, IgxGridToolbarAdvancedFilteringComponent, IgxGridToolbarExporterComponent, IgxExcelTextDirective, IgxCSVTextDirective, NgFor, IgxColumnComponent, IgxSwitchComponent, FormsModule, NgIf, IgxPaginatorComponent, IgxButtonDirective]
 })
 export class TreeGridLoadOnDemandSampleComponent implements OnInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { static: true }) public grid1: IgxTreeGridComponent;
 
     public data1: Array<any>;
@@ -35,10 +41,11 @@ export class TreeGridLoadOnDemandSampleComponent implements OnInit {
     public summaryModes = [];
     public selectionMode;
 
-    public density: DisplayDensity = 'comfortable';
-    public displayDensities;
+    public size = 'large';
+    public sizes;
     private dataService = new TreeGridLoadOnDemandService();
     private nextRow = 1;
+    public paging = false;
 
     constructor(private excelExporterService: IgxExcelExporterService,
                 private csvExporterService: IgxCsvExporterService) {
@@ -46,10 +53,10 @@ export class TreeGridLoadOnDemandSampleComponent implements OnInit {
 
     public ngOnInit(): void {
         this.selectionMode = GridSelectionMode.multiple;
-        this.displayDensities = [
-            { label: 'compact', selected: this.density === 'compact', togglable: true },
-            { label: 'cosy', selected: this.density === 'cosy', togglable: true },
-            { label: 'comfortable', selected: this.density === 'comfortable', togglable: true }
+        this.sizes = [
+            { label: 'small', selected: this.size === 'small', togglable: true },
+            { label: 'medium', selected: this.size === 'medium', togglable: true },
+            { label: 'large', selected: this.size === 'large', togglable: true }
         ];
         this.summaryModes = [
             { label: 'rootLevelOnly', selected: this.summaryMode === 'rootLevelOnly', togglable: true },
@@ -109,7 +116,7 @@ export class TreeGridLoadOnDemandSampleComponent implements OnInit {
     }
 
     public selectDensity(event) {
-        this.density = this.displayDensities[event.index].label;
+        this.size = this.sizes[event.index].label;
     }
 
     public selectSummaryMode(event) {

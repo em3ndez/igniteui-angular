@@ -7,8 +7,11 @@
     <ng-content></ng-content>
     <div [class]="iconPositionClass">
         <ng-content *ngIf="iconTemplate" select="igx-expansion-panel-icon"></ng-content>
-        <igx-icon *ngIf="!iconTemplate">
-            {{panel.collapsed? 'expand_more':'expand_less'}}
+        <igx-icon
+            *ngIf="!iconTemplate"
+            family="default"
+            [name]="panel.collapsed ? 'expand' : 'collapse'"
+            [attr.aria-hidden]="true">
         </igx-icon>
     </div>
 </div>

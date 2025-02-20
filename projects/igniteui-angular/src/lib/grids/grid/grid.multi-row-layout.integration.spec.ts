@@ -1,16 +1,21 @@
 ﻿import { configureTestSuite } from '../../test-utils/configure-suite';
-import { TestBed, fakeAsync, tick, waitForAsync, ComponentFixture } from '@angular/core/testing';
+import { TestBed, waitForAsync, ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { IgxGridComponent } from './grid.component';
-import { IgxGridModule } from './grid.module';
 import { SampleTestData } from '../../test-utils/sample-test-data.spec';
-import { ViewChild, Component } from '@angular/core';
+import { ViewChild, Component, DebugElement } from '@angular/core';
 import { IgxColumnLayoutComponent } from '../columns/column-layout.component';
 import { wait, UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { DefaultSortingStrategy, SortingDirection } from '../../data-operations/sorting-strategy';
-import { GridFunctions } from '../../test-utils/grid-functions.spec';
+import { GridFunctions, GRID_MRL_BLOCK } from '../../test-utils/grid-functions.spec';
 import { ControlsFunction } from '../../test-utils/controls-functions.spec';
+import { IgxColumnComponent } from '../columns/column.component';
+import { IgxGridToolbarComponent } from '../toolbar/grid-toolbar.component';
+import { IgxGridToolbarActionsComponent } from '../toolbar/common';
+import { IgxGridToolbarHidingComponent } from '../toolbar/grid-toolbar-hiding.component';
+import { IgxGridToolbarPinningComponent } from '../toolbar/grid-toolbar-pinning.component';
+import { NgFor, NgIf } from '@angular/common';
 
 
 type FixtureType = ColumnLayoutGroupingTestComponent | ColumnLayouHidingTestComponent | ColumnLayoutResizingTestComponent
@@ -25,17 +30,17 @@ interface ColGroupsType {
 describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
     let fixture: ComponentFixture<FixtureType>;
     let grid: IgxGridComponent;
+    const COLUMN_HEADER_CLASS = '.igx-grid-th';
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
+        return TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
                 ColumnLayoutPinningTestComponent,
                 ColumnLayoutFilteringTestComponent,
                 ColumnLayouHidingTestComponent,
                 ColumnLayoutGroupingTestComponent,
                 ColumnLayoutResizingTestComponent
-            ],
-            imports: [
-                NoopAnimationsModule, IgxGridModule]
+            ]
         });
     }));
 
@@ -234,7 +239,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             fixture.componentInstance.grid.width = '600px';
             fixture.detectChanges();
 
-            let gridFirstRow = grid.rowList.first;
+            const gridFirstRow = grid.rowList.first;
             // group1 should be hidden on init, check DOM
             GridFunctions.verifyLayoutHeadersAreAligned(grid, gridFirstRow);
             GridFunctions.verifyDOMMatchesLayoutSettings(grid, gridFirstRow, fixture.componentInstance.colGroups.slice(1));
@@ -594,7 +599,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             expect(grid.getColumnByName('Fax').pinned).toBeTruthy();
             expect(grid.getColumnByName('Phone').pinned).toBeTruthy();
 
-            let gridFirstRow = grid.rowList.first;
+            const gridFirstRow = grid.rowList.first;
 
             GridFunctions.verifyDOMMatchesLayoutSettings(grid, gridFirstRow, fixture.componentInstance.colGroups.slice(2, 3));
             // headers are aligned to cells
@@ -792,11 +797,11 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
     });
 
     describe('Filtering ', () => {
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(ColumnLayoutFilteringTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('should enforce excel style filtering.', () => {
             const filteringCells = fixture.debugElement.queryAll(By.css('igx-grid-filtering-cell'));
@@ -830,13 +835,15 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
     });
 
     describe('GroupBy ', () => {
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(ColumnLayoutGroupingTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('should render rows correctly when grouped by a column and scrolling to bottom should not leave empty space.', async () => {
+            await wait(16); // needed because of throttleTime on the resize observer
+            fixture.detectChanges();
             grid.height = '600px';
             grid.groupBy({
                 dir: SortingDirection.Desc,
@@ -852,7 +859,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
 
             const lastIndex = grid.data.length + grid.groupsRecords.length - 1;
             grid.verticalScrollContainer.scrollTo(lastIndex);
-            await wait(100);
+            await wait(16); // needed because of throttleTime on the resize observer
             fixture.detectChanges();
 
             const scrollTop = grid.verticalScrollContainer.getScroll().scrollTop;
@@ -867,7 +874,9 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             expect(lastRowOffset).toEqual(tbody.scrollHeight);
         });
 
-        it('should render rows correctly and collapsing all should render all groups and there should be no scrollbar.', fakeAsync(() => {
+        it('should render rows correctly and collapsing all should render all groups and there should be no scrollbar.', async () => {
+            await wait(16); // needed because of throttleTime on the resize observer
+            fixture.detectChanges();
             grid.height = '600px';
             fixture.detectChanges();
             grid.groupBy({
@@ -883,15 +892,39 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
                 grid.verticalScrollContainer.getScroll().offsetHeight).toBeGreaterThan(0);
 
             grid.toggleAllGroupRows();
-            tick(100);
+            await wait(16); // needed because of throttleTime on the resize observer
             fixture.detectChanges();
-            tick(100);
+            await wait(16); // needed because of throttleTime on the resize observer
             fixture.detectChanges();
 
             expect(grid.rowList.length).toEqual(12);
             expect((grid.verticalScrollContainer.getScroll().children[0] as HTMLElement).offsetHeight -
                 grid.verticalScrollContainer.getScroll().offsetHeight).toBeLessThanOrEqual(0);
-        }));
+        });
+
+        it('should create only one ghost element when dragging a column', async () => {
+            const headers: DebugElement[] = fixture.debugElement.queryAll(By.css(COLUMN_HEADER_CLASS));
+            
+            const header = headers[1].nativeElement;
+            UIInteractions.simulatePointerEvent('pointerdown', header, 50, 50);
+            await wait();
+            fixture.detectChanges();
+
+            UIInteractions.simulatePointerEvent('pointermove', header, 56, 56);
+            await wait(50);
+            fixture.detectChanges();
+
+            UIInteractions.simulatePointerEvent('pointermove', header, 230, 30);
+            await wait();
+            fixture.detectChanges();
+
+            const ghost = fixture.debugElement.queryAll(By.css('.igx-grid__drag-ghost-image'));
+            expect(ghost.length).toEqual(1);
+
+            UIInteractions.simulatePointerEvent('pointerup', header, 230, 30);
+            await wait();
+            fixture.detectChanges();
+        });
     });
 
     describe('Resizing', () => {
@@ -899,11 +932,11 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
         const GRID_COL_GROUP_THEAD = 'igx-grid-header-group';
         const RESIZE_LINE_CLASS = '.igx-grid-th__resize-line';
 
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(ColumnLayoutResizingTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('should correctly resize column on upper level with 3 spans and the two cols below it with span 1 that have width', async () => {
             grid.width = '1500px';
@@ -941,7 +974,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             UIInteractions.simulateMouseEvent('mouseup', resizer, 600, 5);
             fixture.detectChanges();
 
-            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('250px 250px 150px 100px 100px 200px');
         });
 
@@ -981,7 +1014,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             UIInteractions.simulateMouseEvent('mouseup', resizer, 550, 5);
             fixture.detectChanges();
 
-            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('250px 250px 100px 100px 100px 200px');
         });
 
@@ -1021,7 +1054,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             UIInteractions.simulateMouseEvent('mouseup', resizer, 550, 5);
             fixture.detectChanges();
 
-            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('200px 300px 100px 100px 100px 200px');
         });
 
@@ -1061,7 +1094,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             UIInteractions.simulateMouseEvent('mouseup', resizer, 550, 5);
             fixture.detectChanges();
 
-            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('300px 200px 100px 100px 100px 200px');
         });
 
@@ -1089,7 +1122,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             expect(grid.columnList.get(7).width).toEqual('200px');
             expect(grid.columnList.get(7).cells[0].value).toEqual('Alfreds Futterkiste');
 
-            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            const groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('200px 200px 700px 100px 100px 200px');
 
             const headerCells = fixture.debugElement.queryAll(By.css(GRID_COL_GROUP_THEAD));
@@ -1131,7 +1164,7 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             // City
             expect(grid.columnList.get(5).cells[0].value).toEqual('Berlin');
 
-            let groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            let groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('200px 200px 700px 100px 100px 200px');
 
             const headerCells = fixture.debugElement.queryAll(By.css(GRID_COL_GROUP_THEAD));
@@ -1149,17 +1182,17 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             fixture.detectChanges();
 
             // Small misalignment in the third column occurs when cols are being intersected.
-            groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css('.igx-grid__mrl-block'));
+            groupRowBlocks = fixture.debugElement.query(By.css('.igx-grid__tbody')).queryAll(By.css(`.${GRID_MRL_BLOCK}`));
             expect(groupRowBlocks[0].nativeElement.style.gridTemplateColumns).toEqual('200px 200px 650px 50px 100px 200px');
         });
     });
 
     describe('Selection ', () => {
-        beforeEach(fakeAsync(() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(ColumnLayoutGroupingTestComponent);
             fixture.detectChanges();
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('should return correct selected data via getSelectedData API.', () => {
             const selectedData1 = [{
@@ -1204,7 +1237,8 @@ describe('IgxGrid - multi-row-layout Integration #grid - ', () => {
             [colEnd]="col.colEnd" [rowEnd]="col.rowEnd" [field]='col.field'></igx-column>
         </igx-column-layout>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnLayoutComponent, IgxColumnComponent, IgxGridToolbarComponent, IgxGridToolbarHidingComponent, IgxGridToolbarActionsComponent, NgIf, NgFor]
 })
 export class ColumnLayouHidingTestComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1251,7 +1285,8 @@ export class ColumnLayouHidingTestComponent {
             [colEnd]="col.colEnd" [rowEnd]="col.rowEnd" [field]='col.field'></igx-column>
         </igx-column-layout>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnLayoutComponent, IgxColumnComponent, IgxGridToolbarComponent, IgxGridToolbarPinningComponent, IgxGridToolbarActionsComponent, NgFor, NgIf]
 })
 export class ColumnLayoutPinningTestComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1293,35 +1328,50 @@ export class ColumnLayoutPinningTestComponent {
             [colEnd]="col.colEnd" [rowEnd]="col.rowEnd" [field]='col.field'></igx-column>
         </igx-column-layout>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnLayoutComponent, IgxColumnComponent, NgFor]
 })
 export class ColumnLayoutFilteringTestComponent extends ColumnLayoutPinningTestComponent {
 }
 
 @Component({
     template: `
-    <igx-grid #grid [data]="data" height="500px" displayDensity="compact">
+    <igx-grid #grid [data]="data" height="500px" [style.--ig-size]="1">
         <igx-column-layout *ngFor='let group of colGroups' [field]='group.group' [pinned]='group.pinned'>
             <igx-column *ngFor='let col of group.columns'
             [rowStart]="col.rowStart" [colStart]="col.colStart" [width]='col.width'
             [colEnd]="col.colEnd" [rowEnd]="col.rowEnd" [field]='col.field' [groupable]="col.groupable"></igx-column>
         </igx-column-layout>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnLayoutComponent, IgxColumnComponent, NgFor]
 })
 export class ColumnLayoutGroupingTestComponent extends ColumnLayoutPinningTestComponent {
-    public showToolbar = false;
-    public cols1: Array<any> = [
+    public override showToolbar = false;
+    public override cols1: Array<any> = [
         { field: 'ID', rowStart: 1, colStart: 1 },
         { field: 'CompanyName', rowStart: 1, colStart: 2, groupable: true },
         { field: 'ContactName', rowStart: 1, colStart: 3, groupable: true },
         { field: 'ContactTitle', rowStart: 2, colStart: 1, rowEnd: 4, colEnd: 4, groupable: true },
     ];
-    public cols2: Array<any> = [
+    public override cols2: Array<any> = [
         { field: 'PostalCode', rowStart: 1, colStart: 1, colEnd: 3 },
         { field: 'City', rowStart: 2, colStart: 1, groupable: true },
         { field: 'Country', rowStart: 2, colStart: 2, groupable: true },
         { field: 'Address', rowStart: 3, colStart: 1, colEnd: 3 }
+    ];
+
+    public override colGroups: ColGroupsType[] = [
+        {
+            group: 'group1',
+            pinned: true,
+            columns: this.cols2
+        },
+        {
+            group: 'group2',
+            pinned: false,
+            columns: this.cols1
+        }
     ];
 }
 @Component({
@@ -1333,7 +1383,8 @@ export class ColumnLayoutGroupingTestComponent extends ColumnLayoutPinningTestCo
             </igx-column>
         </igx-column-layout>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnLayoutComponent, IgxColumnComponent, NgFor]
 })
 export class ColumnLayoutResizingTestComponent {
 

@@ -23,15 +23,18 @@ export class FilterUtil {
 export interface IFilteringStrategy {
     filter(data: any[], expressionsTree: IFilteringExpressionsTree, advancedExpressionsTree?: IFilteringExpressionsTree,
         grid?: GridType): any[];
+    /* csSuppress */
     getFilterItems(column: ColumnType, tree: IFilteringExpressionsTree) : Promise<IgxFilterItem[]>;
 }
 
+/* csSuppress */
 export interface IgxFilterItem {
     value: any;
     label?: string;
     children?: IgxFilterItem[];
 }
 
+/* csSuppress */
 export abstract class BaseFilteringStrategy implements IFilteringStrategy  {
     // protected
     public findMatchByExpression(rec: any, expr: IFilteringExpression, isDate?: boolean, isTime?: boolean, grid?: GridType): boolean {
@@ -138,7 +141,7 @@ export abstract class BaseFilteringStrategy implements IFilteringStrategy  {
             if (column.dataType === GridColumnDataType.String && column.filteringIgnoreCase) {
                 key = key?.toString().toLowerCase();
             } else if (column.dataType === GridColumnDataType.DateTime) {
-                key = item.value?.toLocaleString();
+                key = item.value?.toString();
                 item.value = key ? new Date(key) : key;
             } else if (column.dataType === GridColumnDataType.Time) {
                 const date = key ? new Date(key) : key;
@@ -167,6 +170,7 @@ export abstract class BaseFilteringStrategy implements IFilteringStrategy  {
     protected abstract getFieldValue(rec: any, fieldName: string, isDate?: boolean, isTime?: boolean, grid?: GridType): any;
 }
 
+/* csSuppress */
 export class NoopFilteringStrategy extends BaseFilteringStrategy {
     protected getFieldValue(rec: any, _fieldName: string) {
         return rec;
@@ -213,7 +217,7 @@ export class FilteringStrategy extends BaseFilteringStrategy {
         return res;
     }
 
-    protected getFieldValue(rec: any, fieldName: string, isDate: boolean = false, isTime: boolean = false, grid?: GridType): any {
+    protected getFieldValue(rec: any, fieldName: string, isDate = false, isTime = false, grid?: GridType): any {
         const column = grid?.getColumnByName(fieldName);
         let value = resolveNestedPath(rec, fieldName);
 
@@ -235,7 +239,7 @@ export class FormattedValuesFilteringStrategy extends FilteringStrategy {
         super();
     }
 
-    protected shouldFormatFilterValues(column: ColumnType): boolean {
+    protected override shouldFormatFilterValues(column: ColumnType): boolean {
         return !this.fields || this.fields.length === 0 || this.fields.some(f => f === column.field);
     }
 }

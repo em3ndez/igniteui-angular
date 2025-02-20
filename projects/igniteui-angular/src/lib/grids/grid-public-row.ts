@@ -1,11 +1,11 @@
 import { IGroupByRecord } from '../data-operations/groupby-record.interface';
 import { IgxAddRow, IgxEditRow } from './common/crud.service';
-import { GridInstanceType, GridSummaryCalculationMode, GridSummaryPosition } from './common/enums';
+import { GridSummaryCalculationMode, GridSummaryPosition } from './common/enums';
 import { IgxGridCell } from './grid-public-cell';
 import { IgxSummaryResult } from './summaries/grid-summary';
 import { ITreeGridRecord } from './tree-grid/tree-grid.interfaces';
-import mergeWith from 'lodash.mergewith';
-import { CellType, GridServiceType, GridType, RowType } from './common/grid.interface';
+import { mergeWith } from 'lodash-es';
+import { CellType, GridServiceType, GridType, IGridValidationState, RowType, ValidationStatus } from './common/grid.interface';
 
 abstract class BaseRow implements RowType {
     public index: number;
@@ -19,7 +19,7 @@ abstract class BaseRow implements RowType {
      * Returns the view index calculated per the grid page.
      */
     public get viewIndex(): number {
-        return this.index + ((this.grid.paginator?.page || 0) * (this.grid.paginator?.perPage || 0));
+        return this.index + this.grid.page * this.grid.perPage;
     }
 
     /**
@@ -40,7 +40,7 @@ abstract class BaseRow implements RowType {
 
     /**
      * Gets if this represents add row UI
-     * 
+     *
      * ```typescript
      * let isAddRow = row.addRowUI;
      * ```
@@ -49,6 +49,17 @@ abstract class BaseRow implements RowType {
         return !!this.grid.crudService.row &&
             this.grid.crudService.row.getClassName() === IgxAddRow.name &&
             this.grid.crudService.row.id === this.key;
+    }
+
+    /** Gets the validation status and errors, if any.
+    * ```typescript
+    * let validation = row.validation;
+    * let errors = validation.errors;
+    * ```
+    */
+    public get validation(): IGridValidationState {
+        const formGroup = this.grid.validation.getFormGroup(this.key);
+        return { status: formGroup?.status as ValidationStatus || 'VALID', errors: formGroup?.errors } as const;
     }
 
     /**
@@ -181,8 +192,8 @@ abstract class BaseRow implements RowType {
      */
     public get cells(): CellType[] {
         const res: CellType[] = [];
-        this.grid.columnList.forEach(col => {
-            const cell: CellType = new IgxGridCell(this.grid, this.index, col.field);
+        this.grid.columns.forEach(col => {
+            const cell: CellType = new IgxGridCell(this.grid, this.index, col);
             res.push(cell);
         });
         return res;
@@ -252,8 +263,8 @@ export class IgxGridRow extends BaseRow implements RowType {
      * @hidden
      */
     constructor(
-        public grid: GridType,
-        public index: number, data?: any
+        public override grid: GridType,
+        public override index: number, data?: any
     ) {
         super();
         this._data = data && data.addRow && data.recordRef ? data.recordRef : data;
@@ -262,7 +273,7 @@ export class IgxGridRow extends BaseRow implements RowType {
     /**
      * Returns the view index calculated per the grid page.
      */
-    public get viewIndex(): number {
+    public override get viewIndex(): number {
         if (this.grid.paginator) {
             const precedingDetailRows = [];
             const precedingGroupRows = [];
@@ -330,8 +341,8 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
      * @hidden
      */
     constructor(
-        public grid: GridType,
-        public index: number, data?: any, private _treeRow?: ITreeGridRecord
+        public override grid: GridType,
+        public override index: number, data?: any, private _treeRow?: ITreeGridRecord
     ) {
         super();
         this._data = data && data.addRow && data.recordRef ? data.recordRef : data;
@@ -340,8 +351,8 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
     /**
      * Returns the view index calculated per the grid page.
      */
-    public get viewIndex(): number {
-        if (this.grid.hasSummarizedColumns && ((this.grid.paginator?.page || 0) > 0)) {
+    public override get viewIndex(): number {
+        if (this.grid.hasSummarizedColumns && this.grid.page > 0) {
             if (this.grid.summaryCalculationMode !== GridSummaryCalculationMode.rootLevelOnly) {
                 const firstRowIndex = this.grid.processedExpandedFlatData.indexOf(this.grid.dataView[0].data);
                 // firstRowIndex is based on data result after all pipes triggered, excluding summary pipe
@@ -352,7 +363,7 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
                 return firstRowIndex + precedingSummaryRows + this.index;
             }
         }
-        return this.index + ((this.grid.paginator?.page || 0) * (this.grid.paginator?.perPage || 0));
+        return this.index + this.grid.page * this.grid.perPage;
     }
 
     /**
@@ -362,7 +373,7 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
      * let selectedRowData = this.grid.selectedRows[0].data;
      * ```
      */
-    public get data(): any {
+    public override get data(): any {
         if (this.inEditMode) {
             return mergeWith(this.grid.dataCloneStrategy.clone(this._data ?? this.grid.dataView[this.index]),
                 this.grid.transactions.getAggregatedValue(this.key, false),
@@ -401,7 +412,7 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
     /**
      * Returns true if child rows exist. Always return false for IgxGridRow.
      */
-    public get hasChildren(): boolean {
+    public override get hasChildren(): boolean {
         if (this.treeRow.children) {
             return this.treeRow.children.length > 0;
         } else {
@@ -427,7 +438,7 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
      * let isPinned = row.pinned;
      * ```
      */
-    public get pinned(): boolean {
+    public override get pinned(): boolean {
         return this.grid.isRecordPinned(this);
     }
 
@@ -438,7 +449,7 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
      * row.pinned = !row.pinned;
      * ```
      */
-    public set pinned(val: boolean) {
+    public override set pinned(val: boolean) {
         if (val) {
             this.pin();
         } else {
@@ -453,7 +464,7 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
      * let esExpanded = row.expanded;
      * ```
      */
-    public get expanded(): boolean {
+    public override get expanded(): boolean {
         return this.grid.gridAPI.get_row_expansion_state(this.treeRow);
     }
 
@@ -464,11 +475,11 @@ export class IgxTreeGridRow extends BaseRow implements RowType {
      * row.expanded = true;
      * ```
      */
-    public set expanded(val: boolean) {
+    public override set expanded(val: boolean) {
         this.grid.gridAPI.set_row_expansion_state(this.key, val);
     }
 
-    public get disabled(): boolean {
+    public override get disabled(): boolean {
         // TODO cell
         return this.grid.isGhostRecord(this.data) ? this.treeRow.isFilteredOutParent === undefined : false;
     }
@@ -486,8 +497,8 @@ export class IgxHierarchicalGridRow extends BaseRow implements RowType {
      * @hidden
      */
     constructor(
-        public grid: GridType,
-        public index: number, data?: any
+        public override grid: GridType,
+        public override index: number, data?: any
     ) {
         super();
         this._data = data && data.addRow && data.recordRef ? data.recordRef : data;
@@ -496,14 +507,14 @@ export class IgxHierarchicalGridRow extends BaseRow implements RowType {
     /**
      * Returns true if row islands exist.
      */
-    public get hasChildren(): boolean {
+    public override get hasChildren(): boolean {
         return !!this.grid.childLayoutKeys.length;
     }
 
     /**
      * Returns the view index calculated per the grid page.
      */
-    public get viewIndex() {
+    public override get viewIndex() {
         const firstRowInd = this.grid.filteredSortedData.indexOf(this.grid.dataView[0]);
         const expandedRows = this.grid.filteredSortedData.filter((rec, ind) => {
             const rowID = this.grid.primaryKey ? rec[this.grid.primaryKey] : rec;
@@ -515,10 +526,10 @@ export class IgxHierarchicalGridRow extends BaseRow implements RowType {
     /**
      * Gets the rendered cells in the row component.
      */
-    public get cells(): CellType[] {
+    public override get cells(): CellType[] {
         const res: CellType[] = [];
-        this.grid.columnList.forEach(col => {
-            const cell: CellType = new IgxGridCell(this.grid, this.index, col.field);
+        this.grid.columns.forEach(col => {
+            const cell: CellType = new IgxGridCell(this.grid, this.index, col);
             res.push(cell);
         });
         return res;
@@ -694,12 +705,6 @@ export class IgxSummaryRow implements RowType {
      */
     public isSummaryRow: boolean;
 
-
-    /**
-     * Returns the curent grid type
-     */
-    private gridType: GridInstanceType;
-
     /**
      * The IGroupByRecord object, representing the group record, if the row is a GroupByRow.
      */
@@ -712,7 +717,7 @@ export class IgxSummaryRow implements RowType {
      */
     public get viewIndex(): number {
         if (this.grid.hasSummarizedColumns && this.grid.page > 0) {
-            if (this.gridType === GridInstanceType.Grid) {
+            if (this.grid.type === 'flat') {
                 if (this.grid.page) {
                     const precedingDetailRows = [];
                     const precedingGroupRows = [];
@@ -753,7 +758,7 @@ export class IgxSummaryRow implements RowType {
                 } else {
                     return this.index;
                 }
-            } else if (this.gridType === GridInstanceType.TreeGrid) {
+            } else if (this.grid.type === 'tree') {
                 if (this.grid.summaryCalculationMode !== GridSummaryCalculationMode.rootLevelOnly) {
                     const firstRowIndex = this.grid.processedExpandedFlatData.indexOf(this.grid.dataView[0].data);
                     const precedingSummaryRows = this.grid.summaryPosition === GridSummaryPosition.bottom ?
@@ -764,7 +769,7 @@ export class IgxSummaryRow implements RowType {
             }
         }
 
-        return this.index + ((this.grid.paginator?.page || 0) * (this.grid.paginator?.perPage || 0));
+        return this.index + this.grid.page * this.grid.perPage;
     }
 
     /**
@@ -772,12 +777,11 @@ export class IgxSummaryRow implements RowType {
      */
     constructor(
         grid: GridType,
-        index: number, private _summaries?: Map<string, IgxSummaryResult[]>, type?: GridInstanceType
+        index: number, private _summaries?: Map<string, IgxSummaryResult[]>,
     ) {
         this.grid = grid;
         this.index = index;
         this.isSummaryRow = true;
-        this.gridType = type;
     }
 
     private getRootParent(row: ITreeGridRecord): ITreeGridRecord {

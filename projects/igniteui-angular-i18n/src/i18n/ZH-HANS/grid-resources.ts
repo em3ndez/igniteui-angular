@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsZHHANS_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Simplified Chinese (zh-Hans) resource strings for IgxGrid
+ */
+export const GridResourceStringsZHHANS = {
     igx_grid_groupByArea_message: '将列标题拖放到此处以按该列分组。',
     igx_grid_emptyFilteredGrid_message: '未找到任何记录。',
     igx_grid_emptyGrid_message: '网格无数据。',
@@ -87,7 +90,8 @@ const GridResourceStringsZHHANS_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: '布尔筛选器',
     igx_grid_excel_currency_filter: '货币筛选器',
     igx_grid_excel_custom_filter: '自定义筛选器...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: '无匹配项',
+    igx_grid_excel_matches_count: '{0} 个匹配项',
     igx_grid_advanced_filter_title: '高级筛选',
     igx_grid_advanced_filter_and_group: '"And" 组',
     igx_grid_advanced_filter_or_group: '"Or" 组',
@@ -110,6 +114,7 @@ const GridResourceStringsZHHANS_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: '全部取消固定',
     igx_grid_row_edit_btn_done: '完成',
     igx_grid_row_edit_btn_cancel: '取消',
+    igx_grid_row_edit_text: '您在此行和 {1} 个隐藏列中有 {0} 个更改',
     igx_grid_toolbar_actions_filter_prompt: '筛选列列表...',
     igx_grid_toolbar_pinning_button_tooltip: '打开列固定下拉列表',
     igx_grid_toolbar_hiding_button_tooltip: '打开列隐藏下拉列表',
@@ -134,33 +139,35 @@ const GridResourceStringsZHHANS_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: '取消固定',
     igx_grid_actions_jumpUp_label: '跳上',
     igx_grid_actions_jumpDown_label: '跳下',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
-    igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Simplified Chinese (zh-Hans) resource strings for IgxGrid
- */
-export const GridResourceStringsZHHANS = GridResourceStringsZHHANS_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_date_dimension_total: '所有时期',
+    igx_grid_pivot_aggregate_count: '计算',
+    igx_grid_pivot_aggregate_min: '最小值',
+    igx_grid_pivot_aggregate_max: '最大值',
+    igx_grid_pivot_aggregate_sum: '合计',
+    igx_grid_pivot_aggregate_avg: '平均',
+    igx_grid_pivot_aggregate_date_latest: '最晚日期',
+    igx_grid_pivot_aggregate_date_earliest: '最早日期',
+    igx_grid_pivot_aggregate_time_latest: '最新时间',
+    igx_grid_pivot_aggregate_time_earliest: '最早时间',
+    igx_grid_pivot_empty_row_drop_area: '将行字段拖放到此处.',
+    igx_grid_pivot_empty_column_drop_area: '将列字段拖放到此处.',
+    igx_grid_pivot_empty_filter_drop_area: '将筛选器字段拖放到此处.',
+    igx_grid_pivot_empty_value_drop_area: '将值字段拖放到此处.',
+    igx_grid_pivot_row_drop_chip: '放在这里用作行',
+    igx_grid_pivot_column_drop_chip: '放在这里用作列',
+    igx_grid_pivot_filter_drop_chip: '放在这里用作筛选器',
+    igx_grid_pivot_value_drop_chip: '放在这里用作值',
+    igx_grid_pivot_selector_filters: '筛选器',
+    igx_grid_pivot_selector_rows: '行',
+    igx_grid_pivot_selector_columns: '列',
+    igx_grid_pivot_selector_values: '值',
+    igx_grid_pivot_selector_panel_empty: '拖动项目到此处',
+    igx_grid_pivot_empty_message: '透视网格没有维度和值。',
+    igx_grid_required_validation_error: '此字段为必填项',
+    igx_grid_min_validation_error: '至少应输入 {0} 的值',
+    igx_grid_max_validation_error: '必须输入不超过 {0} 的值',
+    igx_grid_min_length_validation_error: '输入项的字符长度至少应为 {0} 个字符',
+    igx_grid_max_length_validation_error: '输入项的字符不得超过 {0} 个字符',
+    igx_grid_email_validation_error: '必须输入有效的电子邮件地址',
+    igx_grid_pattern_validation_error: '输入项与要求的模式不匹配'
+} satisfies MakeRequired<IGridResourceStrings>;

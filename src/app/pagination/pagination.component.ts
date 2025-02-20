@@ -1,9 +1,12 @@
 import { Component, OnInit } from '@angular/core';
+import { IgxButtonDirective, IgxIconButtonDirective, IgxIconComponent, IgxPageSizeSelectorComponent, IgxPaginatorComponent, IgxPaginatorContentDirective } from 'igniteui-angular';
+
 
 @Component({
     selector: 'app-pagination',
     styleUrls: ['./pagination.styles.scss'],
-    templateUrl: './pagination.template.html'
+    templateUrl: './pagination.template.html',
+    imports: [IgxPaginatorComponent, IgxPaginatorContentDirective, IgxButtonDirective, IgxPageSizeSelectorComponent, IgxIconComponent, IgxIconButtonDirective]
 })
 export class PaginationSampleComponent implements OnInit {
 

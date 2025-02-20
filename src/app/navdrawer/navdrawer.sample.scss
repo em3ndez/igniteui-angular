@@ -1,0 +1,27 @@
+.settings {
+    display: grid;
+    grid-row-gap: 40px;
+}
+
+.setting-container {
+    margin: 8px 0;
+}
+
+.setting-container ~ .setting-container {
+    margin-top: 16px;
+}
+
+.setting-title {
+    margin-bottom: 0;
+    color: var(--ig-secondary-500);
+}
+
+.setting-note {
+    font-size: 14px;
+    color: var(--ig-gray-400);
+    margin: 4px 0;
+}
+
+igx-radio + igx-radio {
+    margin-left: 24px;
+}

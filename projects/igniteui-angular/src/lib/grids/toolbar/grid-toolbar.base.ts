@@ -1,4 +1,4 @@
-import { Directive,  Input, EventEmitter, OnDestroy, Output, Inject } from '@angular/core';
+import { Directive, Input, EventEmitter, OnDestroy, Output, Inject, booleanAttribute } from '@angular/core';
 import { Subject, Subscription } from 'rxjs';
 import { first, takeUntil } from 'rxjs/operators';
 
@@ -11,7 +11,10 @@ import { HorizontalAlignment, OverlaySettings, VerticalAlignment } from '../../s
 import { IgxToolbarToken } from './token';
 import { ConnectedPositioningStrategy } from '../../services/overlay/position/connected-positioning-strategy';
 
-
+/* blazorInclude */
+/* blazorElement */
+/* blazorIndirectRender */
+/* blazorAlternateBaseType: GridToolbarBaseAction */
 /**
  * Base class for the pinning/hiding column and exporter actions.
  *
@@ -66,13 +69,13 @@ export abstract class BaseToolbarDirective implements OnDestroy {
      * Emits an event before the toggle container is closed.
      */
 
-     @Output()
+    @Output()
     public closing = new EventEmitter<ToggleViewEventArgs>();
     /**
      * Emits an event after the toggle container is closed.
      */
 
-     @Output()
+    @Output()
     public closed = new EventEmitter<ToggleViewEventArgs>();
 
     /**
@@ -99,6 +102,7 @@ export abstract class BaseToolbarDirective implements OnDestroy {
 
     /**
      * Returns the grid containing this component.
+     * @hidden @internal
      */
     public get grid() {
         return this.toolbar.grid;
@@ -106,6 +110,7 @@ export abstract class BaseToolbarDirective implements OnDestroy {
 
     constructor(@Inject(IgxToolbarToken) protected toolbar: IgxToolbarToken) { }
 
+    /** @hidden @internal **/
     public ngOnDestroy() {
         this.$destroy.next();
         this.$destroy.complete();
@@ -114,13 +119,20 @@ export abstract class BaseToolbarDirective implements OnDestroy {
     /** @hidden @internal */
     public toggle(anchorElement: HTMLElement, toggleRef: IgxToggleDirective, actions?: IgxColumnActionsComponent): void {
         if (actions) {
-            this._setupListeners(toggleRef);
+            this._setupListeners(toggleRef, actions);
             const setHeight = () =>
-                actions.columnsAreaMaxHeight = this.columnListHeight ?? `${Math.max(this.grid.calcHeight * 0.5, 200)}px`;
+                actions.columnsAreaMaxHeight = actions.columnsAreaMaxHeight !== '100%'
+                    ? actions.columnsAreaMaxHeight :
+                    this.columnListHeight ??
+                    `${Math.max(this.grid.calcHeight * 0.5, 200)}px`;
             toggleRef.opening.pipe(first()).subscribe(setHeight);
         }
-        toggleRef.toggle({ ...this.overlaySettings, ...{ target: anchorElement, outlet: this.grid.outlet,
-            excludeFromOutsideClick: [anchorElement] }});
+        toggleRef.toggle({
+            ...this.overlaySettings, ...{
+                target: anchorElement, outlet: this.grid.outlet,
+                excludeFromOutsideClick: [anchorElement]
+            }
+        });
 
     }
 
@@ -129,12 +141,10 @@ export abstract class BaseToolbarDirective implements OnDestroy {
         columnActions.querySelector('input')?.focus();
     }
 
-    private _setupListeners(toggleRef: IgxToggleDirective, actions? : IgxColumnActionsComponent) {
-        if (actions){
-            if (!this.$sub || this.$sub.closed){
-                this.$sub = actions.columnToggled.subscribe((event) => this.columnToggle.emit(event));
-            } else {
-                this.$sub.unsubscribe();
+    private _setupListeners(toggleRef: IgxToggleDirective, actions?: IgxColumnActionsComponent) {
+        if (actions) {
+            if (!this.$sub || this.$sub.closed) {
+                this.$sub = actions.columnToggled.pipe(takeUntil(this.$destroy)).subscribe((event) => this.columnToggle.emit(event));
             }
         }
         /** The if statement prevents emitting open and close events twice  */
@@ -148,44 +158,45 @@ export abstract class BaseToolbarDirective implements OnDestroy {
     }
 }
 
-
+/* blazorElement */
+/* blazorIndirectRender */
 /**
  * @hidden @internal
  * Base class for pinning/hiding column actions
  */
- @Directive()
- export abstract class BaseToolbarColumnActionsDirective extends BaseToolbarDirective {
-     @Input()
-     public hideFilter = false;
+@Directive()
+export abstract class BaseToolbarColumnActionsDirective extends BaseToolbarDirective {
+    @Input({ transform: booleanAttribute })
+    public hideFilter = false;
 
-     @Input()
-     public filterCriteria = '';
+    @Input()
+    public filterCriteria = '';
 
-     @Input()
-     public columnDisplayOrder: ColumnDisplayOrder = ColumnDisplayOrder.DisplayOrder;
+    @Input()
+    public columnDisplayOrder: ColumnDisplayOrder = ColumnDisplayOrder.DisplayOrder;
 
-     @Input()
-     public columnsAreaMaxHeight = '100%';
+    @Input()
+    public columnsAreaMaxHeight = '100%';
 
-     @Input()
-     public uncheckAllText: string;
+    @Input()
+    public uncheckAllText: string;
 
-     @Input()
-     public checkAllText: string;
+    @Input()
+    public checkAllText: string;
 
-     @Input()
-     public indentetion = 30;
+    @Input()
+    public indentetion = 30;
 
     @Input()
     public buttonText: string;
 
     protected columnActionsUI: IgxColumnActionsComponent;
 
-     public checkAll() {
-         this.columnActionsUI.checkAllColumns();
-     }
+    public checkAll() {
+        this.columnActionsUI.checkAllColumns();
+    }
 
-     public uncheckAll() {
-         this.columnActionsUI.uncheckAllColumns();
-     }
- }
+    public uncheckAll() {
+        this.columnActionsUI.uncheckAllColumns();
+    }
+}

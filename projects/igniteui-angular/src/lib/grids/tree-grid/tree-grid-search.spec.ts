@@ -1,6 +1,5 @@
-import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { IgxTreeGridComponent } from './tree-grid.component';
-import { IgxTreeGridModule } from './public_api';
 import { TreeGridFunctions, CELL_VALUE_DIV_CSS_CLASS } from '../../test-utils/tree-grid-functions.spec';
 import {
     IgxTreeGridSearchComponent,
@@ -23,27 +22,25 @@ describe('IgxTreeGrid - search API #tGrid', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 IgxTreeGridSearchComponent,
                 IgxTreeGridPrimaryForeignKeyComponent,
                 IgxTreeGridSummariesScrollingComponent
-            ],
-            imports: [IgxTreeGridModule, NoopAnimationsModule]
+            ]
         }).compileComponents();
     }));
 
     describe('Child Collection', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridSearchComponent);
             fix.detectChanges();
-            tick(16);
             fixNativeElement = fix.debugElement.nativeElement;
             treeGrid = fix.componentInstance.treeGrid;
 
             treeGrid.getColumnByName('JobTitle').autosize();
             fix.detectChanges();
-            tick(16);
-        }));
+        });
 
         it('Search highlights should work within tree cell', () => {
             let actualCount = treeGrid.findNext('ev');
@@ -112,13 +109,12 @@ describe('IgxTreeGrid - search API #tGrid', () => {
     });
 
     describe('Primary/Foreign key', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridPrimaryForeignKeyComponent);
             fix.detectChanges();
-            tick(16);
             fixNativeElement = fix.debugElement.nativeElement;
             treeGrid = fix.componentInstance.treeGrid;
-        }));
+        });
 
         it('Search highlights should work for tree cells', () => {
             treeGrid.findNext('1');
@@ -152,7 +148,7 @@ describe('IgxTreeGrid - search API #tGrid', () => {
             verifySearchResult(fixNativeElement, 7, 1, actualCount);
         });
 
-        it('Should update search highlights when filtering', fakeAsync(() => {
+        it('Should update search highlights when filtering', () => {
             treeGrid.findNext('Software Developer');
 
             verifySearchResult(fixNativeElement, 3, 0);
@@ -162,9 +158,9 @@ describe('IgxTreeGrid - search API #tGrid', () => {
             fix.detectChanges();
 
             verifySearchResult(fixNativeElement, 2, 0);
-        }));
+        });
 
-        it('Should update search highlights when clearing filter', fakeAsync(() => {
+        it('Should update search highlights when clearing filter', () => {
             // Apply filter
             treeGrid.filter('JobTitle', 'Associate', IgxStringFilteringOperand.instance().condition('contains'));
             fix.detectChanges();
@@ -178,7 +174,7 @@ describe('IgxTreeGrid - search API #tGrid', () => {
             fix.detectChanges();
 
             verifySearchResult(fixNativeElement, 3, 0);
-        }));
+        });
 
         it('Should update search highlights when sorting', () => {
             treeGrid.findNext('er');
@@ -391,8 +387,8 @@ describe('IgxTreeGrid - search API #tGrid', () => {
                 await wait(50);
                 fix.detectChanges();
 
-                expect(treeGrid.page).toBe(expectedPages[index]);
-                expect(treeGrid.totalPages).toBe(expectedPageCounts[index]);
+                expect(treeGrid.paginator.page).toBe(expectedPages[index]);
+                expect(treeGrid.paginator.totalPages).toBe(expectedPageCounts[index]);
                 expect(actualCount).toBe(expectedValues.length);
                 verifyActiveCellValue(fixNativeElement, expectedValue);
             }

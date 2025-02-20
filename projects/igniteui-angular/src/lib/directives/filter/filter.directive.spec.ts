@@ -1,22 +1,21 @@
 import { Component, ViewChild } from '@angular/core';
 import { ComponentFixtureAutoDetect, TestBed, waitForAsync } from '@angular/core/testing';
 import { IgxListItemComponent } from '../../list/list-item.component';
-import { IgxListComponent, IgxListModule } from '../../list/list.component';
-import { IgxFilterModule, IgxFilterOptions } from './filter.directive';
+import { IgxListComponent } from '../../list/list.component';
+import { IgxFilterDirective, IgxFilterOptions, IgxFilterPipe } from './filter.directive';
 
 import { configureTestSuite } from '../../test-utils/configure-suite';
+import { NgFor } from '@angular/common';
 
 describe('Filter', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [DeclarativeListTestComponent, DynamicListTestComponent],
-            imports: [IgxFilterModule, IgxListModule],
+            imports: [DeclarativeListTestComponent, DynamicListTestComponent],
             providers: [
                 { provide: ComponentFixtureAutoDetect, useValue: true }
             ]
-        })
-            .compileComponents();
+        }).compileComponents();
     }));
 
     it('should filter declaratively created list', () => {
@@ -72,6 +71,36 @@ describe('Filter', () => {
         fixture.detectChanges();
 
         expect(list.items.length).toBe(4);
+    });
+
+    it('should filter a list by multiple keys', () => {
+        const fixture = TestBed.createComponent(DynamicListTestComponent);
+        const list = fixture.componentInstance.list;
+
+        fixture.detectChanges();
+        expect(list.items.length).toBe(4);
+        const items = list.items;
+
+        for (const item of items) {
+            expect(item instanceof IgxListItemComponent).toBeTruthy();
+        }
+
+        fixture.componentInstance.fo.key = ['key', 'text'];
+        fixture.componentInstance.filterValue = '1';
+        fixture.detectChanges();
+
+        expect(list.items.length).toBe(1);
+        expect(list.items[0] instanceof IgxListItemComponent).toBeTruthy();
+
+        fixture.componentInstance.filterValue = '';
+        fixture.detectChanges();
+
+        expect(list.items.length).toBe(4);
+
+        fixture.componentInstance.filterValue = 'Nav3';
+        fixture.detectChanges();
+
+        expect(list.items.length).toBe(1);
     });
 
     it('should emit filter events on declaratively created list', () => {
@@ -143,13 +172,15 @@ describe('Filter', () => {
 });
 
 @Component({
-    template: `<igx-list [igxFilter]="fo" (filtering)="filteringHandler($event)" (filtered)="filteredHandler($event)" >
-                    <igx-list-item [isHeader]="true">Header</igx-list-item>
-                    <igx-list-item>Item 1</igx-list-item>
-                    <igx-list-item>Item 2</igx-list-item>
-                    <igx-list-item>Item 3</igx-list-item>
-                </igx-list>
-                <input #logInput />`
+    template: `
+    <igx-list [igxFilter]="fo" (filtering)="filteringHandler($event)" (filtered)="filteredHandler($event)" >
+        <igx-list-item [isHeader]="true">Header</igx-list-item>
+        <igx-list-item>Item 1</igx-list-item>
+        <igx-list-item>Item 2</igx-list-item>
+        <igx-list-item>Item 3</igx-list-item>
+    </igx-list>
+    <input #logInput />`,
+    imports: [IgxListComponent, IgxListItemComponent, IgxFilterDirective]
 })
 class DeclarativeListTestComponent {
     @ViewChild(IgxListComponent, { static: true }) public list: IgxListComponent;
@@ -181,11 +212,13 @@ class DeclarativeListTestComponent {
 }
 
 @Component({
-    template: `<igx-list>
-                 <igx-list-item *ngFor="let item of dataSourceItems | igxFilter: fo">
-                    {{item.text}}
-                 </igx-list-item>
-              </igx-list>`
+    template: `
+    <igx-list>
+        <igx-list-item *ngFor="let item of dataSourceItems | igxFilter: fo">
+            {{item.text}}
+        </igx-list-item>
+    </igx-list>`,
+    imports: [IgxListComponent, IgxListItemComponent, IgxFilterPipe, NgFor]
 })
 class DynamicListTestComponent {
     @ViewChild(IgxListComponent, { static: true }) public list: IgxListComponent;

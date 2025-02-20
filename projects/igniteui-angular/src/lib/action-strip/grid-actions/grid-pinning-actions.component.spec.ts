@@ -1,13 +1,14 @@
 import { Component, ViewChild, OnInit } from '@angular/core';
 import { IgxActionStripComponent } from '../action-strip.component';
 import { configureTestSuite } from '../../test-utils/configure-suite';
-import { TestBed, fakeAsync, waitForAsync } from '@angular/core/testing';
-import { IgxIconModule } from '../../icon/public_api';
-import { IgxGridModule, IgxGridComponent } from '../../grids/grid/public_api';
+import { TestBed, waitForAsync } from '@angular/core/testing';
+import { IgxGridComponent } from '../../grids/grid/public_api';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
-import { IgxActionStripModule } from '../action-strip.module';
 import { wait } from '../../test-utils/ui-interactions.spec';
+import { IgxGridPinningActionsComponent } from './grid-pinning-actions.component';
+import { NgFor } from '@angular/common';
+import { IgxColumnComponent } from '../../grids/public_api';
 
 
 describe('igxGridPinningActions #grid ', () => {
@@ -17,33 +18,28 @@ describe('igxGridPinningActions #grid ', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                IgxActionStripTestingComponent,
-                IgxActionStripPinMenuComponent
-            ],
             imports: [
                 NoopAnimationsModule,
-                IgxActionStripModule,
-                IgxGridModule,
-                IgxIconModule
+                IgxActionStripTestingComponent,
+                IgxActionStripPinMenuComponent
             ]
         }).compileComponents();
     }));
 
     describe('Base ', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxActionStripTestingComponent);
             fixture.detectChanges();
             actionStrip = fixture.componentInstance.actionStrip;
             grid = fixture.componentInstance.grid;
-        }));
+        });
 
         it('should allow pinning and unpinning rows in a grid', () => {
             actionStrip.show(grid.rowList.first);
             fixture.detectChanges();
             let pinningButtons = fixture.debugElement.queryAll(By.css(`igx-grid-pinning-actions button`));
             expect(pinningButtons.length).toBe(1);
-            expect(pinningButtons[0].componentInstance.iconName).toBe('pin-left');
+            expect(pinningButtons[0].componentInstance.iconName).toBe('pin');
             pinningButtons[0].triggerEventHandler('click', new Event('click'));
             actionStrip.hide();
             fixture.detectChanges();
@@ -53,7 +49,7 @@ describe('igxGridPinningActions #grid ', () => {
             fixture.detectChanges();
             pinningButtons = fixture.debugElement.queryAll(By.css(`igx-grid-pinning-actions button`));
             expect(pinningButtons.length).toBe(2);
-            expect(pinningButtons[1].componentInstance.iconName).toBe('unpin-left');
+            expect(pinningButtons[1].componentInstance.iconName).toBe('unpin');
             pinningButtons[1].triggerEventHandler('click', new Event('click'));
             actionStrip.hide();
             fixture.detectChanges();
@@ -80,12 +76,12 @@ describe('igxGridPinningActions #grid ', () => {
     });
 
     describe('Menu ', () => {
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxActionStripPinMenuComponent);
             fixture.detectChanges();
             actionStrip = fixture.componentInstance.actionStrip;
             grid = fixture.componentInstance.grid;
-        }));
+        });
         it('should allow pinning row via menu', async () => {
             const row = grid.rowList.toArray()[0];
             actionStrip.show(row);
@@ -105,17 +101,18 @@ describe('igxGridPinningActions #grid ', () => {
 
 @Component({
     template: `
-<igx-grid #grid [data]="data" [width]="'800px'" [height]="'500px'"
-    [rowEditable]="true" [primaryKey]="'ID'">
-    <igx-column *ngFor="let c of columns" [sortable]="true" [field]="c.field" [header]="c.field"
-        [width]="c.width" [pinned]='c.pinned' [hidden]='c.hidden'>
-    </igx-column>
+    <igx-grid #grid [data]="data" [width]="'800px'" [height]="'500px'"
+        [rowEditable]="true" [primaryKey]="'ID'">
+        <igx-column *ngFor="let c of columns" [sortable]="true" [field]="c.field" [header]="c.field"
+            [width]="c.width" [pinned]='c.pinned' [hidden]='c.hidden'>
+        </igx-column>
 
-    <igx-action-strip #actionStrip>
-        <igx-grid-pinning-actions></igx-grid-pinning-actions>
-    </igx-action-strip>
-</igx-grid>
-`
+        <igx-action-strip #actionStrip>
+            <igx-grid-pinning-actions></igx-grid-pinning-actions>
+        </igx-action-strip>
+    </igx-grid>
+    `,
+    imports: [IgxGridComponent, IgxColumnComponent, IgxActionStripComponent, IgxGridPinningActionsComponent, NgFor]
 })
 class IgxActionStripTestingComponent implements OnInit {
     @ViewChild('actionStrip', { read: IgxActionStripComponent, static: true })
@@ -143,7 +140,6 @@ class IgxActionStripTestingComponent implements OnInit {
         ];
 
         this.data = [
-            /* eslint-disable max-len */
             { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative', Address: 'Obere Str. 57', City: 'Berlin', Region: null, PostalCode: '12209', Country: 'Germany', Phone: '030-0074321', Fax: '030-0076545' },
             { ID: 'ANATR', CompanyName: 'Ana Trujillo Emparedados y helados', ContactName: 'Ana Trujillo', ContactTitle: 'Owner', Address: 'Avda. de la Constitución 2222', City: 'México D.F.', Region: null, PostalCode: '05021', Country: 'Mexico', Phone: '(5) 555-4729', Fax: '(5) 555-3745' },
             { ID: 'ANTON', CompanyName: 'Antonio Moreno Taquería', ContactName: 'Antonio Moreno', ContactTitle: 'Owner', Address: 'Mataderos 2312', City: 'México D.F.', Region: null, PostalCode: '05023', Country: 'Mexico', Phone: '(5) 555-3932', Fax: null },
@@ -172,23 +168,23 @@ class IgxActionStripTestingComponent implements OnInit {
             { ID: 'FRANR', CompanyName: 'France restauration', ContactName: 'Carine Schmitt', ContactTitle: 'Marketing Manager', Address: '54, rue Royale', City: 'Nantes', Region: null, PostalCode: '44000', Country: 'France', Phone: '40.32.21.21', Fax: '40.32.21.20' },
             { ID: 'FRANS', CompanyName: 'Franchi S.p.A.', ContactName: 'Paolo Accorti', ContactTitle: 'Sales Representative', Address: 'Via Monte Bianco 34', City: 'Torino', Region: null, PostalCode: '10100', Country: 'Italy', Phone: '011-4988260', Fax: '011-4988261' }
         ];
-        /* eslint-enable max-len */
     }
 }
 
 @Component({
     template: `
     <igx-grid #grid [data]="data" [width]="'800px'" [height]="'500px'"
-    [rowEditable]="true" [primaryKey]="'ID'">
-    <igx-column *ngFor="let c of columns" [sortable]="true" [field]="c.field" [header]="c.field"
-        [width]="c.width" [pinned]='c.pinned' [hidden]='c.hidden'>
-    </igx-column>
+        [rowEditable]="true" [primaryKey]="'ID'">
+        <igx-column *ngFor="let c of columns" [sortable]="true" [field]="c.field" [header]="c.field"
+            [width]="c.width" [pinned]='c.pinned' [hidden]='c.hidden'>
+        </igx-column>
 
-    <igx-action-strip #actionStrip>
-        <igx-grid-pinning-actions [asMenuItems]='true'></igx-grid-pinning-actions>
-    </igx-action-strip>
-</igx-grid>
-    `
+        <igx-action-strip #actionStrip>
+            <igx-grid-pinning-actions [asMenuItems]='true'></igx-grid-pinning-actions>
+        </igx-action-strip>
+    </igx-grid>
+    `,
+    imports: [IgxGridComponent, IgxColumnComponent, IgxActionStripComponent, IgxGridPinningActionsComponent, NgFor]
 })
 class IgxActionStripPinMenuComponent extends IgxActionStripTestingComponent {
 }

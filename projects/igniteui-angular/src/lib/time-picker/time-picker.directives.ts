@@ -12,17 +12,18 @@ import {
     Inject,
     Input,
     OnDestroy,
-    OnInit,
-    TemplateRef
+    OnInit
 } from '@angular/core';
 import { HammerGesturesManager } from '../core/touch';
 import { DateTimeUtil } from '../date-common/util/date-time.util';
 import { IgxTimePickerBase, IGX_TIME_PICKER_COMPONENT } from './time-picker.common';
+import { HammerInput, HammerOptions } from '../core/touch-annotations';
 
 /** @hidden */
 @Directive({
     selector: '[igxItemList]',
-    providers: [HammerGesturesManager]
+    providers: [HammerGesturesManager],
+    standalone: true
 })
 export class IgxItemListDirective implements OnInit, OnDestroy {
     @HostBinding('attr.tabindex')
@@ -179,7 +180,7 @@ export class IgxItemListDirective implements OnInit, OnDestroy {
      * @hidden @internal
      */
     public ngOnInit() {
-        const hammerOptions: HammerOptions = { recognizers: [[Hammer.Pan, { direction: Hammer.DIRECTION_VERTICAL, threshold: 10 }]] };
+        const hammerOptions: HammerOptions = { recognizers: [[HammerGesturesManager.Hammer?.Pan, { direction: HammerGesturesManager.Hammer?.DIRECTION_VERTICAL, threshold: 10 }]] };
         this.touchManager.addEventListener(this.elementRef.nativeElement, 'pan', this.onPanMove, hammerOptions);
     }
 
@@ -224,7 +225,8 @@ export class IgxItemListDirective implements OnInit, OnDestroy {
  */
 @Directive({
     selector: '[igxTimeItem]',
-    exportAs: 'timeItem'
+    exportAs: 'timeItem',
+    standalone: true
 })
 export class IgxTimeItemDirective {
     @Input('igxTimeItem')
@@ -248,7 +250,7 @@ export class IgxTimeItemDirective {
     public get isSelectedTime(): boolean {
         const currentValue = this.value.length < 2 ? `0${this.value}` : this.value;
         const dateType = this.itemList.type;
-        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.inputFormat);
+        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.appliedFormat);
         switch (dateType) {
             case 'hourList':
                 const hourPart = inputDateParts.find(element => element.type === 'hours');
@@ -260,14 +262,14 @@ export class IgxTimeItemDirective {
                 const secondsPart = inputDateParts.find(element => element.type === 'seconds');
                 return DateTimeUtil.getPartValue(this.timePicker.selectedDate, secondsPart, secondsPart.format.length) === currentValue;
             case 'ampmList':
-                const ampmPart = inputDateParts.find(element => element.format === 'tt');
+                const ampmPart = inputDateParts.find(element => element.format.indexOf('a') !== -1 || element.format === 'tt');
                 return DateTimeUtil.getPartValue(this.timePicker.selectedDate, ampmPart, ampmPart.format.length) === this.value;
         }
     }
 
     public get minValue(): string {
         const dateType = this.itemList.type;
-        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.inputFormat);
+        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.appliedFormat);
         switch (dateType) {
             case 'hourList':
                 return this.getHourPart(this.timePicker.minDropdownValue);
@@ -288,14 +290,14 @@ export class IgxTimeItemDirective {
                 }
                 return '00';
             case 'ampmList':
-                const ampmPart = inputDateParts.find(element => element.format === 'tt');
+                const ampmPart = inputDateParts.find(element => element.format.indexOf('a') !== -1 || element.format === 'tt');
                 return DateTimeUtil.getPartValue(this.timePicker.minDropdownValue, ampmPart, ampmPart.format.length);
         }
     }
 
     public get maxValue(): string {
         const dateType = this.itemList.type;
-        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.inputFormat);
+        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.appliedFormat);
         switch (dateType) {
             case 'hourList':
                 return this.getHourPart(this.timePicker.maxDropdownValue);
@@ -329,7 +331,7 @@ export class IgxTimeItemDirective {
                     return DateTimeUtil.getPartValue(date, secondsPart, secondsPart.format.length);
                 }
             case 'ampmList':
-                const ampmPart = inputDateParts.find(element => element.format === 'tt');
+                const ampmPart = inputDateParts.find(element => element.format.indexOf('a') !== -1 || element.format === 'tt');
                 return DateTimeUtil.getPartValue(this.timePicker.maxDropdownValue, ampmPart, ampmPart.format.length);
         }
     }
@@ -351,9 +353,9 @@ export class IgxTimeItemDirective {
     }
 
     private getHourPart(date: Date): string {
-        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.inputFormat);
+        const inputDateParts = DateTimeUtil.parseDateTimeFormat(this.timePicker.appliedFormat);
         const hourPart = inputDateParts.find(element => element.type === 'hours');
-        const ampmPart = inputDateParts.find(element => element.format === 'tt');
+        const ampmPart = inputDateParts.find(element =>element.format.indexOf('a') !== -1 || element.format === 'tt');
         const hour = DateTimeUtil.getPartValue(date, hourPart, hourPart.format.length);
         if (ampmPart) {
             const ampm = DateTimeUtil.getPartValue(date, ampmPart, ampmPart.format.length);
@@ -361,24 +363,4 @@ export class IgxTimeItemDirective {
         }
         return hour;
     }
-}
-
-/**
- * This directive should be used to mark which ng-template will be used from IgxTimePicker when re-templating its input group.
- */
-@Directive({
-    selector: '[igxTimePickerTemplate]'
-})
-export class IgxTimePickerTemplateDirective {
-    constructor(public template: TemplateRef<any>) { }
-}
-
-/**
- * This directive can be used to add custom action buttons to the dropdown/dialog.
- */
-@Directive({
-    selector: '[igxTimePickerActions]'
-})
-export class IgxTimePickerActionsDirective {
-    constructor(public template: TemplateRef<any>) { }
 }

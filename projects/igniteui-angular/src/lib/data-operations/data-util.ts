@@ -1,5 +1,3 @@
-import { IFilteringState } from './filtering-state.interface';
-
 import { IGroupByResult } from './grouping-result.interface';
 
 import { IPagingState, PagingError } from './paging-state.interface';
@@ -7,7 +5,6 @@ import { IPagingState, PagingError } from './paging-state.interface';
 import { IGroupByKey } from './groupby-expand-state.interface';
 import { IGroupByRecord } from './groupby-record.interface';
 import { IGroupingState } from './groupby-state.interface';
-import { FilteringStrategy } from './filtering-strategy';
 import { mergeObjects, mkenum } from '../core/utils';
 import { Transaction, TransactionType, HierarchicalTransaction } from '../services/transaction/transaction';
 import { getHierarchy, isHierarchyMatch } from './operations';
@@ -22,11 +19,12 @@ import {
     IgxGrouping
 } from '../grids/common/strategy';
 import { DefaultDataCloneStrategy, IDataCloneStrategy } from '../data-operations/data-clone-strategy';
+import { IGroupingExpression } from './grouping-expression.interface';
 
 /**
  * @hidden
  */
-export const GridColumnDataType = mkenum({
+ export const DataType = /*@__PURE__*/mkenum({
     String: 'string',
     Number: 'number',
     Boolean: 'boolean',
@@ -34,8 +32,15 @@ export const GridColumnDataType = mkenum({
     DateTime: 'dateTime',
     Time: 'time',
     Currency: 'currency',
-    Percent: 'percent'
+    Percent: 'percent',
+    Image: 'image'
 });
+export type DataType = (typeof DataType)[keyof typeof DataType];
+
+/**
+ * @hidden
+ */
+export const GridColumnDataType = DataType;
 export type GridColumnDataType = (typeof GridColumnDataType)[keyof typeof GridColumnDataType];
 
 /**
@@ -128,8 +133,8 @@ export class DataUtil {
         return getHierarchy(gRow);
     }
 
-    public static isHierarchyMatch(h1: Array<IGroupByKey>, h2: Array<IGroupByKey>): boolean {
-        return isHierarchyMatch(h1, h2);
+    public static isHierarchyMatch(h1: Array<IGroupByKey>, h2: Array<IGroupByKey>, expressions: IGroupingExpression[]): boolean {
+        return isHierarchyMatch(h1, h2, expressions);
     }
 
     /**
@@ -141,7 +146,7 @@ export class DataUtil {
      * @param deleteRows Should delete rows with DELETE transaction type from data
      * @returns Provided data collections updated with all provided transactions
      */
-    public static mergeTransactions<T>(data: T[], transactions: Transaction[], primaryKey?: any, cloneStrategy: IDataCloneStrategy = new DefaultDataCloneStrategy(), deleteRows: boolean = false): T[] {
+    public static mergeTransactions<T>(data: T[], transactions: Transaction[], primaryKey?: any, cloneStrategy: IDataCloneStrategy = new DefaultDataCloneStrategy(), deleteRows = false): T[] {
         data.forEach((item: any, index: number) => {
             const rowId = primaryKey ? item[primaryKey] : item;
             const transaction = transactions.find(t => t.id === rowId);
@@ -184,7 +189,7 @@ export class DataUtil {
         childDataKey: any,
         primaryKey?: any,
         cloneStrategy: IDataCloneStrategy = new DefaultDataCloneStrategy(),
-        deleteRows: boolean = false): any[] {
+        deleteRows = false): any[] {
         for (const transaction of transactions) {
             if (transaction.path) {
                 const parent = this.findParentFromPath(data, primaryKey, childDataKey, transaction.path);

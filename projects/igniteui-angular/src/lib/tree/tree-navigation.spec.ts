@@ -1,6 +1,6 @@
 import { configureTestSuite } from '../test-utils/configure-suite';
 import { waitForAsync, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { IgxTreeNavigationComponent, IgxTreeScrollComponent } from './tree-samples.spec';
+import { IgxTreeNavigationComponent, IgxTreeScrollComponent, IgxTreeSimpleComponent } from './tree-samples.spec';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { UIInteractions, wait } from '../test-utils/ui-interactions.spec';
 import { IgxTreeNavigationService } from './tree-navigation.service';
@@ -8,7 +8,7 @@ import { ElementRef, EventEmitter } from '@angular/core';
 import { IgxTreeSelectionService } from './tree-selection.service';
 import { TreeTestFunctions } from './tree-functions.spec';
 import { IgxTreeService } from './tree.service';
-import { IgxTreeComponent, IgxTreeModule } from './tree.component';
+import { IgxTreeComponent } from './tree.component';
 import { IgxTree, IgxTreeNode, IgxTreeSelectionType } from './common';
 import { IgxTreeNodeComponent } from './tree-node/tree-node.component';
 
@@ -20,11 +20,12 @@ describe('IgxTree - Navigation #treeView', () => {
         let tree: IgxTreeComponent;
         beforeAll(waitForAsync(() => {
             TestBed.configureTestingModule({
-                declarations: [
+                imports: [
+                    NoopAnimationsModule,
                     IgxTreeNavigationComponent,
-                    IgxTreeScrollComponent
-                ],
-                imports: [IgxTreeModule, NoopAnimationsModule]
+                    IgxTreeScrollComponent,
+                    IgxTreeSimpleComponent
+                ]
             }).compileComponents();
         }));
 
@@ -301,6 +302,70 @@ describe('IgxTree - Navigation #treeView', () => {
             });
         });
 
+        describe('UI Interaction tests - Expand/Collapse nodes', () => {
+            beforeEach(fakeAsync(() => {
+                fix = TestBed.createComponent(IgxTreeSimpleComponent);
+                fix.detectChanges();
+                tree = fix.componentInstance.tree;
+                tree.selection = IgxTreeSelectionType.BiState;
+                fix.detectChanges();
+            }));
+
+            it('Should be able to expand/collapse nodes only through clicking on the expand indicator if `toggleNodeOnClick` is set to `false`', () => {
+                const firstNode = tree.nodes.toArray()[0];
+
+                UIInteractions.simulateClickEvent(firstNode.nativeElement);
+                fix.detectChanges();
+
+                expect(firstNode.expanded).toBeFalsy();
+
+                TreeTestFunctions.clickNodeExpandIndicator(firstNode);
+                fix.detectChanges();
+
+                expect(firstNode.expanded).toBeTruthy();
+            });
+
+            it('Should be able to expand/collapse nodes when clicking over them if `toggleNodeOnClick` is set to `true`', () => {
+                tree.toggleNodeOnClick = true;
+                fix.detectChanges();
+
+                const firstNode = tree.nodes.first;
+                expect(firstNode.expanded).toBeFalsy();
+
+                TreeTestFunctions.clickOnTreeNode(firstNode.nativeElement);
+
+                fix.detectChanges();
+
+                expect(firstNode.expanded).toBeTruthy();
+            });
+
+            it('Should not be able to expand/collapse nodes on right click', () => {
+                tree.toggleNodeOnClick = true;
+                fix.detectChanges();
+
+                const firstNode = tree.nodes.first;
+                expect(firstNode.expanded).toBeFalsy();
+
+                const nodeWrapperElement = TreeTestFunctions.getNodeWrapperDiv(firstNode.nativeElement);
+                UIInteractions.simulateNonPrimaryClick(nodeWrapperElement);
+                fix.detectChanges();
+
+                expect(firstNode.expanded).toBeFalsy();
+            });
+
+            it('Should not be able to expand/collapse nodes when clicking over nodes` checkbox if `toggleNodeOnClick` is set to `true`', () => {
+                tree.toggleNodeOnClick = true;
+                fix.detectChanges();
+
+                const firstNode = tree.nodes.toArray()[0];
+                TreeTestFunctions.clickNodeCheckbox(firstNode);
+                fix.detectChanges();
+
+                TreeTestFunctions.verifyNodeSelected(firstNode);
+                expect(firstNode.expanded).toBeFalsy();
+            });
+        });
+
         describe('UI Interaction tests - Scroll to focused node', () => {
             beforeEach(fakeAsync(() => {
                 fix = TestBed.createComponent(IgxTreeScrollComponent);
@@ -309,6 +374,10 @@ describe('IgxTree - Navigation #treeView', () => {
                 tree.selection = IgxTreeSelectionType.None;
                 fix.detectChanges();
             }));
+
+            it('The tree should have custome expand indicator templates', () => {
+                expect(tree.nodes.first.nativeElement.querySelector('.igx-icon').textContent).toBe('close_fullscreen');
+            });
 
             it('The tree container should be scrolled so that the focused node is in view', fakeAsync(() => {
                 // set another node as active element, expect node to be in view
@@ -633,7 +702,7 @@ describe('IgxTree - Navigation #treeView', () => {
                 expect(mockTree.activeNodeChanged.emit).toHaveBeenCalledWith(someNode2);
 
                 // do not change active node when call w/ same node
-                navService.focusedNode = navService.focusedNode;
+                // navService.focusedNode = navService.focusedNode;
                 expect(mockTree.activeNodeChanged.emit).toHaveBeenCalledTimes(1);
 
                 // handle call w/ null
@@ -701,10 +770,7 @@ describe('IgxTree - Navigation #treeView', () => {
                     }),
                 });
                 const mockElementRef = jasmine.createSpyObj<ElementRef>('mockElement', ['nativeElement'], {
-                    nativeElement: jasmine.createSpyObj<HTMLElement>('mockElement', ['focus'], {
-                        clientHeight: 300,
-                        scrollHeight: 300
-                    })
+                    nativeElement: document.createElement('div')
                 });
                 const mockSelectionService = jasmine.createSpyObj<IgxTreeSelectionService>('mockSelection',
                     ['selectNodesWithNoEvent', 'selectMultipleNodes', 'deselectNode', 'selectNode', 'register']);

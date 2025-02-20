@@ -1,8 +1,7 @@
-import { Component, QueryList, Input, ContentChildren, AfterContentInit, HostBinding, Inject, ElementRef,
-     Output, EventEmitter, HostListener } from '@angular/core';
+import { DOCUMENT, NgFor, NgIf } from '@angular/common';
+import { AfterContentInit, Component, ContentChildren, ElementRef, EventEmitter, HostBinding, HostListener, Inject, Input, Output, QueryList, booleanAttribute, forwardRef } from '@angular/core';
+import { DragDirection, IDragMoveEventArgs, IDragStartEventArgs, IgxDragDirective, IgxDragIgnoreDirective } from '../directives/drag-drop/drag-drop.directive';
 import { IgxSplitterPaneComponent } from './splitter-pane/splitter-pane.component';
-import { DOCUMENT } from '@angular/common';
-import { DragDirection, IDragMoveEventArgs, IDragStartEventArgs } from '../directives/drag-drop/drag-drop.directive';
 
 /**
  * An enumeration that defines the `SplitterComponent` panes orientation.
@@ -45,7 +44,8 @@ export declare interface ISplitterBarResizeEventArgs {
  */
 @Component({
     selector: 'igx-splitter',
-    templateUrl: './splitter.component.html'
+    templateUrl: './splitter.component.html',
+    imports: [NgFor, NgIf, forwardRef(() => IgxSplitBarComponent)]
 })
 export class IgxSplitterComponent implements AfterContentInit {
     /**
@@ -60,6 +60,13 @@ export class IgxSplitterComponent implements AfterContentInit {
     public panes!: QueryList<IgxSplitterPaneComponent>;
 
     /**
+    * @hidden
+    * @internal
+    */
+    @HostBinding('class.igx-splitter')
+    public cssClass = 'igx-splitter';
+
+    /**
      * @hidden @internal
      * Gets/Sets the `overflow` property of the current splitter.
      */
@@ -72,6 +79,15 @@ export class IgxSplitterComponent implements AfterContentInit {
      */
     @HostBinding('style.display')
     public display = 'flex';
+
+    /**
+     * @hidden
+     * @internal
+     */
+    @HostBinding('attr.aria-orientation')
+    public get orientation() {
+        return this.type === SplitterType.Horizontal ? 'horizontal' : 'vertical';
+    }
 
     /**
      * Event fired when resizing of panes starts.
@@ -139,7 +155,7 @@ export class IgxSplitterComponent implements AfterContentInit {
      */
     private sibling!: IgxSplitterPaneComponent;
 
-    constructor(@Inject(DOCUMENT) public document, private elementRef: ElementRef) {}
+    constructor(@Inject(DOCUMENT) public document, private elementRef: ElementRef) { }
     /**
      * Gets/Sets the splitter orientation.
      *
@@ -155,7 +171,21 @@ export class IgxSplitterComponent implements AfterContentInit {
     public set type(value) {
         this._type = value;
         this.resetPaneSizes();
+        this.panes?.notifyOnChanges();
     }
+
+    /**
+     * Sets the visibility of the handle and expanders in the splitter bar.
+     * False by default
+     * 
+     * @example
+     * ```html
+     * <igx-splitter [nonCollapsible]='true'>
+     * </igx-splitter>
+     * ```
+     */
+    @Input({ transform: booleanAttribute })
+    public nonCollapsible = false; // Input to toggle showing/hiding expanders
 
     /**
      * @hidden @internal
@@ -189,7 +219,7 @@ export class IgxSplitterComponent implements AfterContentInit {
 
         const siblingRect = this.sibling.element.getBoundingClientRect();
         this.initialSiblingSize = this.type === SplitterType.Horizontal ? siblingRect.width : siblingRect.height;
-        const args: ISplitterBarResizeEventArgs = {pane: this.pane, sibling: this.sibling};
+        const args: ISplitterBarResizeEventArgs = { pane: this.pane, sibling: this.sibling };
         this.resizeStart.emit(args);
     }
 
@@ -199,16 +229,8 @@ export class IgxSplitterComponent implements AfterContentInit {
      * @param delta - The difference along the X (or Y) axis between the initial and the current point when dragging the bar.
      */
     public onMoving(delta: number) {
-        const min = parseInt(this.pane.minSize, 10) || 0;
-        const max = parseInt(this.pane.maxSize, 10) || this.initialPaneSize + this.initialSiblingSize;
-        const minSibling = parseInt(this.sibling.minSize, 10) || 0;
-        const maxSibling = parseInt(this.sibling.maxSize, 10) || this.initialPaneSize + this.initialSiblingSize;
+        const [ paneSize, siblingSize ] = this.calcNewSizes(delta);
 
-        const paneSize = this.initialPaneSize - delta;
-        const siblingSize = this.initialSiblingSize + delta;
-        if (paneSize < min || paneSize > max || siblingSize < minSibling || siblingSize > maxSibling) {
-            return;
-        }
         this.pane.dragSize = paneSize + 'px';
         this.sibling.dragSize = siblingSize + 'px';
 
@@ -217,17 +239,8 @@ export class IgxSplitterComponent implements AfterContentInit {
     }
 
     public onMoveEnd(delta: number) {
-        const min = parseInt(this.pane.minSize, 10) || 0;
-        const max = parseInt(this.pane.maxSize, 10) || this.initialPaneSize + this.initialSiblingSize;
-        const minSibling = parseInt(this.sibling.minSize, 10) || 0;
-        const maxSibling = parseInt(this.sibling.maxSize, 10) || this.initialPaneSize + this.initialSiblingSize;
+        const [ paneSize, siblingSize ] = this.calcNewSizes(delta);
 
-        const paneSize = this.initialPaneSize - delta;
-        const siblingSize = this.initialSiblingSize + delta;
-
-        if (paneSize < min || paneSize > max || siblingSize < minSibling || siblingSize > maxSibling) {
-            return;
-        }
         if (this.pane.isPercentageSize) {
             // handle % resizes
             const totalSize = this.getTotalSize();
@@ -241,7 +254,7 @@ export class IgxSplitterComponent implements AfterContentInit {
         if (this.sibling.isPercentageSize) {
             // handle % resizes
             const totalSize = this.getTotalSize();
-            const percentSiblingPaneSize =  (siblingSize / totalSize) * 100;
+            const percentSiblingPaneSize = (siblingSize / totalSize) * 100;
             this.sibling.size = percentSiblingPaneSize + '%';
         } else {
             // px resize
@@ -275,7 +288,16 @@ export class IgxSplitterComponent implements AfterContentInit {
      * This method inits panes with properties.
      */
     private initPanes() {
-        this.panes.forEach(pane => pane.owner = this);
+        this.panes.forEach(pane => {
+            pane.owner = this;
+            if (this.type === SplitterType.Horizontal) {
+                pane.minWidth = pane.minSize ?? '0';
+                pane.maxWidth = pane.maxSize ?? '100%';
+            } else {
+                pane.minHeight = pane.minSize ?? '0';
+                pane.maxHeight = pane.maxSize ?? '100%';
+            }
+        });
         this.assignFlexOrder();
         if (this.panes.filter(x => x.collapsed).length > 0) {
             // if any panes are collapsed, reset sizes.
@@ -290,7 +312,13 @@ export class IgxSplitterComponent implements AfterContentInit {
     private resetPaneSizes() {
         if (this.panes) {
             // if type is changed runtime, should reset sizes.
-            this.panes.forEach(x => x.size = 'auto');
+            this.panes.forEach(x => {
+                x.size = 'auto'
+                x.minWidth = '0';
+                x.maxWidth = '100%';
+                x.minHeight = '0';
+                x.maxHeight = '100%';
+            });
         }
     }
 
@@ -305,17 +333,42 @@ export class IgxSplitterComponent implements AfterContentInit {
             k += 2;
         });
     }
-}
 
-export const SPLITTER_INTERACTION_KEYS = new Set('right down left up arrowright arrowdown arrowleft arrowup'.split(' '));
+    /**
+     * @hidden @internal
+     * Calculates new sizes for the panes based on move delta and initial sizes
+     */
+    private calcNewSizes(delta: number): [number, number] {
+        const min = parseInt(this.pane.minSize, 10) || 0;
+        const minSibling = parseInt(this.sibling.minSize, 10) || 0;
+        const max = parseInt(this.pane.maxSize, 10) || this.initialPaneSize + this.initialSiblingSize - minSibling;
+        const maxSibling = parseInt(this.sibling.maxSize, 10) || this.initialPaneSize + this.initialSiblingSize - min;
+
+        if (delta < 0) {
+            const maxPossibleDelta = Math.min(
+                max - this.initialPaneSize,
+                this.initialSiblingSize - minSibling,
+            )
+            delta = Math.min(maxPossibleDelta, Math.abs(delta)) * -1;
+        } else {
+            const maxPossibleDelta = Math.min(
+                this.initialPaneSize - min,
+                maxSibling - this.initialSiblingSize
+            )
+            delta = Math.min(maxPossibleDelta, Math.abs(delta));
+        }
+        return [this.initialPaneSize - delta, this.initialSiblingSize + delta];
+    }
+}
 
 /**
  * @hidden @internal
  * Represents the draggable bar that visually separates panes and allows for changing their sizes.
  */
- @Component({
+@Component({
     selector: 'igx-splitter-bar',
-    templateUrl: './splitter-bar.component.html'
+    templateUrl: './splitter-bar.component.html',
+    imports: [IgxDragDirective, IgxDragIgnoreDirective]
 })
 export class IgxSplitBarComponent {
     /**
@@ -323,6 +376,12 @@ export class IgxSplitBarComponent {
      */
     @HostBinding('class.igx-splitter-bar-host')
     public cssClass = 'igx-splitter-bar-host';
+
+     /**
+     * Sets the visibility of the handle and expanders in the splitter bar.
+     */
+    @Input({ transform: booleanAttribute })
+    public nonCollapsible;
 
     /**
      * Gets/Sets the orientation.
@@ -400,6 +459,8 @@ export class IgxSplitBarComponent {
      */
     private startPoint!: number;
 
+    private interactionKeys = new Set('right down left up arrowright arrowdown arrowleft arrowup'.split(' '));
+
     /**
      * @hidden @internal
      */
@@ -415,69 +476,69 @@ export class IgxSplitBarComponent {
         const key = event.key.toLowerCase();
         const ctrl = event.ctrlKey;
         event.stopPropagation();
-        if (SPLITTER_INTERACTION_KEYS.has(key)) {
+        if (this.interactionKeys.has(key)) {
             event.preventDefault();
         }
-            switch (key) {
-                case 'arrowup':
-                case 'up':
-                    if (this.type === SplitterType.Vertical) {
-                        if (ctrl) {
-                            this.onCollapsing(false);
-                            break;
-                        }
-                        if (!this.resizeDisallowed) {
-                            event.preventDefault();
-                            this.moveStart.emit(this.pane);
-                            this.moving.emit(10);
-                        }
+        switch (key) {
+            case 'arrowup':
+            case 'up':
+                if (this.type === SplitterType.Vertical) {
+                    if (ctrl) {
+                        this.onCollapsing(false);
+                        break;
                     }
-                    break;
-                case 'arrowdown':
-                case 'down':
-                    if (this.type === SplitterType.Vertical) {
-                        if (ctrl) {
-                            this.onCollapsing(true);
-                            break;
-                        }
-                        if (!this.resizeDisallowed) {
-                            event.preventDefault();
-                            this.moveStart.emit(this.pane);
-                            this.moving.emit(-10);
-                        }
+                    if (!this.resizeDisallowed) {
+                        event.preventDefault();
+                        this.moveStart.emit(this.pane);
+                        this.moving.emit(10);
                     }
-                    break;
-                case 'arrowleft':
-                case 'left':
-                    if (this.type === SplitterType.Horizontal) {
-                        if (ctrl) {
-                            this.onCollapsing(false);
-                            break;
-                        }
-                        if (!this.resizeDisallowed) {
-                            event.preventDefault();
-                            this.moveStart.emit(this.pane);
-                            this.moving.emit(10);
-                        }
+                }
+                break;
+            case 'arrowdown':
+            case 'down':
+                if (this.type === SplitterType.Vertical) {
+                    if (ctrl) {
+                        this.onCollapsing(true);
+                        break;
                     }
-                    break;
-                case 'arrowright':
-                case 'right':
-                    if (this.type === SplitterType.Horizontal) {
-                        if (ctrl) {
-                            this.onCollapsing(true);
-                            break;
-                        }
-                        if (!this.resizeDisallowed) {
-                            event.preventDefault();
-                            this.moveStart.emit(this.pane);
-                            this.moving.emit(-10);
-                        }
+                    if (!this.resizeDisallowed) {
+                        event.preventDefault();
+                        this.moveStart.emit(this.pane);
+                        this.moving.emit(-10);
                     }
-                    break;
-                default:
-                    break;
-            }
+                }
+                break;
+            case 'arrowleft':
+            case 'left':
+                if (this.type === SplitterType.Horizontal) {
+                    if (ctrl) {
+                        this.onCollapsing(false);
+                        break;
+                    }
+                    if (!this.resizeDisallowed) {
+                        event.preventDefault();
+                        this.moveStart.emit(this.pane);
+                        this.moving.emit(10);
+                    }
+                }
+                break;
+            case 'arrowright':
+            case 'right':
+                if (this.type === SplitterType.Horizontal) {
+                    if (ctrl) {
+                        this.onCollapsing(true);
+                        break;
+                    }
+                    if (!this.resizeDisallowed) {
+                        event.preventDefault();
+                        this.moveStart.emit(this.pane);
+                        this.moving.emit(-10);
+                    }
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -511,7 +572,7 @@ export class IgxSplitBarComponent {
      */
     public onDragMove(event: IDragMoveEventArgs) {
         const isHorizontal = this.type === SplitterType.Horizontal;
-        const curr =  isHorizontal ? event.pageX : event.pageY;
+        const curr = isHorizontal ? event.pageX : event.pageY;
         const delta = this.startPoint - curr;
         if (delta !== 0) {
             this.moving.emit(delta);
@@ -522,7 +583,7 @@ export class IgxSplitBarComponent {
 
     public onDragEnd(event: any) {
         const isHorizontal = this.type === SplitterType.Horizontal;
-        const curr =  isHorizontal ? event.pageX : event.pageY;
+        const curr = isHorizontal ? event.pageX : event.pageY;
         const delta = this.startPoint - curr;
         if (delta !== 0) {
             this.movingEnd.emit(delta);

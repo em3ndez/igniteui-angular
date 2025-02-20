@@ -17,8 +17,11 @@ import { IgxColumnResizingService } from '../resizing/resizing.service';
 import { Subject } from 'rxjs';
 import { ColumnType, GridType, IGX_GRID_BASE } from '../common/grid.interface';
 import { GridSelectionMode } from '../common/enums';
-import { DisplayDensity } from '../../core/displayDensity';
 import { SortingDirection } from '../../data-operations/sorting-strategy';
+import { SortingIndexPipe } from './pipes';
+import { NgTemplateOutlet, NgIf, NgClass } from '@angular/common';
+import { IgxIconComponent } from '../../icon/icon.component';
+import { ExpressionsTreeUtil } from '../../data-operations/expressions-tree-util';
 
 /**
  * @hidden
@@ -26,15 +29,13 @@ import { SortingDirection } from '../../data-operations/sorting-strategy';
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-grid-header',
-    templateUrl: 'grid-header.component.html'
+    templateUrl: 'grid-header.component.html',
+    imports: [IgxIconComponent, NgTemplateOutlet, NgIf, NgClass, SortingIndexPipe]
 })
 export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
 
     @Input()
     public column: ColumnType;
-
-    @Input()
-    public density: DisplayDensity;
 
     /**
      * @hidden
@@ -49,6 +50,12 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
     protected defaultSortHeaderIconTemplate;
 
     /**
+     * @hidden
+     */
+    @ViewChild('sortIconContainer', { read: ElementRef })
+    protected sortIconContainer: ElementRef;
+
+    /**
      * Returns the `aria-selected` of the header.
      */
     @HostBinding('attr.aria-selected')
@@ -59,24 +66,6 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
     @HostBinding('class.igx-grid-th')
     public get columnGroupStyle() {
         return !this.column.columnGroup;
-    }
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('class.igx-grid-th--cosy')
-    public get cosyStyle() {
-        return this.density === 'cosy';
-    }
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('class.igx-grid-th--compact')
-    public get compactStyle() {
-        return this.density === 'compact';
     }
 
     @HostBinding('class.asc')
@@ -119,15 +108,6 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
         return this.selected;
     }
 
-    @HostBinding('style.height.rem')
-    public get height() {
-        if (!this.grid.hasColumnGroups || this.grid.isPivot) {
-            return null;
-        }
-
-        return (this.grid.maxLevelHeaderDepth + 1 - this.column.level) * this.grid.defaultRowHeight / this.grid._baseFontSize;
-    }
-
     /**
      * @hidden
      */
@@ -149,13 +129,23 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
             return this.defaultSortHeaderIconTemplate;
         }
     }
+    /**
+     * @hidden
+     */
+    public get disabled() {
+        const groupArea = this.grid.groupArea || this.grid.treeGroupArea;
+        if (groupArea?.expressions && groupArea.expressions.length && groupArea.expressions.map(g => g.fieldName).includes(this.column.field)) {
+            return true;
+        }
+        return false;
+    }
 
     public get sorted() {
         return this.sortDirection !== SortingDirection.None;
     }
 
     public get filterIconClassName() {
-        return this.column.filteringExpressionsTree ? 'igx-excel-filter__icon--filtered' : 'igx-excel-filter__icon';
+        return this.column.filteringExpressionsTree || this.isAdvancedFilterApplied() ? 'igx-excel-filter__icon--filtered' : 'igx-excel-filter__icon';
     }
 
     public get selectable() {
@@ -179,7 +169,7 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
     }
 
     public sortDirection = SortingDirection.None;
-    private _destroy$ = new Subject<boolean>();
+    protected _destroy$ = new Subject<boolean>();
 
     constructor(
         @Inject(IGX_GRID_BASE) public grid: GridType,
@@ -232,22 +222,41 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
         this.column.applySelectableClass = false;
     }
 
+    /**
+     * @hidden @internal
+     */
     public ngDoCheck() {
         this.getSortDirection();
         this.cdr.markForCheck();
     }
 
+    /**
+     * @hidden @internal
+     */
     public ngOnDestroy(): void {
         this._destroy$.next(true);
         this._destroy$.complete();
     }
 
+    /**
+     * @hidden @internal
+     */
+    public onPointerDownIndicator(event) {
+        // Stop propagation of pointer events to now allow column dragging using the header indicators.
+        event.stopPropagation();
+    }
 
+    /**
+     * @hidden @internal
+     */
     public onFilteringIconClick(event) {
         event.stopPropagation();
         this.grid.filteringService.toggleFilterDropdown(this.nativeElement, this.column);
     }
 
+    /**
+     * @hidden @internal
+     */
     public onSortingIconClick(event) {
         event.stopPropagation();
         this.triggerSort();
@@ -256,6 +265,13 @@ export class IgxGridHeaderComponent implements DoCheck, OnDestroy {
     protected getSortDirection() {
         const expr = this.grid.sortingExpressions.find((x) => x.fieldName === this.column.field);
         this.sortDirection = expr ? expr.dir : SortingDirection.None;
+    }
+
+    protected isAdvancedFilterApplied() {
+        if(!this.grid.advancedFilteringExpressionsTree) {
+            return false;
+        }
+        return !!ExpressionsTreeUtil.find(this.grid.advancedFilteringExpressionsTree, this.column.field);
     }
 
     private triggerSort() {

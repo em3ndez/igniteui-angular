@@ -1,4 +1,4 @@
-﻿import {
+import {
     Component,
     ContentChildren,
     ChangeDetectorRef,
@@ -24,6 +24,7 @@ import {
 import { IDropBaseEventArgs, IDragBaseEventArgs } from '../directives/drag-drop/drag-drop.directive';
 import { takeUntil } from 'rxjs/operators';
 import { Subject } from 'rxjs';
+import { rem } from '../core/utils';
 
 export interface IBaseChipsAreaEventArgs {
     originalEvent: IDragBaseEventArgs | IDropBaseEventArgs | KeyboardEvent | MouseEvent | TouchEvent;
@@ -62,27 +63,9 @@ export interface IChipsAreaSelectEventArgs extends IBaseChipsAreaEventArgs {
 @Component({
     selector: 'igx-chips-area',
     templateUrl: 'chips-area.component.html',
+    standalone: true
 })
 export class IgxChipsAreaComponent implements DoCheck, AfterViewInit, OnDestroy {
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @Input()
-    public class = '';
-
-    /**
-     * @hidden
-     * @internal
-     */
-    @HostBinding('attr.class')
-    public get hostClass() {
-        const classes = ['igx-chip-area'];
-        classes.push(this.class);
-
-        return classes.join(' ');
-    }
 
     /**
      * Returns the `role` attribute of the chips area.
@@ -108,28 +91,38 @@ export class IgxChipsAreaComponent implements DoCheck, AfterViewInit, OnDestroy 
      public ariaLabel = 'chip area';
 
     /**
-     * An @Input property that sets the width of the `IgxChipsAreaComponent`.
+     * Sets the width of the `IgxChipsAreaComponent`.
      *
      * @example
      * ```html
-     * <igx-chips-area #chipsArea [width]="'300'" [height]="'10'" (onReorder)="chipsOrderChanged($event)"></igx-chips-area>
+     * <igx-chips-area #chipsArea [width]="300" [height]="10" (onReorder)="chipsOrderChanged($event)"></igx-chips-area>
      * ```
      */
-    @HostBinding('style.width.px')
     @Input()
     public width: number;
 
+    /** @hidden @internal */
+    @HostBinding('style.width.rem')
+    public get _widthToRem() {
+        return rem(this.width);
+    }
+
     /**
-     * An @Input property that sets the height of the `IgxChipsAreaComponent`.
+     * Sets the height of the `IgxChipsAreaComponent`.
      *
      * @example
      * ```html
-     * <igx-chips-area #chipsArea [width]="'300'" [height]="'10'" (onReorder)="chipsOrderChanged($event)"></igx-chips-area>
+     * <igx-chips-area #chipsArea [width]="300" [height]="10" (onReorder)="chipsOrderChanged($event)"></igx-chips-area>
      * ```
      */
-    @HostBinding('style.height.px')
     @Input()
     public height: number;
+
+    /** @hidden @internal */
+    @HostBinding('style.height.rem')
+    public get _heightToRem() {
+        return rem(this.height);
+    }
 
     /**
      * Emits an event when `IgxChipComponent`s in the `IgxChipsAreaComponent` should be reordered.
@@ -193,6 +186,9 @@ export class IgxChipsAreaComponent implements DoCheck, AfterViewInit, OnDestroy 
 
     protected destroy$ = new Subject<boolean>();
 
+    @HostBinding('class')
+    private hostClass = 'igx-chip-area';
+
     private modifiedChipsArray: IgxChipComponent[];
     private _differ: IterableDiffer<IgxChipComponent> | null = null;
 
@@ -228,20 +224,20 @@ export class IgxChipsAreaComponent implements DoCheck, AfterViewInit, OnDestroy 
             const changes = this._differ.diff(this.chipsList.toArray());
             if (changes) {
                 changes.forEachAddedItem((addedChip) => {
-                    addedChip.item.moveStart.pipe(takeUntil(this.destroy$)).subscribe((args) => {
+                    addedChip.item.moveStart.pipe(takeUntil(addedChip.item.destroy$)).subscribe((args) => {
                         this.onChipMoveStart(args);
                     });
-                    addedChip.item.moveEnd.pipe(takeUntil(this.destroy$)).subscribe((args) => {
+                    addedChip.item.moveEnd.pipe(takeUntil(addedChip.item.destroy$)).subscribe((args) => {
                         this.onChipMoveEnd(args);
                     });
-                    addedChip.item.dragEnter.pipe(takeUntil(this.destroy$)).subscribe((args) => {
+                    addedChip.item.dragEnter.pipe(takeUntil(addedChip.item.destroy$)).subscribe((args) => {
                         this.onChipDragEnter(args);
                     });
-                    addedChip.item.keyDown.pipe(takeUntil(this.destroy$)).subscribe((args) => {
+                    addedChip.item.keyDown.pipe(takeUntil(addedChip.item.destroy$)).subscribe((args) => {
                         this.onChipKeyDown(args);
                     });
                     if (addedChip.item.selectable) {
-                        addedChip.item.selectedChanging.pipe(takeUntil(this.destroy$)).subscribe((args) => {
+                        addedChip.item.selectedChanging.pipe(takeUntil(addedChip.item.destroy$)).subscribe((args) => {
                             this.onChipSelectionChange(args);
                         });
                     }

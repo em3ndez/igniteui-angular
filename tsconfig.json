@@ -1,51 +1,55 @@
 {
     "compileOnSave": false,
     "compilerOptions": {
-        "baseUrl": "./",
-        "downlevelIteration": true,
-        "importHelpers": true,
-        "module": "es2020",
-        "outDir": "./dist/out-tsc",
-        "sourceMap": true,
-        "declaration": false,
-        "moduleResolution": "node",
-        "experimentalDecorators": true,
-        "target": "es2015",
-        "typeRoots": [
-            "node_modules/@types"
+      "baseUrl": "./",
+      "importHelpers": true,
+      "module": "es2022",
+      "outDir": "./dist/out-tsc",
+      "sourceMap": true,
+      "declaration": false,
+      "moduleResolution": "node",
+      "experimentalDecorators": true,
+      "forceConsistentCasingInFileNames": true,
+      "esModuleInterop": true,
+      "target": "ES2022",
+      "skipLibCheck": true,
+      "typeRoots": [
+        "node_modules/@types"
+      ],
+      "lib": [
+        "es2022",
+        "dom"
+      ],
+      "paths": {
+        "igniteui-angular": [
+          "projects/igniteui-angular/src/public_api.ts"
         ],
-        "lib": [
-            "es2019",
-            "dom"
+        "igniteui-angular/*": [
+          "projects/igniteui-angular/*"
         ],
-        "paths": {
-            "igniteui-angular": [
-                "projects/igniteui-angular/src/public_api.ts"
-            ],
-            "igniteui-angular-i18n": [
-                "projects/igniteui-angular-i18n/src/index.ts"
-            ]
-        },
-        "rootDir": "."
+        "igniteui-angular-i18n": [
+          "projects/igniteui-angular-i18n/src/index.ts"
+        ]
+      },
+      "rootDir": ".",
+      "useDefineForClassFields": false,
+      "noImplicitOverride": true
     },
     "exclude": [
         "dist",
         "projects/igniteui-angular/migrations/",
-        "projects/igniteui-angular/schematics/"
+        "projects/igniteui-angular/schematics/",
+        "projects/igniteui-angular/cypress/",
+        "cypress",
+        "./cypress.config.ts"
     ],
-    "typedocOptions": {
-        "out": "dist/igniteui-angular/docs/typescript",
-        "exclude": "**/*.spec.ts",
-        "theme":  "node_modules/ig-typedoc-theme/dist",
-        "excludePrivate": true,
-        "excludeProtected": true,
-        "name": "Ignite UI for Angular",
-        "readme": "none"
-    },
     "angularCompilerOptions": {
         "generateDeepReexports": true,
         "strictTemplates": true,
-        "fullTemplateTypeCheck": true,
-        "strictInjectionParameters": true
+        "extendedDiagnostics": {
+            "defaultCategory": "error"
+        },
+        "strictInjectionParameters": true,
+        "strictInputAccessModifiers": true,
     }
 }

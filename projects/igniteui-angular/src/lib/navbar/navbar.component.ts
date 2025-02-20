@@ -1,27 +1,29 @@
-import { CommonModule } from '@angular/common';
+import { NgIf } from '@angular/common';
 import {
     Component,
     EventEmitter,
     HostBinding,
     Input,
-    NgModule,
     Output,
     Directive,
-    ContentChild
+    ContentChild,
+    booleanAttribute
 } from '@angular/core';
-import { IgxButtonModule } from '../directives/button/button.directive';
-import { IgxIconModule } from '../icon/public_api';
+
+import { IgxIconComponent } from '../icon/icon.component';
 
 /**
  * IgxActionIcon is a container for the action nav icon of the IgxNavbar.
  */
 @Directive({
-    selector: 'igx-navbar-action,[igxNavbarAction]'
+    selector: 'igx-navbar-action,[igxNavbarAction]',
+    standalone: true
 })
 export class IgxNavbarActionDirective { }
 
 @Directive({
-    selector: 'igx-navbar-title,[igxNavbarTitle]'
+    selector: 'igx-navbar-title,[igxNavbarTitle]',
+    standalone: true
 })
 export class IgxNavbarTitleDirective { }
 
@@ -49,14 +51,16 @@ let NEXT_ID = 0;
     styles: [`
         :host {
             display: block;
+            width: 100%;
         }
     `
-    ]
+    ],
+    imports: [NgIf, IgxIconComponent]
 })
 
 export class IgxNavbarComponent {
     /**
-     * An @Input property that sets the value of the `id` attribute. If not provided it will be automatically generated.
+     * Sets the value of the `id` attribute. If not provided it will be automatically generated.
      * ```html
      * <igx-navbar [id]="'igx-navbar-12'" title="Sample App" actionButtonIcon="menu">
      * ```
@@ -66,7 +70,7 @@ export class IgxNavbarComponent {
     public id = `igx-navbar-${NEXT_ID++}`;
 
     /**
-     * An @Input property that sets the icon of the `IgxNavbarComponent`.
+     * Sets the icon of the `IgxNavbarComponent`.
      * ```html
      * <igx-navbar [title]="currentView" actionButtonIcon="arrow_back"></igx-navbar>
      * ```
@@ -74,7 +78,7 @@ export class IgxNavbarComponent {
     @Input() public actionButtonIcon: string;
 
     /**
-     * An @Input property that sets the title of the `IgxNavbarComponent`.
+     * Sets the title of the `IgxNavbarComponent`.
      * ```html
      * <igx-navbar title="Sample App" actionButtonIcon="menu">
      * ```
@@ -97,7 +101,7 @@ export class IgxNavbarComponent {
     @Output() public action = new EventEmitter<IgxNavbarComponent>();
 
     /**
-     * An @Input property that sets the titleId of the `IgxNavbarComponent`. If not set it will be automatically generated.
+     * Sets the titleId of the `IgxNavbarComponent`. If not set it will be automatically generated.
      * ```html
      * <igx-navbar [titleId]="'igx-navbar-7'" title="Sample App" actionButtonIcon="menu">
      * ```
@@ -139,7 +143,7 @@ export class IgxNavbarComponent {
      * }
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get isActionButtonVisible(): boolean {
         if (this.actionIconTemplate || !this.actionButtonIcon) {
             return false;
@@ -159,13 +163,3 @@ export class IgxNavbarComponent {
     }
 }
 
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxNavbarComponent, IgxNavbarActionDirective, IgxNavbarTitleDirective],
-    exports: [IgxNavbarComponent, IgxNavbarActionDirective, IgxNavbarTitleDirective],
-    imports: [IgxButtonModule, IgxIconModule, CommonModule]
-})
-export class IgxNavbarModule {
-}

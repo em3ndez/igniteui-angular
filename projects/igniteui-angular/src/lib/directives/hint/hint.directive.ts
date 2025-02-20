@@ -6,7 +6,8 @@ enum IgxHintPosition {
 }
 
 @Directive({
-    selector: 'igx-hint,[igxHint]'
+    selector: 'igx-hint,[igxHint]',
+    standalone: true
 })
 export class IgxHintDirective implements OnInit {
     /**
@@ -54,7 +55,7 @@ export class IgxHintDirective implements OnInit {
      *
      * @memberof IgxHintDirective
      */
-    @Input('position')
+    @Input()
     public set position(value: string) {
         const position: IgxHintPosition = (IgxHintPosition as any)[value.toUpperCase()];
         if (position !== undefined) {

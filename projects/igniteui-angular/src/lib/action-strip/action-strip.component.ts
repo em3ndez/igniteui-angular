@@ -5,32 +5,47 @@ import {
     Input,
     Renderer2,
     ViewContainerRef,
-    Optional,
-    Inject,
     ContentChildren,
     QueryList,
     ViewChild,
     TemplateRef,
     AfterContentInit,
     ChangeDetectorRef,
-    AfterViewInit
+    AfterViewInit,
+    ElementRef,
+    booleanAttribute
 } from '@angular/core';
-import { DisplayDensityBase, DisplayDensityToken, IDisplayDensityOptions } from '../core/density';
-import { IActionStripResourceStrings } from '../core/i18n/action-strip-resources';
-import { CurrentResourceStrings } from '../core/i18n/resources';
-import { IgxDropDownComponent } from '../drop-down/public_api';
+import { ActionStripResourceStringsEN, IActionStripResourceStrings } from '../core/i18n/action-strip-resources';
+import { IgxDropDownComponent } from '../drop-down/drop-down.component';
 import { CloseScrollStrategy, OverlaySettings } from '../services/public_api';
 import { IgxGridActionsBaseDirective } from './grid-actions/grid-actions-base.directive';
+import { IgxDropDownItemComponent } from '../drop-down/drop-down-item.component';
+import { IgxIconComponent } from '../icon/icon.component';
+import { IgxDropDownItemNavigationDirective } from '../drop-down/drop-down-navigation.directive';
+import { IgxToggleActionDirective } from '../directives/toggle/toggle.directive';
+import { IgxRippleDirective } from '../directives/ripple/ripple.directive';
+import { NgIf, NgFor, NgTemplateOutlet } from '@angular/common';
+import { getCurrentResourceStrings } from '../core/i18n/resources';
+import { IgxIconButtonDirective } from '../directives/button/icon-button.directive';
+import { IgxActionStripToken } from './token';
 
 @Directive({
-    selector: '[igxActionStripMenuItem]'
+    selector: '[igxActionStripMenuItem]',
+    standalone: true
 })
 export class IgxActionStripMenuItemDirective {
-    constructor(
-        public templateRef: TemplateRef<any>
-    ) { }
+    constructor(public templateRef: TemplateRef<any>) {}
 }
 
+/* blazorElement */
+/* jsonAPIManageItemInMarkup */
+/* jsonAPIManageCollectionInMarkup */
+/* wcElementTag: igc-action-strip */
+/* blazorIndirectRender */
+/* singleInstanceIdentifier */
+/* contentParent: GridBaseDirective */
+/* contentParent: RowIsland */
+/* contentParent: HierarchicalGrid */
 /**
  * Action Strip provides templatable area for one or more actions.
  *
@@ -41,6 +56,8 @@ export class IgxActionStripMenuItemDirective {
  * @igxKeywords action, strip, actionStrip, pinning, editing
  *
  * @igxGroup Data Entry & Display
+ *
+ * @igxParent IgxGridComponent, IgxTreeGridComponent, IgxHierarchicalGridComponent, IgxRowIslandComponent, *
  *
  * @remarks
  * The Ignite UI Action Strip is a container, overlaying its parent container,
@@ -54,10 +71,24 @@ export class IgxActionStripMenuItemDirective {
  */
 @Component({
     selector: 'igx-action-strip',
-    templateUrl: 'action-strip.component.html'
+    templateUrl: 'action-strip.component.html',
+    imports: [
+        NgIf,
+        NgFor,
+        NgTemplateOutlet,
+        IgxIconButtonDirective,
+        IgxRippleDirective,
+        IgxToggleActionDirective,
+        IgxDropDownItemNavigationDirective,
+        IgxIconComponent,
+        IgxDropDownComponent,
+        IgxDropDownItemComponent
+    ],
+    providers: [{ provide: IgxActionStripToken, useExisting: IgxActionStripComponent }]
 })
+export class IgxActionStripComponent implements IgxActionStripToken, AfterContentInit, AfterViewInit {
 
-export class IgxActionStripComponent extends DisplayDensityBase implements AfterContentInit, AfterViewInit {
+    /* blazorSuppress */
     /**
      * Sets the context of an action strip.
      * The context should be an instance of a @Component, that has element property.
@@ -70,6 +101,7 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
      */
     @Input()
     public context: any;
+
     /**
      * Menu Items ContentChildren inside the Action Strip
      *
@@ -80,6 +112,10 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
     public _menuItems: QueryList<IgxActionStripMenuItemDirective>;
 
 
+    /* blazorInclude */
+    /* contentChildren */
+    /* blazorTreatAsCollection */
+    /* blazorCollectionName: GridActionsBaseDirectiveCollection */
     /**
      * ActionButton as ContentChildren inside the Action Strip
      *
@@ -90,7 +126,7 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
     public actionButtons: QueryList<IgxGridActionsBaseDirective>;
 
     /**
-     * An @Input property that set the visibility of the Action Strip.
+     * Gets/Sets the visibility of the Action Strip.
      * Could be used to set if the Action Strip will be initially hidden.
      *
      * @example
@@ -98,23 +134,9 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
      *  <igx-action-strip [hidden]="false">
      * ```
      */
-    @Input()
-    public set hidden(value) {
-        this._hidden = value;
-    }
+    @Input({ transform: booleanAttribute })
+    public hidden = false;
 
-    public get hidden() {
-        return this._hidden;
-    }
-
-    /**
-     * Host `class.igx-action-strip` binding.
-     *
-     * @hidden
-     * @internal
-     */
-    @Input('class')
-    public hostClass: string;
 
     /**
      * Gets/Sets the resource strings.
@@ -128,10 +150,25 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
     }
 
     public get resourceStrings(): IActionStripResourceStrings {
-        if (!this._resourceStrings) {
-            this._resourceStrings = CurrentResourceStrings.ActionStripResourceStrings;
-        }
         return this._resourceStrings;
+    }
+
+    /**
+     * Hide or not the Action Strip based on if it is a menu.
+     *
+     * @hidden
+     * @internal
+     */
+    public get hideOnRowLeave(): boolean {
+        if (this.menu.items.length === 0) {
+            return true;
+        } else if (this.menu.items.length > 0) {
+            if (this.menu.collapsed) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
     /**
@@ -152,43 +189,16 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
     public menuOverlaySettings: OverlaySettings = { scrollStrategy: new CloseScrollStrategy() };
 
     private _hidden = false;
-    private _resourceStrings;
+    private _resourceStrings = getCurrentResourceStrings(ActionStripResourceStringsEN);
+    private _originalParent!: HTMLElement;
 
     constructor(
         private _viewContainer: ViewContainerRef,
         private renderer: Renderer2,
-        @Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions: IDisplayDensityOptions,
-        public cdr: ChangeDetectorRef) {
-        super(_displayDensityOptions);
-    }
-
-    /**
-     * Getter for the 'display' property of the current `IgxActionStrip`
-     *
-     * @hidden
-     * @internal
-     */
-    @HostBinding('style.display')
-    public get display(): string {
-        return this._hidden ? 'none' : 'flex';
-    }
-
-    /**
-     * Host `attr.class` binding.
-     *
-     * @hidden
-     * @internal
-     */
-    @HostBinding('attr.class')
-    public get hostClasses(): string {
-        const classes = [this.getComponentDensityClass('igx-action-strip')];
-        // The custom classes should be at the end.
-        if (!classes.includes('igx-action-strip')) {
-            classes.push('igx-action-strip');
-        }
-        classes.push(this.hostClass);
-        return classes.join(' ');
-    }
+        protected el: ElementRef,
+        /** @hidden @internal **/
+        public cdr: ChangeDetectorRef,
+    ) { }
 
     /**
      * Menu Items list.
@@ -208,6 +218,21 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
         });
         return [... this._menuItems.toArray(), ...actions];
     }
+
+
+    /**
+     * Getter for the 'display' property of the current `IgxActionStrip`
+     */
+    @HostBinding('style.display')
+    private get display(): string {
+        return this.hidden ? 'none' : 'flex';
+    }
+
+    /**
+     * Host `attr.class` binding.
+     */
+    @HostBinding('class.igx-action-strip')
+    protected hostClass = 'igx-action-strip';
 
     /**
      * @hidden
@@ -242,6 +267,7 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
                 button.actionClick.emit();
             }
         });
+        this._originalParent = this._viewContainer.element.nativeElement?.parentElement;
     }
 
     /**
@@ -280,7 +306,10 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
     public hide(): void {
         this.hidden = true;
         this.closeMenu();
-        if (this.context && this.context.element) {
+        if (this._originalParent) {
+            // D.P. fix(elements) don't detach native DOM, instead move back. Might not matter for Angular, but Elements will destroy
+            this.renderer.appendChild(this._originalParent, this._viewContainer.element.nativeElement);
+        } else if (this.context && this.context.element) {
             this.renderer.removeChild(this.context.element.nativeElement, this._viewContainer.element.nativeElement);
         }
     }
@@ -297,4 +326,3 @@ export class IgxActionStripComponent extends DisplayDensityBase implements After
         }
     }
 }
-

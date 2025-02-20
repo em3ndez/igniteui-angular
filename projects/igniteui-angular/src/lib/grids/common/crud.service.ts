@@ -1,25 +1,33 @@
 import { Injectable } from '@angular/core';
 import { first } from 'rxjs/operators';
-import { IGridEditDoneEventArgs, IGridEditEventArgs, IRowDataEventArgs } from '../common/events';
+import { IGridEditDoneEventArgs, IGridEditEventArgs, IRowDataCancelableEventArgs, IRowDataEventArgs } from '../common/events';
 import { GridType, RowType } from './grid.interface';
 import { Subject } from 'rxjs';
-import { copyDescriptors, isEqual } from '../../core/utils';
+import { copyDescriptors, isEqual, isDate } from '../../core/utils';
+import { FormGroup } from '@angular/forms';
+import { DateTimeUtil } from '../../date-common/util/date-time.util';
 
 export class IgxEditRow {
     public transactionState: any;
     public state: any;
     public newData: any;
+    public rowFormGroup = new FormGroup({});
 
-    constructor(public id: any, public index: number, public data: any, public grid: GridType) { }
+    constructor(public id: any, public index: number, public data: any, public grid: GridType) {
+        this.rowFormGroup = this.grid.validation.create(id, data);
+    }
 
-    public createEditEventArgs(includeNewValue = true, event?: Event): IGridEditEventArgs {
+    public createRowEditEventArgs(includeNewValue = true, event?: Event): IGridEditEventArgs {
         const args: IGridEditEventArgs = {
+            primaryKey: this.id,
             rowID: this.id,
+            rowKey: this.id,
             rowData: this.data,
             oldValue: this.data,
             cancel: false,
             owner: this.grid,
             isAddRow: false,
+            valid: this.rowFormGroup.valid,
             event
         };
         if (includeNewValue) {
@@ -28,17 +36,37 @@ export class IgxEditRow {
         return args;
     }
 
-    public createDoneEditEventArgs(cachedRowData: any, event?: Event): IGridEditDoneEventArgs {
+    public createRowDataEventArgs(event?: Event): IRowDataCancelableEventArgs {
+        const args: IRowDataCancelableEventArgs = {
+            rowID: this.id,
+            primaryKey: this.id,
+            rowKey: this.id,
+            rowData: this.newData ?? this.data,
+            data: this.newData ?? this.data,
+            oldValue: this.data,
+            cancel: false,
+            owner: this.grid,
+            isAddRow: true,
+            valid: this.rowFormGroup.valid,
+            event
+        };
+        return args;
+    }
+
+    public createRowEditDoneEventArgs(cachedRowData: any, event?: Event): IGridEditDoneEventArgs {
         const updatedData = this.grid.transactions.enabled ?
             this.grid.transactions.getAggregatedValue(this.id, true) : this.grid.gridAPI.getRowData(this.id);
         const rowData = updatedData ?? this.grid.gridAPI.getRowData(this.id);
         const args: IGridEditDoneEventArgs = {
+            primaryKey: this.id,
             rowID: this.id,
+            rowKey: this.id,
             rowData,
             oldValue: cachedRowData,
             newValue: updatedData,
             owner: this.grid,
             isAddRow: false,
+            valid: true,
             event
         };
 
@@ -53,30 +81,35 @@ export class IgxEditRow {
 export class IgxAddRow extends IgxEditRow {
     public isAddRow = true;
 
-    constructor(public id: any,
-        public index: number,
-        public data: any,
+    constructor(id: any,
+        index: number,
+        data: any,
         public recordRef: any,
-        public grid: GridType) {
+        grid: GridType) {
         super(id, index, data, grid);
     }
 
-    public createEditEventArgs(includeNewValue = true, event?: Event): IGridEditEventArgs {
-        const args = super.createEditEventArgs(includeNewValue, event);
+    public override createRowEditEventArgs(includeNewValue = true, event?: Event): IGridEditEventArgs {
+        const args = super.createRowEditEventArgs(includeNewValue, event);
         args.oldValue = null;
         args.isAddRow = true;
+        args.rowData = this.newData ?? this.data;
         return args;
     }
 
-    public createDoneEditEventArgs(cachedRowData: any, event?: Event): IGridEditDoneEventArgs {
-        const args = super.createDoneEditEventArgs(null, event);
+    public override createRowEditDoneEventArgs(cachedRowData: any, event?: Event): IGridEditDoneEventArgs {
+        const args = super.createRowEditDoneEventArgs(null, event);
         args.isAddRow = true;
         return args;
     }
 }
 
 export interface IgxAddRowParent {
+    /**
+     * @deprecated since version 17.1.0. Use `rowKey` instead
+     */
     rowID: string;
+    rowKey: any;
     index: number;
     asChild: boolean;
     isPinned: boolean;
@@ -85,15 +118,37 @@ export interface IgxAddRowParent {
 export class IgxCell {
     public primaryKey: any;
     public state: any;
+    public pendingValue: any;
 
     constructor(
         public id,
         public rowIndex: number,
         public column,
         public value: any,
-        public editValue: any,
+        public _editValue: any,
         public rowData: any,
-        public grid: GridType) { }
+        public grid: GridType) {
+        this.grid.validation.create(id.rowID, rowData);
+    }
+
+    public get editValue() {
+        const formControl = this.grid.validation.getFormControl(this.id.rowID, this.column.field);
+        if (formControl) {
+            return formControl.value;
+        }
+    }
+
+    public set editValue(value) {
+        const formControl = this.grid.validation.getFormControl(this.id.rowID, this.column.field);
+
+        if (this.grid.validationTrigger === 'change') {
+            // in case trigger is change, mark as touched.
+            formControl.setValue(value);
+            formControl.markAsTouched();
+        } else {
+            this.pendingValue = value;
+        }
+    }
 
     public castToNumber(value: any): any {
         if (this.column.dataType === 'number' && !this.column.inlineEditorTemplate) {
@@ -103,15 +158,19 @@ export class IgxCell {
         return value;
     }
 
-    public createEditEventArgs(includeNewValue = true, event?: Event): IGridEditEventArgs {
+    public createCellEditEventArgs(includeNewValue = true, event?: Event): IGridEditEventArgs {
+        const formControl = this.grid.validation.getFormControl(this.id.rowID, this.column.field);
         const args: IGridEditEventArgs = {
+            primaryKey: this.id.rowID,
             rowID: this.id.rowID,
+            rowKey: this.id.rowID,
             cellID: this.id,
             rowData: this.rowData,
             oldValue: this.value,
             cancel: false,
             column: this.column,
             owner: this.grid,
+            valid: formControl ? formControl.valid : true,
             event
         };
         if (includeNewValue) {
@@ -120,17 +179,21 @@ export class IgxCell {
         return args;
     }
 
-    public createDoneEditEventArgs(value: any, event?: Event): IGridEditDoneEventArgs {
+    public createCellEditDoneEventArgs(value: any, event?: Event): IGridEditDoneEventArgs {
         const updatedData = this.grid.transactions.enabled ?
             this.grid.transactions.getAggregatedValue(this.id.rowID, true) : this.rowData;
         const rowData = updatedData === null ? this.grid.gridAPI.getRowData(this.id.rowID) : updatedData;
+        const formControl = this.grid.validation.getFormControl(this.id.rowID, this.column.field);
         const args: IGridEditDoneEventArgs = {
+            primaryKey: this.id.rowID,
             rowID: this.id.rowID,
+            rowKey: this.id.rowID,
             cellID: this.id,
             // rowData - should be the updated/committed rowData - this effectively should be the newValue
             // the only case we use this.rowData directly, is when there is no rowEditing or transactions enabled
             rowData,
             oldValue: this.value,
+            valid: formControl ? formControl.valid : true,
             newValue: value,
             column: this.column,
             owner: this.grid,
@@ -169,7 +232,7 @@ export class IgxCellCrudState {
     }
 
     public beginCellEdit(event?: Event) {
-        const args = this.cell.createEditEventArgs(false, event);
+        const args = this.cell.createCellEditEventArgs(false, event);
         this.grid.cellEditEnter.emit(args);
 
         if (args.cancel) {
@@ -179,7 +242,7 @@ export class IgxCellCrudState {
     }
 
     public cellEdit(event?: Event) {
-        const args = this.cell.createEditEventArgs(true, event);
+        const args = this.cell.createCellEditEventArgs(true, event);
         this.grid.cellEdit.emit(args);
         return args;
     }
@@ -188,8 +251,37 @@ export class IgxCellCrudState {
         if (!this.cell) {
             return;
         }
+        // this is needed when we are not using ngModel to update the editValue
+        // so that the change event of the inlineEditorTemplate is hit before
+        // trying to update any cell
+        const cellNode = this.grid.gridAPI.get_cell_by_index(this.cell.id.rowIndex, this.cell.column.field)?.nativeElement;
+        let activeElement;
+        if (cellNode) {
+            const document = cellNode.getRootNode() as Document | ShadowRoot;
+            if (cellNode.contains(document.activeElement)) {
+                activeElement = document.activeElement as HTMLElement;
+                this.grid.tbody.nativeElement.focus();
+            }
+        }
+
+        const formControl = this.grid.validation.getFormControl(this.cell.id.rowID, this.cell.column.field);
+        if (this.grid.validationTrigger === 'blur' && this.cell.pendingValue !== undefined) {
+            // in case trigger is blur, update value if there's a pending one and mark as touched.
+            formControl.setValue(this.cell.pendingValue);
+            formControl.markAsTouched();
+        }
+
+        if (this.grid.validationTrigger === 'blur') {
+            this.grid.tbody.nativeElement.focus({ preventScroll: true });
+        }
 
         let doneArgs;
+        if (this.cell.column.dataType === 'date' && !isDate(this.cell.value)) {
+            if (isEqual(DateTimeUtil.parseIsoDate(this.cell.value), this.cell.editValue)) {
+                doneArgs = this.exitCellEdit(event);
+                return doneArgs;
+            }
+        }
         if (isEqual(this.cell.value, this.cell.editValue)) {
             doneArgs = this.exitCellEdit(event);
             return doneArgs;
@@ -197,6 +289,8 @@ export class IgxCellCrudState {
 
         const args = this.cellEdit(event);
         if (args.cancel) {
+            // the focus is needed when we cancel the cellEdit so that the activeElement stays on the editor template
+            activeElement?.focus();
             return args;
         }
 
@@ -212,7 +306,7 @@ export class IgxCellCrudState {
 
     public cellEditDone(event, addRow: boolean): IGridEditDoneEventArgs {
         const newValue = this.cell.castToNumber(this.cell.editValue);
-        const doneArgs = this.cell.createDoneEditEventArgs(newValue, event);
+        const doneArgs = this.cell.createCellEditDoneEventArgs(newValue, event);
         this.grid.cellEditDone.emit(doneArgs);
         if (addRow) {
             doneArgs.rowData = this.row.data;
@@ -225,16 +319,15 @@ export class IgxCellCrudState {
         if (!this.cell) {
             return;
         }
-
         const newValue = this.cell.castToNumber(this.cell.editValue);
-        const args = this.cell?.createDoneEditEventArgs(newValue, event);
+        const args = this.cell?.createCellEditDoneEventArgs(newValue, event);
 
         this.cell.value = newValue;
-
         this.grid.cellEditExit.emit(args);
         this.endCellEdit();
         return args;
     }
+
 
     /** Clears cell editing state */
     public endCellEdit() {
@@ -251,10 +344,10 @@ export class IgxCellCrudState {
     }
 }
 export class IgxRowCrudState extends IgxCellCrudState {
-    public row: IgxEditRow | null = null;
     public closeRowEditingOverlay = new Subject();
 
     private _rowEditingBlocked = false;
+    private _rowEditingStarted = false;
 
     public get primaryKey(): any {
         return this.grid.primaryKey;
@@ -269,6 +362,10 @@ export class IgxRowCrudState extends IgxCellCrudState {
         return this.grid.rowEditable;
     }
 
+    public get nonEditable(): boolean {
+        return this.grid.rowEditable && (this.grid.primaryKey === undefined || this.grid.primaryKey === null);
+    }
+
     public get rowEditingBlocked() {
         return this._rowEditingBlocked;
     }
@@ -279,20 +376,21 @@ export class IgxRowCrudState extends IgxCellCrudState {
 
     /** Enters row edit mode */
     public beginRowEdit(event?: Event) {
-        if (this.grid.rowEditable && (this.grid.primaryKey === undefined || this.grid.primaryKey === null)) {
-            console.warn('The grid must have a `primaryKey` specified when using `rowEditable`!');
-        }
-
         if (!this.row || !(this.row.getClassName() === IgxEditRow.name)) {
             if (!this.row) {
                 this.createRow(this.cell);
             }
-            const rowArgs = this.row.createEditEventArgs(false, event);
 
-            this.grid.rowEditEnter.emit(rowArgs);
-            if (rowArgs.cancel) {
-                this.endEditMode();
-                return true;
+            if (!this._rowEditingStarted) {
+                const rowArgs = this.row.createRowEditEventArgs(false, event);
+
+                this.grid.rowEditEnter.emit(rowArgs);
+                if (rowArgs.cancel) {
+                    this.endEditMode();
+                    return true;
+                }
+
+                this._rowEditingStarted = true;
             }
 
             this.row.transactionState = this.grid.transactions.getAggregatedValue(this.row.id, true);
@@ -302,7 +400,7 @@ export class IgxRowCrudState extends IgxCellCrudState {
     }
 
     public rowEdit(event: Event): IGridEditEventArgs {
-        const args = this.row.createEditEventArgs(true, event);
+        const args = this.row.createRowEditEventArgs(true, event);
         this.grid.rowEdit.emit(args);
         return args;
     }
@@ -320,8 +418,6 @@ export class IgxRowCrudState extends IgxCellCrudState {
             this.updateRowEditData(this.row, this.row.newData);
             args = this.rowEdit(event);
             if (args.cancel) {
-                delete this.row.newData;
-                this.grid.transactions.clear(this.row.id);
                 return args;
             }
         }
@@ -334,18 +430,25 @@ export class IgxRowCrudState extends IgxCellCrudState {
     /**
      * @hidden @internal
      */
-    public endRowTransaction(commit: boolean, event?: Event): IGridEditEventArgs {
+    public endRowTransaction(commit: boolean, event?: Event): IGridEditEventArgs | IRowDataCancelableEventArgs {
         this.row.newData = this.grid.transactions.getAggregatedValue(this.row.id, true);
-        let rowEditArgs = this.row.createEditEventArgs(true, event);
+        let rowEditArgs = this.row.createRowEditEventArgs(true, event);
 
         let nonCancelableArgs;
         if (!commit) {
             this.grid.transactions.endPending(false);
+            const isAddRow = this.row && this.row.getClassName() === IgxAddRow.name;
+            const id = this.row ? this.row.id : this.cell.id.rowID;
+            if (isAddRow) {
+                this.grid.validation.clear(id);
+            } else {
+                this.grid.validation.update(id, rowEditArgs.oldValue);
+            }
         } else if (this.row.getClassName() === IgxEditRow.name) {
             rowEditArgs = this.grid.gridAPI.update_row(this.row, this.row.newData, event);
             nonCancelableArgs = this.rowEditDone(rowEditArgs.oldValue, event);
         } else {
-            const rowAddArgs = this.row.createEditEventArgs(true, event);
+            const rowAddArgs = this.row.createRowDataEventArgs(event);
             this.grid.rowAdd.emit(rowAddArgs);
             if (rowAddArgs.cancel) {
                 return rowAddArgs;
@@ -366,7 +469,7 @@ export class IgxRowCrudState extends IgxCellCrudState {
     }
 
     public rowEditDone(cachedRowData, event: Event) {
-        const doneArgs = this.row.createDoneEditEventArgs(cachedRowData, event);
+        const doneArgs = this.row.createRowEditDoneEventArgs(cachedRowData, event);
         this.grid.rowEditDone.emit(doneArgs);
         return doneArgs;
     }
@@ -374,7 +477,7 @@ export class IgxRowCrudState extends IgxCellCrudState {
 
     /** Exit row edit mode */
     public exitRowEdit(cachedRowData, event?: Event): IGridEditDoneEventArgs {
-        const nonCancelableArgs = this.row.createDoneEditEventArgs(cachedRowData, event);
+        const nonCancelableArgs = this.row.createRowEditDoneEventArgs(cachedRowData, event);
         this.grid.rowEditExit.emit(nonCancelableArgs);
         this.grid.closeRowEditingOverlay();
 
@@ -386,6 +489,7 @@ export class IgxRowCrudState extends IgxCellCrudState {
     public endRowEdit() {
         this.row = null;
         this.rowEditingBlocked = false;
+        this._rowEditingStarted = false;
     }
 
     /** Clears cell and row editing state and closes row editing template if it is open */
@@ -445,6 +549,7 @@ export class IgxRowAddCrudState extends IgxRowCrudState {
         const unpinIndex = this.grid.getUnpinnedIndexById(rowId);
         this.addRowParent = {
             rowID: rowId,
+            rowKey: rowId,
             index: isInPinnedArea ? pinIndex : unpinIndex,
             asChild: newRowAsChild,
             isPinned: isInPinnedArea
@@ -454,8 +559,9 @@ export class IgxRowAddCrudState extends IgxRowCrudState {
     /**
      * @hidden @internal
      */
-    public endRowTransaction(commit: boolean, event?: Event): IGridEditEventArgs {
-        if (this.row && this.row.getClassName() === IgxAddRow.name) {
+    public override endRowTransaction(commit: boolean, event?: Event): IGridEditEventArgs | IRowDataCancelableEventArgs {
+        const isAddRow = this.row && this.row.getClassName() === IgxAddRow.name;
+        if (isAddRow) {
             this.grid.rowAdded.pipe(first()).subscribe((addRowArgs: IRowDataEventArgs) => {
                 const rowData = addRowArgs.data;
                 const pinnedIndex = this.grid.pinnedRecords.findIndex(x => x[this.primaryKey] === rowData[this.primaryKey]);
@@ -473,10 +579,19 @@ export class IgxRowAddCrudState extends IgxRowCrudState {
             return args;
         }
 
-        this.endAddRow();
-        if (commit) {
-            this.grid.rowAddedNotifier.next({ data: args.newValue });
-            this.grid.rowAdded.emit({ data: args.newValue });
+        if (isAddRow) {
+            this.endAddRow();
+            if (commit) {
+                const rowAddedEventArgs: IRowDataEventArgs = {
+                    data: args.rowData,
+                    rowData: args.rowData,
+                    owner: this.grid,
+                    primaryKey: args.rowData[this.grid.primaryKey],
+                    rowKey: args.rowData[this.grid.primaryKey],
+                }
+                this.grid.rowAddedNotifier.next(rowAddedEventArgs);
+                this.grid.rowAdded.emit(rowAddedEventArgs);
+            }
         }
 
         return args;
@@ -499,7 +614,7 @@ export class IgxRowAddCrudState extends IgxRowCrudState {
         return this.grid.dataView.findIndex(data => data[this.primaryKey] === rec[this.primaryKey]);
     }
 
-    protected getParentRowId() {
+    protected override getParentRowId() {
         if (this.addRowParent.asChild) {
             return this.addRowParent.asChild ? this.addRowParent.rowID : undefined;
         } else if (this.addRowParent.rowID !== null && this.addRowParent.rowID !== undefined) {
@@ -517,6 +632,11 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
             return;
         }
 
+        if (this.nonEditable) {
+            console.warn('The grid must have a `primaryKey` specified when using `rowEditable`!');
+            return;
+        }
+
         if (this.cellInEditMode) {
             // TODO: case solely for f2/enter nav that uses enterEditMode as toggle. Refactor.
             const canceled = this.endEdit(true, event);
@@ -525,21 +645,18 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
                 this.grid.tbody.nativeElement.focus();
             }
         } else {
-
-            this.createCell(cell);
             if (this.rowEditing) {
                 // TODO rowData
-                if (this.row && !this.sameRow(this.cell?.id?.rowID)) {
+                if (this.row && !this.sameRow(cell?.cellID?.rowID)) {
                     this.rowEditingBlocked = this.endEdit(true, event);
                     if (this.rowEditingBlocked) {
                         return true;
                     }
 
-                    // If enters here, @endEdit clears the new reference of the cell edit.
-                    this.createCell(cell);
                     this.rowEditingBlocked = false;
                     this.endRowEdit();
                 }
+                this.createCell(cell);
 
                 const canceled = this.beginRowEdit(event);
                 if (!canceled) {
@@ -547,6 +664,7 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
                 }
 
             } else {
+                this.createCell(cell);
                 this.beginCellEdit(event);
             }
         }
@@ -566,12 +684,13 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
             return;
         }
         this.endEdit(true, event);
-
-        if (parentRow != null && this.grid.expansionStates.get(parentRow.key)) {
-            this.grid.collapseRow(parentRow.key);
+        // work with copy of original row, since context may change on collapse.
+        const parentRowCopy = parentRow ? Object.assign(copyDescriptors(parentRow), parentRow) : null;
+        if (parentRowCopy != null && this.grid.expansionStates.get(parentRowCopy.key)) {
+            this.grid.collapseRow(parentRowCopy.key);
         }
 
-        this.createAddRow(parentRow, asChild);
+        this.createAddRow(parentRowCopy, asChild);
 
         this.grid.transactions.startPending();
         if (this.addRowParent.isPinned) {
@@ -584,7 +703,9 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
 
         this.grid.navigateTo(this.row.index, -1);
         // when selecting the dummy row we need to adjust for top pinned rows
-        const indexAdjust = this.grid.isRowPinningToTop && !this.addRowParent.isPinned ? this.grid.pinnedRows.length : 0;
+        const indexAdjust = this.grid.isRowPinningToTop ?
+            (!this.addRowParent.isPinned ? this.grid.pinnedRows.length : 0) :
+            (!this.addRowParent.isPinned ? 0 : this.grid.unpinnedRecords.length);
 
         // TODO: Type this without shoving a bunch of internal properties in the row type
         const dummyRow = this.grid.gridAPI.get_row_by_index(this.row.index + indexAdjust) as any;
@@ -601,18 +722,18 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
     }
 
     /**
-     * Finishes the row transactions on the current row.
+     * Finishes the row transactions on the current row and returns whether the grid editing was canceled.
      *
      * @remarks
      * If `commit === true`, passes them from the pending state to the data (or transaction service)
      * @example
      * ```html
-     * <button igxButton (click)="grid.endEdit(true)">Commit Row</button>
+     * <button type="button" igxButton (click)="grid.endEdit(true)">Commit Row</button>
      * ```
      * @param commit
      */
     // TODO: Implement the same representation of the method without evt emission.
-    public endEdit(commit = true, event?: Event) {
+    public endEdit(commit = true, event?: Event): boolean {
         if (!this.row && !this.cell) {
             return;
         }
@@ -624,7 +745,14 @@ export class IgxGridCRUDService extends IgxRowAddCrudState {
                 return args.cancel;
             }
         } else {
+            // needede because this.cell is null after exitCellEdit
+            // thus the next if is always false
+            const cell = this.cell;
             this.exitCellEdit(event);
+            if (!this.grid.rowEditable && cell) {
+                const value = this.grid.transactions.getAggregatedValue(cell.id.rowID, true) || cell.rowData;
+                this.grid.validation.update(cell.id.rowID, value);
+            }
         }
 
         args = this.updateRow(commit, event);

@@ -1,56 +1,44 @@
-import { CommonModule } from '@angular/common';
+import { DOCUMENT, NgClass, NgIf, NgTemplateOutlet } from '@angular/common';
 import {
-    AfterViewInit, ChangeDetectorRef, Component, ElementRef, NgModule, OnInit, OnDestroy,
-    Optional, Inject, Injector, ViewChild, Input, Output, EventEmitter
+    AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, OnDestroy,
+    Optional, Inject, Injector, ViewChild, Input, Output, EventEmitter, HostListener, DoCheck, booleanAttribute
 } from '@angular/core';
-import {
-    IgxComboItemDirective,
-    IgxComboEmptyDirective,
-    IgxComboHeaderItemDirective,
-    IgxComboHeaderDirective,
-    IgxComboFooterDirective,
-    IgxComboAddItemDirective,
-    IgxComboToggleIconDirective,
-    IgxComboClearIconDirective
-} from './combo.directives';
-import { FormsModule, ReactiveFormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IgxCheckboxModule } from '../checkbox/checkbox.component';
+
+import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+
 import { IgxSelectionAPIService } from '../core/selection';
 import { IBaseEventArgs, IBaseCancelableEventArgs, CancelableEventArgs } from '../core/utils';
-import { IgxStringFilteringOperand, IgxBooleanFilteringOperand } from '../data-operations/filtering-condition';
-import { FilteringLogic } from '../data-operations/filtering-expression.interface';
-import { IgxForOfModule } from '../directives/for-of/for_of.directive';
-import { IgxIconModule, IgxIconService } from '../icon/public_api';
-import { IgxRippleModule } from '../directives/ripple/ripple.directive';
-import { IgxToggleModule } from '../directives/toggle/toggle.directive';
-import { IgxButtonModule } from '../directives/button/button.directive';
-import { IgxDropDownModule } from '../drop-down/public_api';
-import { IgxInputGroupModule } from '../input-group/input-group.component';
+import { IgxForOfDirective } from '../directives/for-of/for_of.directive';
+import { IgxIconService } from '../icon/icon.service';
+import { IgxRippleDirective } from '../directives/ripple/ripple.directive';
+import { IgxButtonDirective } from '../directives/button/button.directive';
+import { IgxInputGroupComponent } from '../input-group/input-group.component';
 import { IgxComboItemComponent } from './combo-item.component';
 import { IgxComboDropDownComponent } from './combo-dropdown.component';
 import { IgxComboFilteringPipe, IgxComboGroupingPipe } from './combo.pipes';
-import { DisplayDensityToken, IDisplayDensityOptions } from '../core/density';
 import { IGX_COMBO_COMPONENT, IgxComboBaseDirective } from './combo.common';
 import { IgxComboAddItemComponent } from './combo-add-item.component';
 import { IgxComboAPIService } from './combo.api';
 import { EditorProvider } from '../core/edit-provider';
 import { IgxInputGroupType, IGX_INPUT_GROUP_TYPE } from '../input-group/public_api';
-
-/** The filtering criteria to be applied on data search */
-export interface IComboFilteringOptions {
-    /** Defines filtering case-sensitivity */
-    caseSensitive: boolean;
-}
+import { IgxDropDownItemNavigationDirective } from '../drop-down/drop-down-navigation.directive';
+import { IgxIconComponent } from '../icon/icon.component';
+import { IgxSuffixDirective } from '../directives/suffix/suffix.directive';
+import { IgxInputDirective } from '../directives/input/input.directive';
 
 /** Event emitted when an igx-combo's selection is changing */
 export interface IComboSelectionChangingEventArgs extends IBaseCancelableEventArgs {
     /** An array containing the values that are currently selected */
-    oldSelection: any[];
+    oldValue: any[];
     /** An array containing the values that will be selected after this event */
+    newValue: any[];
+    /** An array containing the items that are currently selected */
+    oldSelection: any[];
+    /** An array containing the items that will be selected after this event */
     newSelection: any[];
-    /** An array containing the values that will be added to the selection (if any) */
+    /** An array containing the items that will be added to the selection (if any) */
     added: any[];
-    /** An array containing the values that will be removed from the selection (if any) */
+    /** An array containing the items that will be removed from the selection (if any) */
     removed: any[];
     /** The text that will be displayed in the combo text box */
     displayText: string;
@@ -111,29 +99,51 @@ const diffInSets = (set1: Set<any>, set2: Set<any>): any[] => {
         IgxComboAPIService,
         { provide: IGX_COMBO_COMPONENT, useExisting: IgxComboComponent },
         { provide: NG_VALUE_ACCESSOR, useExisting: IgxComboComponent, multi: true }
+    ],
+    imports: [
+        NgIf,
+        NgTemplateOutlet,
+        NgClass,
+        FormsModule,
+        IgxInputGroupComponent,
+        IgxInputDirective,
+        IgxSuffixDirective,
+        IgxIconComponent,
+        IgxComboDropDownComponent,
+        IgxDropDownItemNavigationDirective,
+        IgxForOfDirective,
+        IgxComboItemComponent,
+        IgxComboAddItemComponent,
+        IgxButtonDirective,
+        IgxRippleDirective,
+        IgxComboFilteringPipe,
+        IgxComboGroupingPipe
     ]
 })
 export class IgxComboComponent extends IgxComboBaseDirective implements AfterViewInit, ControlValueAccessor, OnInit,
-    OnDestroy, EditorProvider {
+    OnDestroy, DoCheck, EditorProvider {
     /**
-     * An @Input property that controls whether the combo's search box
-     * should be focused after the `opened` event is called
+     * Whether the combo's search box should be focused after the dropdown is opened.
      * When `false`, the combo's list item container will be focused instead
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public autoFocusSearch = true;
 
     /**
-     * An @Input property that enabled/disables filtering in the list. The default is `true`.
-     * ```html
-     * <igx-combo [filterable]="false">
-     * ```
+     * Enables/disables filtering in the list. The default is `false`.
      */
-    @Input()
-    public filterable = true;
+    @Input({ transform: booleanAttribute })
+    public get disableFiltering(): boolean {
+        return this._disableFiltering || this.filteringOptions.filterable === false;
+    }
+    public set disableFiltering(value: boolean) {
+        this._disableFiltering = value;
+    }
 
     /**
      * Defines the placeholder value for the combo dropdown search field
+     *
+     * @deprecated in version 18.2.0. Replaced with values in the localization resource strings.
      *
      * ```typescript
      * // get
@@ -146,7 +156,7 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
      * ```
      */
     @Input()
-    public searchPlaceholder = 'Enter a Search Term';
+    public searchPlaceholder: string;
 
     /**
      * Emitted when item selection is changing, before the selection completes
@@ -162,16 +172,9 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
     @ViewChild(IgxComboDropDownComponent, { static: true })
     public dropdown: IgxComboDropDownComponent;
 
-    /**
-     * @hidden @internal
-     */
-    public get inputEmpty(): boolean {
-        return !this.value && !this.placeholder;
-    }
-
     /** @hidden @internal */
     public get filteredData(): any[] | null {
-        return this.filterable ? this._filteredData : this.data;
+        return this.disableFiltering ? this.data : this._filteredData;
     }
     /** @hidden @internal */
     public set filteredData(val: any[] | null) {
@@ -179,31 +182,36 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
         this.checkMatch();
     }
 
-    /**
-     * @hidden @internal
-     */
-    public filteringLogic = FilteringLogic.Or;
-
-    protected stringFilters = IgxStringFilteringOperand;
-    protected booleanFilters = IgxBooleanFilteringOperand;
     protected _prevInputValue = '';
 
+    private _displayText: string;
+    private _disableFiltering = false;
+
     constructor(
-        protected elementRef: ElementRef,
-        protected cdr: ChangeDetectorRef,
-        protected selectionService: IgxSelectionAPIService,
-        protected comboAPI: IgxComboAPIService,
-        protected _iconService: IgxIconService,
-        @Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions: IDisplayDensityOptions,
-        @Optional() @Inject(IGX_INPUT_GROUP_TYPE) protected _inputGroupType: IgxInputGroupType,
-        @Optional() protected _injector: Injector) {
-        super(elementRef, cdr, selectionService, comboAPI, _iconService, _displayDensityOptions, _inputGroupType, _injector);
+        elementRef: ElementRef,
+        cdr: ChangeDetectorRef,
+        selectionService: IgxSelectionAPIService,
+        comboAPI: IgxComboAPIService,
+        @Inject(DOCUMENT) document: any,
+        @Optional() @Inject(IGX_INPUT_GROUP_TYPE) _inputGroupType: IgxInputGroupType,
+        @Optional() _injector: Injector,
+        @Optional() @Inject(IgxIconService) _iconService?: IgxIconService,
+    ) {
+        super(elementRef, cdr, selectionService, comboAPI, document, _inputGroupType, _injector, _iconService);
         this.comboAPI.register(this);
+    }
+
+    @HostListener('keydown.ArrowDown', ['$event'])
+    @HostListener('keydown.Alt.ArrowDown', ['$event'])
+    public onArrowDown(event: Event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this.open();
     }
 
     /** @hidden @internal */
     public get displaySearchInput(): boolean {
-        return this.filterable || this.allowCustomValues;
+        return !this.disableFiltering || this.allowCustomValues;
     }
 
     /**
@@ -234,11 +242,20 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
      * @hidden @internal
      */
     public writeValue(value: any[]): void {
-        const selection = Array.isArray(value) ? value : [];
+        const selection = Array.isArray(value) ? value.filter(x => x !== undefined) : [];
         const oldSelection = this.selection;
         this.selectionService.select_items(this.id, selection, true);
         this.cdr.markForCheck();
-        this._value = this.createDisplayText(this.selection, oldSelection);
+        this._displayValue = this.createDisplayText(this.selection, oldSelection);
+        this._value = this.valueKey ? this.selection.map(item => item[this.valueKey]) : this.selection;
+    }
+
+    /** @hidden @internal */
+    public ngDoCheck(): void {
+        if (this.data?.length && this.selection.length) {
+            this._displayValue = this._displayText || this.createDisplayText(this.selection, []);
+            this._value = this.valueKey ? this.selection.map(item => item[this.valueKey]) : this.selection;
+        }
     }
 
     /**
@@ -354,7 +371,7 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
      * ```
      */
     public setSelectedItem(itemID: any, select = true, event?: Event): void {
-        if (itemID === null || itemID === undefined) {
+        if (itemID === undefined) {
             return;
         }
         if (select) {
@@ -393,15 +410,20 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
         }
     }
 
-    protected setSelection(newSelection: Set<any>, event?: Event): void {
-        const removed = diffInSets(this.selectionService.get(this.id), newSelection);
-        const added = diffInSets(newSelection, this.selectionService.get(this.id));
-        const newSelectionAsArray = Array.from(newSelection);
-        const oldSelectionAsArray = Array.from(this.selectionService.get(this.id) || []);
-        const displayText = this.createDisplayText(newSelectionAsArray, oldSelectionAsArray);
+    protected setSelection(selection: Set<any>, event?: Event): void {
+        const currentSelection = this.selectionService.get(this.id);
+        const removed = this.convertKeysToItems(diffInSets(currentSelection, selection));
+        const added = this.convertKeysToItems(diffInSets(selection, currentSelection));
+        const newValue = Array.from(selection);
+        const oldValue = Array.from(currentSelection || []);
+        const newSelection = this.convertKeysToItems(newValue);
+        const oldSelection = this.convertKeysToItems(oldValue);
+        const displayText = this.createDisplayText(this.convertKeysToItems(newValue), oldValue);
         const args: IComboSelectionChangingEventArgs = {
-            newSelection: newSelectionAsArray,
-            oldSelection: oldSelectionAsArray,
+            newValue,
+            oldValue,
+            newSelection,
+            oldSelection,
             added,
             removed,
             event,
@@ -411,80 +433,36 @@ export class IgxComboComponent extends IgxComboBaseDirective implements AfterVie
         };
         this.selectionChanging.emit(args);
         if (!args.cancel) {
-            this.selectionService.select_items(this.id, args.newSelection, true);
+            this.selectionService.select_items(this.id, args.newValue, true);
+            this._value = args.newValue;
             if (displayText !== args.displayText) {
-                this._value = args.displayText;
+                this._displayValue = this._displayText = args.displayText;
             } else {
-                this._value = this.createDisplayText(args.newSelection, args.oldSelection);
+                this._displayValue = this.createDisplayText(this.selection, args.oldSelection);
             }
-            this._onChangeCallback(args.newSelection);
+            this._onChangeCallback(args.newValue);
+        } else if (this.isRemote) {
+            this.registerRemoteEntries(diffInSets(selection, currentSelection), false);
         }
     }
 
     protected createDisplayText(newSelection: any[], oldSelection: any[]) {
+        const selection = this.valueKey ? newSelection.map(item => item[this.valueKey]) : newSelection;
         return this.isRemote
-            ? this.getRemoteSelection(newSelection, oldSelection)
+            ? this.getRemoteSelection(selection, oldSelection)
             : this.concatDisplayText(newSelection);
+    }
+
+    protected getSearchPlaceholderText(): string {
+        return this.searchPlaceholder ||
+            (this.disableFiltering ? this.resourceStrings.igx_combo_addCustomValues_placeholder : this.resourceStrings.igx_combo_filter_search_placeholder);
     }
 
     /** Returns a string that should be populated in the combo's text box */
     private concatDisplayText(selection: any[]): string {
         const value = this.displayKey !== null && this.displayKey !== undefined ?
-            this.convertKeysToItems(selection).map(entry => entry[this.displayKey]).join(', ') :
+            selection.map(entry => entry[this.displayKey]).join(', ') :
             selection.join(', ');
         return value;
     }
 }
-
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [
-        IgxComboAddItemComponent,
-        IgxComboAddItemDirective,
-        IgxComboClearIconDirective,
-        IgxComboComponent,
-        IgxComboDropDownComponent,
-        IgxComboEmptyDirective,
-        IgxComboFilteringPipe,
-        IgxComboFooterDirective,
-        IgxComboGroupingPipe,
-        IgxComboHeaderDirective,
-        IgxComboHeaderItemDirective,
-        IgxComboItemComponent,
-        IgxComboItemDirective,
-        IgxComboToggleIconDirective
-    ],
-    exports: [
-        IgxComboAddItemComponent,
-        IgxComboAddItemDirective,
-        IgxComboClearIconDirective,
-        IgxComboComponent,
-        IgxComboDropDownComponent,
-        IgxComboEmptyDirective,
-        IgxComboFilteringPipe,
-        IgxComboFooterDirective,
-        IgxComboGroupingPipe,
-        IgxComboHeaderDirective,
-        IgxComboHeaderItemDirective,
-        IgxComboItemComponent,
-        IgxComboItemDirective,
-        IgxComboToggleIconDirective,
-        IgxInputGroupModule
-    ],
-    imports: [
-        CommonModule,
-        FormsModule,
-        IgxButtonModule,
-        IgxCheckboxModule,
-        IgxDropDownModule,
-        IgxForOfModule,
-        IgxIconModule,
-        IgxInputGroupModule,
-        IgxRippleModule,
-        IgxToggleModule,
-        ReactiveFormsModule
-    ]
-})
-export class IgxComboModule { }

@@ -3,6 +3,8 @@ import { SampleTestData } from './sample-test-data.spec';
 import { IgxColumnComponent } from '../grids/columns/column.component';
 import { IgxGridComponent } from '../grids/grid/public_api';
 import { IgxColumnGroupComponent } from '../grids/columns/column-group.component';
+import { NgFor, NgIf } from '@angular/common';
+import { IgxCellHeaderTemplateDirective } from '../grids/columns/templates.directive';
 
 @Component({
     template: `
@@ -13,7 +15,8 @@ import { IgxColumnGroupComponent } from '../grids/columns/column-group.component
             </igx-column-group>
         </igx-grid>
     </div>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class OneGroupOneColGridComponent {
     @ViewChild('grid', { static: true })
@@ -35,7 +38,8 @@ export class OneGroupOneColGridComponent {
             </igx-column-group>
         </igx-grid>
     </div>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class OneGroupThreeColsGridComponent {
     @ViewChild('grid', { static: true }) public grid: IgxGridComponent;
@@ -47,7 +51,7 @@ export class OneGroupThreeColsGridComponent {
 
 @Component({
     template: `
-    <igx-grid #grid [data]="data" height="500px">
+    <igx-grid #grid [data]="data" height="500px" [hideGroupedColumns]="hideGroupedColumns">
         <igx-column field="ID"></igx-column>
         <igx-column-group header="General Information">
             <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="CompanyName"></igx-column>
@@ -72,7 +76,8 @@ export class OneGroupThreeColsGridComponent {
         <igx-column-group #emptyColGroup header="Empty Header">
         </igx-column-group>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class ColumnGroupTestComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -82,6 +87,8 @@ export class ColumnGroupTestComponent {
     public emptyColGroup: IgxColumnGroupComponent;
 
     public data = SampleTestData.contactInfoDataFull();
+
+    public hideGroupedColumns = false;
 }
 
 @Component({
@@ -113,7 +120,8 @@ export class ColumnGroupTestComponent {
             </igx-column-group>
         </igx-column-group>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class ColumnGroupFourLevelTestComponent implements OnInit {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -174,38 +182,6 @@ export class ColumnGroupFourLevelTestComponent implements OnInit {
     }
 }
 
-
-@Component({
-    template: `
-    <igx-grid #grid [data]="data" height="600px" width="800px">
-        <igx-column field="ID"></igx-column>
-        <igx-column-group header="General Information">
-            <igx-column  field="CompanyName"></igx-column>
-            <igx-column-group header="Person Details">
-                <igx-column field="ContactName"></igx-column>
-                <igx-column field="ContactTitle"></igx-column>
-            </igx-column-group>
-        </igx-column-group>
-        <igx-column-group header="Address Information">
-            <igx-column field="Region"></igx-column>
-            <igx-column-group header="Location">
-                <igx-column field="Country"></igx-column>
-                <igx-column-group header="Location City">
-                    <igx-column field="City"></igx-column>
-                    <igx-column field="Address"></igx-column>
-                </igx-column-group>
-            </igx-column-group>
-        </igx-column-group>
-    </igx-grid>
-       `
-})
-export class ColumnGroupTwoGroupsTestComponent {
-    @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
-    public grid: IgxGridComponent;
-
-    public data = SampleTestData.contactInfoDataFull();
-}
-
 @Component({
     template: `
     <igx-grid #grid [data]="data" height="600px" width="1000px">
@@ -225,7 +201,8 @@ export class ColumnGroupTwoGroupsTestComponent {
             <igx-column #postalCodeCol field="PostalCode"></igx-column>
         </igx-column-group>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class ThreeGroupsThreeColumnsGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -276,7 +253,8 @@ export class ThreeGroupsThreeColumnsGridComponent {
         </igx-column-group>
         <igx-column #cityCol field="City"></igx-column>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class NestedColGroupsGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -310,7 +288,8 @@ export class NestedColGroupsGridComponent {
                     [filterable]="true"></igx-column>
             </igx-column-group>
         </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent, NgFor]
 })
 export class DynamicColGroupsGridComponent {
 
@@ -378,7 +357,8 @@ export class DynamicColGroupsGridComponent {
             <igx-column #faxCol field="Fax" header="Fax"></igx-column>
         </igx-column-group>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class StegosaurusGridComponent implements OnInit {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -462,6 +442,7 @@ export class StegosaurusGridComponent implements OnInit {
         <igx-grid #grid [data]="data" [height]="gridHeight" [columnWidth]="columnWidth">
             <igx-column-group headerGroupClasses="firstGroup" [header]="firstGroupTitle">
                 <igx-column headerClasses="firstGroupColumn" field="ID" *ngFor="let item of hunderdItems;"></igx-column>
+                <igx-column *ngIf="extraMissingColumn" headerClasses="firstGroupColumn" [field]='"Missing"'></igx-column>
             </igx-column-group>
             <igx-column-group headerGroupClasses="secondGroup" [header]="secondGroupTitle">
                 <igx-column-group headerGroupClasses="secondSubGroup" [header]="secondSubGroupTitle">
@@ -493,7 +474,8 @@ export class StegosaurusGridComponent implements OnInit {
                 </igx-column-group>
             </igx-column-group>
         </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent, NgIf, NgFor]
 })
 export class BlueWhaleGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -502,9 +484,16 @@ export class BlueWhaleGridComponent {
     public gridHeight = '500px';
     public columnWidth = '100px';
     public data = SampleTestData.contactInfoDataFull();
+    public extraMissingColumn = false;
+    public firstGroupRepeats = 100;
+    public secondGroupRepeats = 50;
 
-    public hunderdItems = new Array(100);
-    public fiftyItems = new Array(50);
+    public get hunderdItems() {
+        return new Array(this.firstGroupRepeats);
+    }
+    public get fiftyItems() {
+        return new Array(this.secondGroupRepeats);
+    }
 
     public firstGroupTitle = '100 IDs';
     public secondGroupTitle = '2 col groups with 50 IDs each';
@@ -527,7 +516,8 @@ export class BlueWhaleGridComponent {
                 <igx-column headerClasses="faxCol" field="Fax" [header]="faxColTitle" [width]="faxColWidth"></igx-column>
             </igx-column-group>
         </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class OneColPerGroupGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -566,7 +556,8 @@ export class OneColPerGroupGridComponent {
                 </igx-column-group>
             </igx-column-group>
         </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
 })
 export class NestedColumnGroupsGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -596,7 +587,8 @@ export class NestedColumnGroupsGridComponent {
                 <igx-column field="City"></igx-column>
             </igx-column-group>
         </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent, NgFor]
 })
 export class DynamicGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -626,7 +618,8 @@ export class DynamicGridComponent {
         </igx-column-group>
         <igx-column #cityCol field="City"></igx-column>
     </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent, IgxCellHeaderTemplateDirective]
 })
 export class NestedColGroupsWithTemplatesGridComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -654,3 +647,35 @@ export class NestedColGroupsWithTemplatesGridComponent {
 
     public data = SampleTestData.contactInfoDataFull();
 }
+
+@Component({
+    template: `
+    <igx-grid #grid [data]="data" height="500px" >
+        <igx-column field="ID"></igx-column>
+        <igx-column-group header="General Information" [hidden]="true">
+            <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="CompanyName"></igx-column>
+            <igx-column-group header="Person Details">
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="ContactName"></igx-column>
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="ContactTitle"></igx-column>
+            </igx-column-group>
+        </igx-column-group>
+        <igx-column-group header="Address Information">
+            <igx-column-group header="Location" [hidden]="true">
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="Country"></igx-column>
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="Region"></igx-column>
+            </igx-column-group>
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="City"></igx-column>
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="Address"></igx-column>
+            <igx-column-group header="Contact Information">
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="Phone"></igx-column>
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="Fax"></igx-column>
+                <igx-column [filterable]="true" [sortable]="true" [resizable]="true" field="PostalCode"></igx-column>
+            </igx-column-group>
+        </igx-column-group>
+        <igx-column-group #emptyColGroup header="Empty Header">
+        </igx-column-group>
+    </igx-grid>
+    `,
+    imports: [IgxGridComponent, IgxColumnGroupComponent, IgxColumnComponent]
+})
+export class ColumnGroupHiddenInTemplateComponent extends ColumnGroupTestComponent { }

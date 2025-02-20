@@ -1,0 +1,24 @@
+.resultsText {
+    font-size: 0.875rem;
+}
+
+.chips {
+    margin-left: 5px;
+    & igx-chip {
+        --ig-size: var(--ig-size-small);
+    }
+}
+
+.searchButtons {    
+    display: flex;
+    margin-left: 5px;
+}
+
+.searchButtons > igx-icon {
+    user-select: none;
+    position: relative;
+}  
+
+.search-box {
+ --ig-size: var(--ig-size-small);
+}

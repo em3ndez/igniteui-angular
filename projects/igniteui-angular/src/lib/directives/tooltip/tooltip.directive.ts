@@ -17,28 +17,29 @@ let NEXT_ID = 0;
  *
  * Example:
  * ```html
- * <button [igxTooltipTarget]="tooltipRef">Hover me</button>
+ * <button type="button" igxButton [igxTooltipTarget]="tooltipRef">Hover me</button>
  * <span #tooltipRef="tooltip" igxTooltip>Hello there, I am a tooltip!</span>
  * ```
  */
 @Directive({
     exportAs: 'tooltip',
-    selector: '[igxTooltip]'
+    selector: '[igxTooltip]',
+    standalone: true
 })
 export class IgxTooltipDirective extends IgxToggleDirective {
     /**
      * @hidden
      */
     @HostBinding('class.igx-tooltip--hidden')
-    public get hiddenClass() {
+    public override get hiddenClass() {
         return this.collapsed;
     }
 
     /**
      * @hidden
      */
-    @HostBinding('class.igx-tooltip--desktop')
-    public get defaultClass() {
+    @HostBinding('class.igx-tooltip')
+    public override get defaultClass() {
         return !this.collapsed;
     }
 
@@ -57,7 +58,7 @@ export class IgxTooltipDirective extends IgxToggleDirective {
      * this.tooltip.context = "Tooltip's context";
      * ```
      */
-    @Input('context')
+    @Input()
     public context;
 
     /**
@@ -70,7 +71,7 @@ export class IgxTooltipDirective extends IgxToggleDirective {
      */
     @HostBinding('attr.id')
     @Input()
-    public id = `igx-tooltip-${NEXT_ID++}`;
+    public override id = `igx-tooltip-${NEXT_ID++}`;
 
     /**
      * Get the role attribute of the tooltip.

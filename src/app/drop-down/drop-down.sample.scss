@@ -8,8 +8,20 @@
     }
 }
 
+.sample-wrapper {
+    display: grid;
+    gap: 1rem;
+    justify-items: center;
+}
+
+igc-dropdown::part(base) {
+    height: 400px;
+    width: 180px;
+    overflow: auto;
+}
+
 // Import the IgniteUI themes library first
-@import '../../../projects/igniteui-angular/src/lib/core/styles/themes/index';
+// @import '../../../projects/igniteui-angular/src/lib/core/styles/themes/index';
 
 //:host {
 //    // Change theme palette to purple.

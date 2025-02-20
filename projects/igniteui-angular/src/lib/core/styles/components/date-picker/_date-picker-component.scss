@@ -1,14 +1,8 @@
 @use '../../base' as *;
 @use 'sass:string';
 
-//// Date Picker
-/// @group components
+/// @access private
 /// @author <a href="https://github.com/simeonoff" target="_blank">Simeon Simeonoff</a>
-/// @requires {mixin} bem-block
-/// @requires {mixin} bem-elem
-/// @requires {mixin} bem-mod
-////
-
 @mixin component {
     @include b(igx-date-picker) {
         $this: bem--selector-to-string(&);
@@ -20,6 +14,10 @@
         );
 
         @extend %date-picker !optional;
+
+        @include e(actions) {
+            @extend %date-picker__actions !optional;
+        }
 
         @include e(buttons) {
             @extend %date-picker__buttons !optional;

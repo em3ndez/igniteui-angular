@@ -1,8 +1,11 @@
 import { Component, DebugElement, TemplateRef, ViewChild } from '@angular/core';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick, waitForAsync, ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { getLocaleCurrencySymbol, NgFor, registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+import localeJa from '@angular/common/locales/ja';
+
 import { IgxGridComponent } from './grid.component';
-import { IgxGridModule } from './public_api';
 import { GridTemplateStrings, ColumnDefinitions } from '../../test-utils/template-strings.spec';
 import { SampleTestData } from '../../test-utils/sample-test-data.spec';
 import {
@@ -18,33 +21,43 @@ import { configureTestSuite } from '../../test-utils/configure-suite';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { IgxStringFilteringOperand } from '../../data-operations/filtering-condition';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
-import { getLocaleCurrencySymbol } from '@angular/common';
 import { GridFunctions, GridSummaryFunctions } from '../../test-utils/grid-functions.spec';
 import { IgxDateTimeEditorDirective } from '../../directives/date-time-editor/date-time-editor.directive';
 import { SortingDirection } from '../../data-operations/sorting-strategy';
+import { GridColumnDataType } from '../../data-operations/data-util';
+import { IgxColumnComponent } from '../public_api';
+import { IgxButtonDirective } from '../../directives/button/button.directive';
+import { IgxCellFooterTemplateDirective, IgxCellHeaderTemplateDirective, IgxCellTemplateDirective, IgxSummaryTemplateDirective } from '../columns/templates.directive';
+import { IgxInputDirective } from '../../input-group/public_api';
+import { IgxGridRowComponent } from './grid-row.component';
 
 describe('IgxGrid - Column properties #grid', () => {
+
+    registerLocaleData(localeFr);
+    registerLocaleData(localeJa);
 
     const COLUMN_HEADER_CLASS = '.igx-grid-th';
     const COLUMN_HEADER_GROUP_CLASS = '.igx-grid-thead__item';
 
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                ColumnsFromIterableComponent,
-                TemplatedColumnsComponent,
-                TemplatedInputColumnsComponent,
-                TemplatedContextInputColumnsComponent,
+        return TestBed.configureTestingModule({
+            imports: [
                 ColumnCellFormatterComponent,
-                ColumnHaederClassesComponent,
                 ColumnHiddenFromMarkupComponent,
                 DynamicColumnsComponent,
                 GridAddColumnComponent,
                 IgxGridCurrencyColumnComponent,
                 IgxGridPercentColumnComponent,
-                IgxGridDateTimeColumnComponent
-            ],
-            imports: [IgxGridModule, NoopAnimationsModule]
+                IgxGridDateTimeColumnComponent,
+                NoopAnimationsModule,
+                ColumnsFromIterableComponent,
+                TemplatedColumnsComponent,
+                TemplatedInputColumnsComponent,
+                TemplatedContextInputColumnsComponent,
+                ColumnHaederClassesComponent,
+                ResizableColumnsComponent,
+                DOMAttributesAsSettersComponent
+            ]
         });
     }));
 
@@ -160,31 +173,32 @@ describe('IgxGrid - Column properties #grid', () => {
         }
     });
 
-    it('should reflect the column in the DOM based on its index', () => {
+    it('should reflect the column in the DOM based on its index', fakeAsync(() => {
         const fix = TestBed.createComponent(ColumnCellFormatterComponent);
         fix.detectChanges();
 
         const grid = fix.componentInstance.grid;
         let headers: DebugElement[];
 
-        expect(grid.columnList.first.field).toMatch('ID');
-        expect(grid.columnList.last.field).toMatch('Name');
+        expect(grid.columns[0].field).toMatch('ID');
+        expect(grid.columns[2].field).toMatch('Name');
 
         headers = fix.debugElement.queryAll(By.css(COLUMN_HEADER_CLASS));
         expect(headers[0].nativeElement.textContent).toMatch('ID');
         expect(headers[2].nativeElement.textContent).toMatch('Name');
 
         // Swap columns
-        grid.moveColumn(grid.columnList.first, grid.columnList.last);
+        grid.moveColumn(grid.columns[0], grid.columns[2]);
+        tick();
         fix.detectChanges();
 
-        expect(grid.columnList.first.field).toMatch('IsEmployed');
-        expect(grid.columnList.last.field).toMatch('ID');
+        expect(grid.columns[0].field).toMatch('IsEmployed');
+        expect(grid.columns[2].field).toMatch('ID');
 
         headers = fix.debugElement.queryAll(By.css(COLUMN_HEADER_CLASS));
         expect(headers[0].nativeElement.textContent).toMatch('IsEmployed');
         expect(headers[1].nativeElement.textContent).toMatch('Name');
-    });
+    }));
 
     it('should support adding and removing columns through a declared iterable', fakeAsync(/** columnList.changes rAF */() => {
         const fix = TestBed.createComponent(ColumnsFromIterableComponent);
@@ -228,7 +242,7 @@ describe('IgxGrid - Column properties #grid', () => {
         cityCol = grid.getColumnByName('City');
         expect(cityCol).not.toBeDefined();
 
-         // add to pinned area
+        // add to pinned area
         fix.componentInstance.columns.push({ field: 'City', width: 150, type: 'string', pinned: true });
         fix.detectChanges();
 
@@ -831,12 +845,18 @@ describe('IgxGrid - Column properties #grid', () => {
 
     });
 
-    describe('DateTime and Time column tests', () => {
-        it('should display correctly the data when column dataType is dateTime #ivy', () => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
+    describe('Date, DateTime and Time column tests', () => {
+        let grid: IgxGridComponent;
+        let fix: ComponentFixture<IgxGridDateTimeColumnComponent>;
+
+        beforeEach(() => {
+            fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
             fix.detectChanges();
 
-            const grid = fix.componentInstance.grid;
+            grid = fix.componentInstance.grid;
+        });
+
+        it('should display correctly the data when column dataType is dateTime #ivy', () => {
             let orderDateColumn = grid.getColumnByName('OrderDate');
 
             expect(orderDateColumn._cells[0].nativeElement.innerText).toEqual('Oct 1, 2015, 11:37:22 AM');
@@ -859,10 +879,6 @@ describe('IgxGrid - Column properties #grid', () => {
         });
 
         it('should display correctly the data when column dataType is time #ivy', () => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             let receiveTime = grid.getColumnByName('ReceiveTime');
 
             expect(receiveTime._cells[0].nativeElement.innerText).toEqual('8:37:11 AM');
@@ -883,31 +899,35 @@ describe('IgxGrid - Column properties #grid', () => {
         });
 
         it('DateTime: should preview the dateTime value correctly when cell is in edit mode correctly', fakeAsync(() => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             const orderColumn = grid.getColumnByName('OrderDate');
             orderColumn.editable = true;
             fix.detectChanges();
 
             const firstCell = orderColumn._cells[0];
-
             expect(firstCell.nativeElement.innerText).toEqual('Oct 1, 2015, 11:37:22 AM');
 
             firstCell.setEditMode(true);
             fix.detectChanges();
             tick();
 
-            const input = firstCell.nativeElement.querySelector('.igx-input-group__input');
+            const firstRow = fix.debugElement.query(By.directive(IgxGridRowComponent));
+            const dateTimeEditor = firstRow.query(By.directive(IgxDateTimeEditorDirective))
+                .injector.get(IgxDateTimeEditorDirective);
             const prefix = firstCell.nativeElement.querySelector('igx-prefix');
             const suffix = firstCell.nativeElement.querySelector('igx-suffix');
-            expect((input as any).value).toEqual('01/10/2015 11:37:22 AM');
+            const input = dateTimeEditor.nativeElement;
+
+            // input is not focused yet, so the value is as the display format sets it
+            expect(input.value).toEqual('Oct 1, 2015, 11:37:22 AM');
+
+            expect(dateTimeEditor.inputFormat.normalize('NFKC')).toBe('MM/dd/yyyy, hh:mm:ss tt');
+            dateTimeEditor.onFocus();
+            fix.detectChanges();
+
+            expect(dateTimeEditor.nativeElement.value.normalize('NFKC')).toEqual('10/01/2015, 11:37:22 AM');
             expect(prefix).toBeNull();
             expect(suffix).toBeNull();
 
-            const inputElement = fix.debugElement.query(By.css('input'));
-            const dateTimeEditor = inputElement.injector.get(IgxDateTimeEditorDirective);
             dateTimeEditor.value = new Date(2021, 11, 3, 15, 15, 22);
             fix.detectChanges();
 
@@ -918,10 +938,6 @@ describe('IgxGrid - Column properties #grid', () => {
         }));
 
         it('Time: should preview the time value correctly when cell is in edit mode correctly', fakeAsync(() => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             const timeColumn = grid.getColumnByName('ReceiveTime');
             timeColumn.editable = true;
             fix.detectChanges();
@@ -937,7 +953,7 @@ describe('IgxGrid - Column properties #grid', () => {
             const input = cell.nativeElement.querySelector('.igx-input-group__input');
             const prefix = cell.nativeElement.querySelector('igx-prefix');
             const suffix = cell.nativeElement.querySelector('igx-suffix');
-            expect((input as any).value).toEqual('12:12:02 PM');
+            expect((input as any).value.normalize('NFKD')).toEqual('12:12:02 PM');
             expect(prefix).not.toBeNull();
             expect(suffix).not.toBeNull();
 
@@ -953,10 +969,6 @@ describe('IgxGrid - Column properties #grid', () => {
         }));
 
         it('should display summaries correctly for dateTime and time column', () => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             const column = grid.getColumnByName('OrderDate');
             const receiveTimeColumn = grid.getColumnByName('ReceiveTime');
             column.hasSummary = true;
@@ -982,11 +994,6 @@ describe('IgxGrid - Column properties #grid', () => {
         });
 
         it('DateTime: filtering UI list should be populated with correct values based on the pipeArgs', fakeAsync(() => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            tick();
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             const orderDateColumn = grid.getColumnByName('OrderDate');
             grid.allowFiltering = true;
             grid.filterMode = 'excelStyleFilter';
@@ -1024,11 +1031,6 @@ describe('IgxGrid - Column properties #grid', () => {
         }));
 
         it('Time: filtering UI list should be populated with correct values based on the pipeArgs', fakeAsync(() => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            tick();
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             const timeColumn = grid.getColumnByName('ReceiveTime');
             grid.allowFiltering = true;
             fix.detectChanges();
@@ -1065,11 +1067,6 @@ describe('IgxGrid - Column properties #grid', () => {
         }));
 
         it('DateTime: dateTime input should be disabled when try to filter based on unary conditions - today or etc. #ivy', fakeAsync(() => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            tick();
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
             const orderDateColumn = grid.getColumnByName('OrderDate');
             grid.allowFiltering = true;
             grid.filterMode = 'excelStyleFilter';
@@ -1089,12 +1086,227 @@ describe('IgxGrid - Column properties #grid', () => {
             expect(inputElement).not.toBeNull();
         }));
 
-        it('Sorting dateTime column', () => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
+        it('Date/Time/DateTime: Set editorOptions.dateTimeFormat as inputFormat for default cell editor', fakeAsync(() => {
+            const producedDateColumn = grid.getColumnByName('ProducedDate');
+            const orderDateColumn = grid.getColumnByName('OrderDate');
+            const receiveTimeColumn = grid.getColumnByName('ReceiveTime');
+
+            producedDateColumn.editorOptions = { dateTimeFormat: 'yyyy-MM-dd' };
+            orderDateColumn.editorOptions = { dateTimeFormat: 'yyyy--MM--dd' };
+            receiveTimeColumn.editorOptions = { dateTimeFormat: 'h-mm-ss aaaaa' };
             fix.detectChanges();
 
-            const grid = fix.componentInstance.grid;
+            producedDateColumn._cells[0].setEditMode(true)
+            fix.detectChanges();
+            tick();
 
+            let inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            let dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect((dateTimeEditor.nativeElement as any).value).toEqual('2014-10-01');
+
+            orderDateColumn._cells[0].setEditMode(true)
+            fix.detectChanges();
+            tick();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect((dateTimeEditor.nativeElement as any).value).toEqual('2015--10--01');
+
+            receiveTimeColumn._cells[0].setEditMode(true)
+            fix.detectChanges();
+            tick();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect(dateTimeEditor.nativeElement.value).toEqual('08-37-11 a');
+        }));
+
+        it('DateTime: Use pipeArgs.format as inputFormat for cell editor if numeric and editorOptions.dateTimeFormat is unset', fakeAsync(() => {
+            const orderDateColumn = grid.getColumnByName('OrderDate');
+            const firstCell = orderDateColumn._cells[0];
+            expect(firstCell.nativeElement.innerText).toEqual('Oct 1, 2015, 11:37:22 AM');
+
+            orderDateColumn.pipeArgs = { format: 'dd-MM-yyyy hh:mm aa' };
+            fix.detectChanges();
+
+            expect(firstCell.nativeElement.innerText).toEqual('01-10-2015 11:37 AM');
+
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+
+            let inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            let dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect((dateTimeEditor.nativeElement as any).value).toEqual('01-10-2015 11:37 AM');
+
+            orderDateColumn.pipeArgs = { format: 'MMM d, y, h:mm:ss a' };
+            firstCell.setEditMode(false);
+            fix.detectChanges();
+
+            expect(firstCell.nativeElement.innerText).toEqual('Oct 1, 2015, 11:37:22 AM');
+
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            // resolve back to the default format for the locale since the pipeArgs.format is not numeric
+            expect(dateTimeEditor.nativeElement.value.normalize('NFKC')).toEqual('10/01/2015, 11:37:22 AM');
+        }));
+
+        it('Date: Use pipeArgs.format as inputFormat for cell editor if numeric and editorOptions.dateTimeFormat is unset', fakeAsync(() => {
+            const producedDateColumn = grid.getColumnByName('ProducedDate');
+            const firstCell = producedDateColumn._cells[0];
+            expect(firstCell.nativeElement.innerText).toEqual('Oct 1, 2014');
+
+            producedDateColumn.pipeArgs = { format: 'dd-MM-yyyy' };
+            fix.detectChanges();
+
+            expect(firstCell.nativeElement.innerText).toEqual('01-10-2014');
+
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+            tick();
+
+            let inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            let dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect((dateTimeEditor.nativeElement as any).value).toEqual('01-10-2014');
+
+            producedDateColumn.pipeArgs = { format: 'MMM d, y' };
+            firstCell.setEditMode(false);
+            fix.detectChanges();
+
+            expect(firstCell.nativeElement.innerText).toEqual('Oct 1, 2014');
+
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+            tick();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            // resolve back to the default format for the locale since the pipeArgs.format is not numeric
+            expect(dateTimeEditor.nativeElement.value).toEqual('10/01/2014');
+        }));
+
+        it('Time: Use pipeArgs.format as inputFormat for cell editor if numeric and editorOptions.dateTimeFormat is unset', fakeAsync(() => {
+            const receivedTimeColumn = grid.getColumnByName('ReceiveTime');
+            const firstCell = receivedTimeColumn._cells[0];
+            expect(firstCell.nativeElement.innerText).toEqual('8:37:11 AM');
+
+            receivedTimeColumn.pipeArgs = { format: 'h-mm-ss aaaaa' };
+            fix.detectChanges();
+
+            expect(firstCell.nativeElement.innerText).toEqual('8-37-11 a');
+
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+            tick();
+
+            let inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            let dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect((dateTimeEditor.nativeElement as any).value.normalize('NFKC')).toEqual('08-37-11 a');
+
+            receivedTimeColumn.pipeArgs = { format: 'longTime' };
+            firstCell.setEditMode(false);
+            fix.detectChanges();
+
+            expect(firstCell.nativeElement.innerText).toContain('8:37:11 AM GMT+');
+
+            firstCell.setEditMode(true);
+            fix.detectChanges();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            // resolve back to the default time format since the pipeArgs.format is not numeric
+            expect((dateTimeEditor.nativeElement as any).value.normalize('NFKC')).toEqual('08:37 AM');
+        }));
+
+        it('Date/Time/DateTime: Use default locale format as inputFormat when editorOptions/pipeArgs formats are null/empty ', fakeAsync(() => {
+            const producedDateColumn = grid.getColumnByName('ProducedDate');
+            const orderDateColumn = grid.getColumnByName('OrderDate');
+            const receiveTimeColumn = grid.getColumnByName('ReceiveTime');
+
+
+            producedDateColumn.editorOptions = null;
+            orderDateColumn.editorOptions.dateTimeFormat = '';
+            receiveTimeColumn.pipeArgs = {
+                format: undefined
+            };
+            fix.detectChanges();
+
+            producedDateColumn._cells[0].setEditMode(true)
+            fix.detectChanges();
+
+            let inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            let dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect(dateTimeEditor.nativeElement.value).toEqual('10/01/2014');
+
+            orderDateColumn._cells[0].setEditMode(true)
+            fix.detectChanges();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect(dateTimeEditor.nativeElement.value.normalize('NFKC')).toEqual('10/01/2015, 11:37:22 AM');
+
+            receiveTimeColumn._cells[0].setEditMode(true)
+            fix.detectChanges();
+
+            inputDebugElement = fix.debugElement.query(By.directive(IgxInputDirective));
+            dateTimeEditor = inputDebugElement.injector.get(IgxDateTimeEditorDirective);
+            dateTimeEditor.nativeElement.focus();
+            tick(16);
+            fix.detectChanges();
+
+            expect(dateTimeEditor.nativeElement.value.normalize('NFKC')).toEqual('08:37 AM');
+        }));
+
+        it('Sorting dateTime column', () => {
             const currColumn = 'OrderDate';
             grid.sort({ fieldName: currColumn, dir: SortingDirection.Asc, ignoreCase: false });
             fix.detectChanges();
@@ -1119,11 +1331,6 @@ describe('IgxGrid - Column properties #grid', () => {
         });
 
         it('Sorting time column', () => {
-            const fix = TestBed.createComponent(IgxGridDateTimeColumnComponent);
-            fix.detectChanges();
-
-            const grid = fix.componentInstance.grid;
-
             const currentColumn = 'ReceiveTime';
             grid.sort({ fieldName: currentColumn, dir: SortingDirection.Asc, ignoreCase: false });
             fix.detectChanges();
@@ -1147,10 +1354,315 @@ describe('IgxGrid - Column properties #grid', () => {
 
     });
 
+    describe('Data type image column tests', () => {
+        let fix: ComponentFixture<IgxGridComponent>;
+        let grid: IgxGridComponent;
+        const dataWithImages = [{
+            avatar: 'assets/images/avatar/1.jpg',
+            phone: '770-504-2217',
+            text: 'Terrance Orta',
+            available: false
+        }, {
+            avatar: 'assets/images/avatar/2.jpg',
+            phone: '423-676-2869',
+            text: 'Richard Mahoney',
+            available: true
+        }, {
+            avatar: 'assets/images/avatar/3.jpg',
+            phone: '859-496-2817',
+            text: 'Donna Price',
+            available: true
+        }, {
+            avatar: 'assets/images/avatar/4.jpg',
+            phone: '901-747-3428',
+            text: 'Lisa Landers',
+            available: true
+        }, {
+            avatar: 'assets/images/avatar/12.jpg',
+            phone: '573-394-9254',
+            text: 'Dorothy H. Spencer',
+            available: true
+        }, {
+            avatar: 'assets/images/avatar/13.jpg',
+            phone: '323-668-1482',
+            text: 'Stephanie May',
+            available: false
+        }, {
+            avatar: 'assets/images/avatar/14.jpg',
+            phone: '401-661-3742',
+            text: 'Marianne Taylor',
+            available: true
+        }];
+
+        beforeEach(waitForAsync(() => {
+            fix = TestBed.createComponent(IgxGridComponent);
+            grid = fix.componentInstance;
+            // For test fixture destroy
+            grid.id = "root1";
+            grid.data = dataWithImages;
+            grid.autoGenerate = true;
+            fix.detectChanges();
+        }));
+
+        it('should initialize correctly with autoGenerate and image data', () => {
+            const column = grid.getColumnByName('avatar');
+            expect(column.dataType).toBe(GridColumnDataType.Image);
+            expect(column.sortable).toBeFalse();
+            expect(column.groupable).toBeFalse();
+            expect(column.filterable).toBeFalse();
+            expect(column.editable).toBeFalse();
+            expect(column.hasSummary).toBeFalse();
+
+            const cell = column._cells[0];
+            expect(cell.nativeElement.firstElementChild.tagName).toBe('IMG');
+            expect(cell.nativeElement.firstElementChild.getAttribute('src')).toBe('assets/images/avatar/1.jpg');
+            expect(cell.nativeElement.firstElementChild.getAttribute('alt')).toBe('1');
+        });
+
+    });
+
+    describe('Auto-sizing with width auto: ', () => {
+        it('should auto-size column in view on init.', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.detectChanges();
+            tick();
+            const grid = fix.componentInstance.instance;
+            expect(grid.columns[0].width).toBe('95px');
+            expect(grid.columns[1].width).toBe('207px');
+        }));
+
+        it('should auto-size within minWidth/maxWidth bounds', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.componentInstance.columns = [
+                { field: 'ID', width: 'auto', minWidth: '100px', maxWidth: '200px' },
+                { field: 'Address', minWidth: '100px', maxWidth: '200px', width: 'auto' }
+            ];
+            fix.detectChanges();
+            tick();
+            const grid = fix.componentInstance.instance;
+            expect(grid.columns[0].width).toBe('100px');
+            expect(grid.columns[1].width).toBe('200px');
+        }));
+
+        it('should auto-size column when scrolled into view.', (async () => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.componentInstance.columns = [
+                { field: 'ID', width: 'auto' },
+                { field: 'CompanyName', width: 'auto' },
+                { field: 'ContactName', width: 'auto' },
+                { field: 'ContactTitle', width: 'auto' },
+                { field: 'Address', width: 'auto' },
+                { field: 'City', width: 'auto' },
+                { field: 'Region', width: 'auto' },
+                { field: 'PostalCode', width: 'auto' },
+                { field: 'Phone', width: 'auto' },
+                { field: 'Fax', width: 'auto' }
+            ];
+            fix.detectChanges();
+            await wait();
+            const grid = fix.componentInstance.instance;
+            // initially no autoSize
+            expect(grid.columns.find(x => x.field === 'Fax').width).toBe('fit-content');
+            // scroll last column in view
+            grid.navigateTo(0, 9);
+            await wait(100);
+            fix.detectChanges();
+            await wait(100);
+            fix.detectChanges();
+            // check size after it comes in view
+            expect(grid.columns.find(x => x.field === 'Fax').width).toBe('130px');
+        }));
+
+        it('should auto-size correctly when cell has custom template', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            const grid = fix.componentInstance.instance;
+            fix.detectChanges();
+            const col = grid.columns[0];
+            col.bodyTemplate = fix.componentInstance.customTemplate;
+            fix.detectChanges();
+            tick();
+            expect(col.width).toBe('137px');
+        }));
+
+        it('should auto-size after an initially hidden column is shown.', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.componentInstance.columns = [
+                { field: 'ID', width: 'auto', hidden: true },
+                { field: 'Address', minWidth: '100px', maxWidth: '200px', width: 'auto' }
+            ];
+            fix.detectChanges();
+            tick();
+            const grid = fix.componentInstance.instance;
+            const col = grid.columns[0];
+            expect(col.width).toBe('fit-content');
+            col.hidden = false;
+            fix.detectChanges();
+            tick();
+            expect(col.width).toBe('95px');
+        }));
+
+        it('should auto-size initially pinned column.', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.componentInstance.columns = [
+                { field: 'ID', width: 'auto', pinned: true },
+                { field: 'Address', minWidth: '100px', maxWidth: '200px', width: 'auto' }
+            ];
+            fix.detectChanges();
+            tick();
+            const grid = fix.componentInstance.instance;
+            const pinnedCol = grid.pinnedColumns[0];
+            expect(pinnedCol.width).toBe('97px');
+        }));
+
+        it('should auto-size columns added in view after grid is resized', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.componentInstance.columns = [
+                { field: 'ID', width: 'auto' },
+                { field: 'CompanyName', width: 'auto' },
+                { field: 'ContactName', width: 'auto' },
+                { field: 'ContactTitle', width: 'auto' },
+                { field: 'Address', width: 'auto' },
+                { field: 'City', width: 'auto' },
+                { field: 'Region', width: 'auto' },
+                { field: 'PostalCode', width: 'auto' },
+                { field: 'Phone', width: 'auto' },
+                { field: 'Fax', width: 'auto' }
+            ];
+            fix.detectChanges();
+            tick();
+            const grid = fix.componentInstance.instance;
+            const lastCol = grid.columns[grid.columns.length - 1];
+            expect(lastCol.width).toBe('fit-content');
+            // resize grid so that all columns are in view
+            grid.width = '1500px';
+            fix.detectChanges();
+            tick();
+            fix.detectChanges();
+            const widths = grid.columns.map(x => x.width);
+            expect(widths).toEqual(['95px', '240px', '149px', '159px', '207px', '114px', '86px', '108px', '130px', '130px']);
+        }));
+
+        it('should auto-size on initial data loaded.', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.componentInstance.data = [];
+            fix.componentInstance.columns = [
+                { field: 'ID', width: 'auto' },
+                { field: 'CompanyName', width: 'auto' },
+                { field: 'ContactName', width: 'auto' },
+                { field: 'ContactTitle', width: 'auto' },
+                { field: 'Address', width: 'auto' },
+                { field: 'City', width: 'auto' },
+                { field: 'Region', width: 'auto' },
+                { field: 'PostalCode', width: 'auto' },
+                { field: 'Phone', width: 'auto' },
+                { field: 'Fax', width: 'auto' }
+            ];
+            const grid = fix.componentInstance.instance;
+            // resize grid so that all columns are in view
+            grid.width = '1500px';
+            fix.detectChanges();
+            tick();
+
+            let widths = grid.columns.map(x => x.width);
+            expect(widths).toEqual(['80px', '130px', '121px', '114px', '92px', '80px', '86px', '108px', '82px', '80px']);
+            fix.componentInstance.data = SampleTestData.contactInfoData();
+            fix.detectChanges();
+            tick();
+
+            widths = grid.columns.map(x => x.width);
+            expect(widths).toEqual(['95px', '240px', '149px', '159px', '207px', '114px', '86px', '108px', '130px', '130px']);
+        }));
+
+        it('should recalculate sizes via the recalculateAutoSizes API ', fakeAsync(() => {
+            const fix = TestBed.createComponent(ResizableColumnsComponent);
+            fix.detectChanges();
+            tick();
+            const grid = fix.componentInstance.instance;
+            expect(grid.columns[0].width).toBe('95px');
+            expect(grid.columns[1].width).toBe('207px');
+
+            grid.data = [
+                {
+                    ID: 'VeryVeryVeryLongID',
+                    Address: 'Avda. de la Constitución 2222 Obere Str. 57'
+                }
+            ];
+            fix.detectChanges();
+            // no width change on new data.
+            expect(grid.columns[0].width).toBe('95px');
+            expect(grid.columns[1].width).toBe('207px');
+
+
+            // use api to force recalculation
+            grid.recalculateAutoSizes();
+            fix.detectChanges();
+            tick();
+            expect(grid.columns[0].width).toBe('164px');
+            expect(grid.columns[1].width).toBe('279px');
+        }));
+    });
+
+
+    describe('DOM attributes as setters', () => {
+        it('successfully renders a grid with DOM attributes as setters', fakeAsync(() => {
+            const fixture = TestBed.createComponent(DOMAttributesAsSettersComponent);
+            fixture.detectChanges();
+            tick();
+
+            const grid = fixture.componentInstance.instance;
+            const column = grid.getColumnByName('id');
+
+            const gridAttributes = `
+                moving
+                hideRowSelectors
+                rowDraggable
+                rowEditable
+                allowFiltering
+                allowAdvancedFiltering
+                showSummaryOnCollapse
+                batchEditing
+                selectRowOnClick
+                groupsExpanded
+                hideGroupedColumns
+                showGroupArea
+            `.split('\n')
+                .map(attr => attr.trim())
+                .filter(attr => Boolean(attr));
+
+            const columnAttributes = `
+                sortable
+                groupable
+                editable
+                filterable
+                resizable
+                autosizeHeader
+                hasSummary
+                hidden
+                disableHiding
+                disablePinning
+                filteringIgnoreCase
+                sortingIgnoreCase
+                searchable
+                pinned
+                visibleWhenCollapsed
+            `.split('\n')
+                .map(attr => attr.trim())
+                .filter(attr => Boolean(attr));
+
+            for (const attr of gridAttributes) {
+                expect(grid[attr]).toBe(true, `Grid attribute: '${attr}' failed`);
+            }
+
+            for (const attr of columnAttributes) {
+                expect(column[attr]).toBe(true, `Column attribute: '${attr}' failed`);
+            }
+        }))
+    });
 });
 
 @Component({
-    template: GridTemplateStrings.declareGrid('', '', ColumnDefinitions.iterableComponent)
+    template: GridTemplateStrings.declareGrid('', '', ColumnDefinitions.iterableComponent),
+    imports: [IgxGridComponent, IgxColumnComponent, NgFor]
 })
 export class ColumnsFromIterableComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1158,6 +1670,38 @@ export class ColumnsFromIterableComponent {
 
     public data = SampleTestData.personIDNameData();
     public columns = ['ID', 'Name'];
+}
+
+interface IColumnConfig {
+    field: string,
+    width: string,
+    minWidth?: string;
+    maxWidth?: string;
+    hidden?: boolean;
+    pinned?: boolean;
+}
+
+@Component({
+    template: GridTemplateStrings.declareGrid(`height="800px" width="400px"`, ``, ColumnDefinitions.resizableColsComponent) +
+        `
+    <ng-template #customTemplate let-value>
+        <button type="button" igxButton="contained">{{value}}</button>
+    </ng-template>
+    `,
+    imports: [IgxGridComponent, IgxColumnComponent, NgFor, IgxButtonDirective]
+})
+export class ResizableColumnsComponent {
+    @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
+    public instance: IgxGridComponent;
+
+    @ViewChild('customTemplate', { read: TemplateRef, static: true })
+    public customTemplate: TemplateRef<any>;
+
+    public data = SampleTestData.contactInfoData();
+    public columns: IColumnConfig[] = [
+        { field: 'ID', width: 'auto' },
+        { field: 'Address', minWidth: '100px', maxWidth: '400px', width: 'auto' }
+    ];
 }
 
 @Component({
@@ -1169,10 +1713,11 @@ export class ColumnsFromIterableComponent {
         <ng-template #newCell>
             <span class="new-cell">New cell text</span>
         </ng-template>
-        
+
         <ng-template #newSummary>
             <span class="new-summary">New summary text</span>
-        </ng-template>`
+        </ng-template>`,
+    imports: [IgxGridComponent, IgxColumnComponent, IgxCellTemplateDirective, IgxCellHeaderTemplateDirective, IgxCellFooterTemplateDirective, IgxSummaryTemplateDirective]
 })
 export class TemplatedColumnsComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1214,7 +1759,8 @@ export class TemplatedColumnsComponent {
         <ng-template #summary igxSummary let-summaryResults>
             <span class="customSummaryTemplate">{{ summaryResults[0].label }}: {{ summaryResults[0].summaryResult }}</span>
         </ng-template>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnComponent, NgFor, IgxSummaryTemplateDirective]
 })
 export class TemplatedInputColumnsComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1239,7 +1785,8 @@ export class TemplatedInputColumnsComponent {
                 </ng-template>
             </igx-column>
         </igx-grid>
-    `
+    `,
+    imports: [IgxGridComponent, IgxColumnComponent, IgxCellTemplateDirective]
 })
 export class TemplatedContextInputColumnsComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1262,7 +1809,8 @@ export class TemplatedContextInputColumnsComponent {
             <igx-column field="Number7" dataType="number" width="100px"></igx-column>
         </igx-grid>
     `,
-    styles: [`.headerAlignSyle {text-align: right !important;}`]
+    styles: [`.headerAlignSyle {text-align: right !important;}`],
+    imports: [IgxGridComponent, IgxColumnComponent]
 })
 export class ColumnHaederClassesComponent {
     @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
@@ -1271,4 +1819,50 @@ export class ColumnHaederClassesComponent {
     public data = [
         { ProductId: 1, Number1: 11, Number2: 10, Number3: 5, Number4: 3, Number5: 4, Number6: 6, Number7: 7 }
     ];
+}
+
+@Component({
+    template: `
+        <igx-grid [data]="data" height="500px" width="400px"
+            moving
+            hideRowSelectors
+            rowDraggable
+            rowEditable
+            allowFiltering
+            allowAdvancedFiltering
+            showSummaryOnCollapse
+            batchEditing
+            selectRowOnClick
+            groupsExpanded
+            hideGroupedColumns
+            showGroupArea
+        >
+            <igx-column field="id"
+                sortable
+                groupable
+                editable
+                filterable
+                resizable
+                autosizeHeader
+                hasSummary
+                hidden
+                disableHiding
+                disablePinning
+                filteringIgnoreCase
+                sortingIgnoreCase
+                searchable
+                pinned
+                visibleWhenCollapsed
+            >
+            </igx-column>
+            <igx-column field="value"></igx-column>
+        </igx-grid>
+    `,
+    imports: [IgxGridComponent, IgxColumnComponent]
+})
+export class DOMAttributesAsSettersComponent {
+    @ViewChild(IgxGridComponent, { read: IgxGridComponent, static: true })
+    public instance: IgxGridComponent;
+
+    public data = [{ id: 1, value: 1 }];
 }

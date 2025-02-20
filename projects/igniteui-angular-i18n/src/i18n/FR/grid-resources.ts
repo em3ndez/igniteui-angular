@@ -1,13 +1,16 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsFR_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * French resource strings for IgxGrid
+ */
+export const GridResourceStringsFR = {
     igx_grid_groupByArea_message: 'Faites glisser un en-tête de colonne et déposez-le ici pour le regrouper par cette colonne.',
     igx_grid_emptyFilteredGrid_message: 'Aucun enregistrement trouvé.',
     igx_grid_emptyGrid_message: 'La grille n\'a pas de données.',
     igx_grid_filter: 'Filtre',
-    igx_grid_filter_row_close: 'Fermer',
-    igx_grid_filter_row_reset: 'Éteindre',
+    igx_grid_filter_row_close: 'Éteindre',
+    igx_grid_filter_row_reset: 'Réinitialiser',
     igx_grid_filter_row_placeholder: 'Ajouter une valeur de filtre',
     igx_grid_filter_row_boolean_placeholder: 'Tout',
     igx_grid_filter_row_date_placeholder: 'Choisir la date',
@@ -87,7 +90,8 @@ const GridResourceStringsFR_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Filtre booléen',
     igx_grid_excel_currency_filter: 'Filtre devise',
     igx_grid_excel_custom_filter: 'Filtre personnalisé...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Aucune correspondance',
+    igx_grid_excel_matches_count: '{0} correspondance(s)',
     igx_grid_advanced_filter_title: 'Filtrage avancé',
     igx_grid_advanced_filter_and_group: 'Groupe "Et"',
     igx_grid_advanced_filter_or_group: 'Groupe "Ou"',
@@ -110,6 +114,7 @@ const GridResourceStringsFR_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Détacher tout',
     igx_grid_row_edit_btn_done: 'Terminé',
     igx_grid_row_edit_btn_cancel: 'Annuler',
+    igx_grid_row_edit_text: 'Vous avez {0} modifications dans cette ligne et {1} colonnes masquées',
     igx_grid_toolbar_actions_filter_prompt: 'Filtre liste des colonnes ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Ouvrir le menu pour attacher les colonnes',
     igx_grid_toolbar_hiding_button_tooltip: 'Ouvrir le menu pour masquer les colonnes',
@@ -134,33 +139,35 @@ const GridResourceStringsFR_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Détacher',
     igx_grid_actions_jumpUp_label: 'Sauter au début',
     igx_grid_actions_jumpDown_label: 'Sauter à la fin',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
+    igx_grid_pivot_date_dimension_total: 'Toutes les périodes',
+    igx_grid_pivot_aggregate_count: 'Décompte',
     igx_grid_pivot_aggregate_min: 'Minimum',
     igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * French resource strings for IgxGrid
- */
-export const GridResourceStringsFR = GridResourceStringsFR_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_aggregate_sum: 'Total',
+    igx_grid_pivot_aggregate_avg: 'Moyenne',
+    igx_grid_pivot_aggregate_date_latest: 'Dernière date',
+    igx_grid_pivot_aggregate_date_earliest: 'Date la plus ancienne',
+    igx_grid_pivot_aggregate_time_latest: 'Dernière heure',
+    igx_grid_pivot_aggregate_time_earliest: 'Heure la plus ancienne',
+    igx_grid_pivot_empty_row_drop_area: 'Placer les champs de ligne ici.',
+    igx_grid_pivot_empty_column_drop_area: 'Placer les champs de colonne ici.',
+    igx_grid_pivot_empty_filter_drop_area: 'Placer les champs de filtre ici.',
+    igx_grid_pivot_empty_value_drop_area: 'Placer les champs de valeur ici.',
+    igx_grid_pivot_row_drop_chip: 'Placer ici pour utiliser comme ligne',
+    igx_grid_pivot_column_drop_chip: 'Placer ici pour utiliser comme colonne',
+    igx_grid_pivot_filter_drop_chip: 'Placer ici pour utiliser comme filtre',
+    igx_grid_pivot_value_drop_chip: 'Placer ici pour utiliser comme valeur',
+    igx_grid_pivot_selector_filters: 'Filtres',
+    igx_grid_pivot_selector_rows: 'Lignes',
+    igx_grid_pivot_selector_columns: 'Colonnes',
+    igx_grid_pivot_selector_values: 'Valeurs',
+    igx_grid_pivot_selector_panel_empty: 'Déplacer des éléments ici',
+    igx_grid_pivot_empty_message: 'La grille de pivot n\'a pas de dimensions ni de valeurs.',
+    igx_grid_required_validation_error: 'Ce champ est obligatoire',
+    igx_grid_min_validation_error: 'Veuillez entrer une valeur supérieure ou égale à {0}',
+    igx_grid_max_validation_error: 'Veuillez entrer une valeur inférieure ou égale à {0}',
+    igx_grid_min_length_validation_error: 'Veuillez entrer au moins {0} caractères',
+    igx_grid_max_length_validation_error: 'Veuillez sélectionner au maximum {0} caractères',
+    igx_grid_email_validation_error: 'Une adresse e-mail valide doit être saisie',
+    igx_grid_pattern_validation_error: 'La valeur entrée ne correspond pas au schéma requis'
+} satisfies MakeRequired<IGridResourceStrings>;

@@ -1,5 +1,6 @@
 import { ElementRef } from '@angular/core';
 import { DatePartDeltas } from '../directives/date-time-editor/public_api';
+
 /** @hidden */
 export const IGX_TIME_PICKER_COMPONENT = 'IgxTimePickerComponentToken';
 
@@ -11,7 +12,7 @@ export interface IgxTimePickerBase {
     secondsList: ElementRef;
     ampmList: ElementRef;
     inputFormat: string;
-    itemsDelta: Pick<DatePartDeltas, 'hours' | 'minutes' | 'seconds'>;
+    itemsDelta: Pick<DatePartDeltas, 'hours' | 'minutes' | 'seconds' | 'fractionalSeconds'>;
 	spinLoop: boolean;
     selectedDate: Date;
     maxDropdownValue: Date;
@@ -23,6 +24,8 @@ export interface IgxTimePickerBase {
     showAmPmList: boolean;
     minDateValue: Date;
     maxDateValue: Date;
+    /** @hidden @internal */
+    appliedFormat: string;
     nextHour(delta: number);
     nextMinute(delta: number);
     nextSeconds(delta: number);

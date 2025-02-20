@@ -14,7 +14,10 @@ interface GridStyleCSSProperty {
  * @hidden
  * @internal
  */
-@Pipe({ name: 'igxCellStyleClasses' })
+@Pipe({
+    name: 'igxCellStyleClasses',
+    standalone: true
+})
 export class IgxGridCellStyleClassesPipe implements PipeTransform {
 
     public transform(cssClasses: GridStyleCSSProperty, _: any, data: any, field: string, index: number, __: number): string {
@@ -42,7 +45,8 @@ export class IgxGridCellStyleClassesPipe implements PipeTransform {
  * @internal
  */
 @Pipe({
-    name: 'igxCellStyles'
+    name: 'igxCellStyles',
+    standalone: true
 })
 export class IgxGridCellStylesPipe implements PipeTransform {
 
@@ -62,12 +66,35 @@ export class IgxGridCellStylesPipe implements PipeTransform {
     }
 }
 
+/**
+ * @hidden
+ * @internal
+ */
+ @Pipe({
+    name: 'igxCellImageAlt',
+    standalone: true
+})
+export class IgxGridCellImageAltPipe implements PipeTransform {
+
+    public transform(value: string): string {
+        if (value) {
+            const val = value.split('/');
+            const imagename = val[val.length - 1].split('.');
+            return imagename.length ? imagename[0] : '';
+        }
+        return value;
+    }
+}
+
 
 /**
  * @hidden
  * @internal
  */
-@Pipe({ name: 'igxGridRowClasses' })
+@Pipe({
+    name: 'igxGridRowClasses',
+    standalone: true
+})
 export class IgxGridRowClassesPipe implements PipeTransform {
     public row: RowType;
 
@@ -86,9 +113,10 @@ export class IgxGridRowClassesPipe implements PipeTransform {
         index: number,
         mrl: boolean,
         filteredOut: boolean,
+        _rowData: any,
         _: number
     ) {
-        const result = new Set(['igx-grid__tr', index % 2 ? row.grid.evenRowCSS : row.grid.oddRowCSS]);
+        const result = new Set(['igx-grid__tr', index % 2 ? 'igx-grid__tr--even': 'igx-grid__tr--odd']);
         const mapping = [
             [selected, 'igx-grid__tr--selected'],
             [editMode, 'igx-grid__tr--edit'],
@@ -123,7 +151,10 @@ export class IgxGridRowClassesPipe implements PipeTransform {
  * @hidden
  * @internal
  */
-@Pipe({ name: 'igxGridRowStyles' })
+@Pipe({
+    name: 'igxGridRowStyles',
+    standalone: true
+})
 export class IgxGridRowStylesPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -135,7 +166,8 @@ export class IgxGridRowStylesPipe implements PipeTransform {
         }
         for (const prop of Object.keys(styles)) {
             const cb = styles[prop];
-            const row = new IgxGridRow((this.grid as any), index, rowData);
+            const data = this.grid.isTreeRow && this.grid.isTreeRow(rowData) ? rowData.data : rowData;
+            const row = new IgxGridRow((this.grid as any), index, data);
             css[prop] = typeof cb === 'function' ? cb(row) : cb;
         }
         return css;
@@ -147,7 +179,8 @@ export class IgxGridRowStylesPipe implements PipeTransform {
  * @internal
  */
 @Pipe({
-    name: 'igxNotGrouped'
+    name: 'igxNotGrouped',
+    standalone: true
 })
 export class IgxGridNotGroupedPipe implements PipeTransform {
 
@@ -161,7 +194,8 @@ export class IgxGridNotGroupedPipe implements PipeTransform {
  * @internal
  */
 @Pipe({
-    name: 'igxTopLevel'
+    name: 'igxTopLevel',
+    standalone: true
 })
 export class IgxGridTopLevelColumns implements PipeTransform {
 
@@ -176,7 +210,8 @@ export class IgxGridTopLevelColumns implements PipeTransform {
  */
 @Pipe({
     name: 'filterCondition',
-    pure: true
+    pure: true,
+    standalone: true
 })
 export class IgxGridFilterConditionPipe implements PipeTransform {
 
@@ -189,7 +224,10 @@ export class IgxGridFilterConditionPipe implements PipeTransform {
  * @hidden
  * @internal
  */
-@Pipe({ name: 'gridTransaction' })
+@Pipe({
+    name: 'gridTransaction',
+    standalone: true
+})
 export class IgxGridTransactionPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -212,7 +250,10 @@ export class IgxGridTransactionPipe implements PipeTransform {
  * @hidden
  * @internal
  */
-@Pipe({ name: 'paginatorOptions' })
+@Pipe({
+    name: 'paginatorOptions',
+    standalone: true
+})
 export class IgxGridPaginatorOptionsPipe implements PipeTransform {
     public transform(values: Array<number>) {
         return Array.from(new Set([...values])).sort((a, b) => a - b);
@@ -223,7 +264,10 @@ export class IgxGridPaginatorOptionsPipe implements PipeTransform {
  * @hidden
  * @internal
  */
-@Pipe({ name: 'visibleColumns' })
+@Pipe({
+    name: 'visibleColumns',
+    standalone: true
+})
 export class IgxHasVisibleColumnsPipe implements PipeTransform {
     public transform(values: any[], hasVisibleColumns) {
         if (!(values && values.length)) {
@@ -250,7 +294,10 @@ function buildDataView(): MethodDecorator {
 /**
  * @hidden
  */
-@Pipe({ name: 'gridRowPinning' })
+@Pipe({
+    name: 'gridRowPinning',
+    standalone: true
+})
 export class IgxGridRowPinningPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }
@@ -275,7 +322,10 @@ export class IgxGridRowPinningPipe implements PipeTransform {
     }
 }
 
-@Pipe({ name: 'dataMapper' })
+@Pipe({
+    name: 'dataMapper',
+    standalone: true
+})
 export class IgxGridDataMapperPipe implements PipeTransform {
 
     public transform(data: any[], field: string, _: number, val: any, isNestedPath: boolean) {
@@ -283,7 +333,10 @@ export class IgxGridDataMapperPipe implements PipeTransform {
     }
 }
 
-@Pipe({ name: 'igxStringReplace' })
+@Pipe({
+    name: 'igxStringReplace',
+    standalone: true
+})
 export class IgxStringReplacePipe implements PipeTransform {
 
     public transform(value: string, search: string | RegExp, replacement: string): string {
@@ -291,7 +344,10 @@ export class IgxStringReplacePipe implements PipeTransform {
     }
 }
 
-@Pipe({ name: 'transactionState' })
+@Pipe({
+    name: 'transactionState',
+    standalone: true
+})
 export class IgxGridTransactionStatePipe implements PipeTransform {
 
     public transform(row_id: any, field: string, rowEditable: boolean, transactions: any, _: any, __: any, ___: any) {
@@ -309,15 +365,21 @@ export class IgxGridTransactionStatePipe implements PipeTransform {
     }
 }
 
-@Pipe({ name: 'columnFormatter' })
+@Pipe({
+    name: 'columnFormatter',
+    standalone: true
+})
 export class IgxColumnFormatterPipe implements PipeTransform {
 
-    public transform(value: any, formatter: (v: any, data: any) => any, rowData: any) {
-        return formatter(value, rowData);
+    public transform(value: any, formatter: (v: any, data: any, columnData? :any) => any, rowData: any, columnData? : any) {
+        return formatter(value, rowData, columnData);
     }
 }
 
-@Pipe({ name: 'summaryFormatter' })
+@Pipe({
+    name: 'summaryFormatter',
+    standalone: true
+})
 export class IgxSummaryFormatterPipe implements PipeTransform {
 
     public transform(summaryResult: IgxSummaryResult, summaryOperand: IgxSummaryOperand,
@@ -326,7 +388,10 @@ export class IgxSummaryFormatterPipe implements PipeTransform {
     }
 }
 
-@Pipe({ name: 'gridAddRow' })
+@Pipe({
+    name: 'gridAddRow',
+    standalone: true
+})
 export class IgxGridAddRowPipe implements PipeTransform {
 
     constructor(@Inject(IGX_GRID_BASE) private grid: GridType) { }

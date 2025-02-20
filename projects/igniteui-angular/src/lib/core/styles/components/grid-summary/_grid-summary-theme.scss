@@ -1,7 +1,7 @@
-@use '../../base' as *;
-@use '../../themes/schemas' as *;
 @use 'sass:map';
 @use 'sass:meta';
+@use '../../base' as *;
+@use '../../themes/schemas' as *;
 
 ////
 /// @group themes
@@ -10,9 +10,7 @@
 /// @author <a href="https://github.com/desig9stein" target="_blank">Marin Popov</a>
 ////
 
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
-///
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} $background-color [null] - The summaries background color is inherited form igx-grid__tfoot
 /// @param {Color} $focus-background-color [null] - The background color when a summary item is on focus.
 /// @param {Color} $label-color [null] - The summaries label color.
@@ -22,23 +20,16 @@
 /// @param {Color} $pinned-border-style [null] - The border style of the summary panel.
 /// @param {Color} $pinned-border-color [null] - The border color of the summary panel.
 /// @param {Color} $label-hover-color [null] - The summaries hover label color.
-///
-/// @requires $default-palette
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-/// @requires text-contrast
-///
-/// @example scss Change the summaries background nad labels color
+/// @requires $light-material-schema
+/// @example scss Change the summaries background and labels color
 ///   $my-summary-theme: grid-summary-theme(
 ///     $background-color: black,
 ///     $label-color: white
 ///   );
-///   // Pass the theme to the grid-summary component mixin
-///   @include grid-summary($my-summary-theme);
+///   // Pass the theme to the css-vars mixin
+///   @include css-vars($my-summary-theme);
 @function grid-summary-theme(
-    $palette: null,
-    $schema: $light-schema,
+    $schema: $light-material-schema,
 
     $background-color: null,
     $focus-background-color: null,
@@ -54,13 +45,14 @@
     $selector: '.igx-grid-summary';
     $grid-summary-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $grid-summary-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'grid-summary') {
+        $grid-summary-schema: map.get($schema, 'grid-summary');
     } @else {
         $grid-summary-schema: $schema;
     }
 
-    $theme: apply-palette($grid-summary-schema, $palette);
+    $theme: digest-schema($grid-summary-schema);
+    $meta: map.get($theme, '_meta');
 
     @if not($result-color) and $background-color {
         $result-color: text-contrast($background-color);
@@ -81,7 +73,6 @@
     @return extend($theme, (
         name: $name,
         selector: $selector,
-        palette: $palette,
         background-color: $background-color,
         focus-background-color: $focus-background-color,
         label-color: $label-color,
@@ -90,36 +81,37 @@
         pinned-border-width: $pinned-border-width,
         pinned-border-style: $pinned-border-style,
         pinned-border-color: $pinned-border-color,
-        label-hover-color: $label-hover-color
+        label-hover-color: $label-hover-color,
+        theme: map.get($schema, '_meta', 'theme'),
+        _meta: map.merge(if($meta, $meta, ()), (
+            variant: map.get($schema, '_meta', 'theme')
+        )),
     ));
 }
 
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires {mixin} ellipsis
-/// @requires rem
-/// @requires var-get
 @mixin grid-summary($theme) {
     @include css-vars($theme);
 
-    $left: if-ltr(left, right);
-    $right: if-ltr(right, left);
+    $variant: map.get($theme, '_meta', 'variant');
 
     $cell-pin: (
         style: var-get($theme, 'pinned-border-width') var-get($theme, 'pinned-border-style'),
         color: var-get($theme, 'pinned-border-color')
     );
 
-    $item-padding: (
-        comfortable: rem(6px) 0,
-        cosy: rem(2px) 0,
+    $item-padding-block: (
+        comfortable: rem(6px),
+        cosy: rem(2px),
         compact: 0
     );
 
-    $summary-padding: (
-        comfortable: 0 rem(24px),
-        cosy: 0 rem(16px),
-        compact: 0 rem(12px)
+    $summary-padding-inline: (
+        comfortable: rem(24px),
+        cosy: rem(16px),
+        compact: rem(12px)
     );
 
     %igx-grid-summary {
@@ -127,30 +119,30 @@
         display: flex;
         flex-direction: column;
         flex: 1 1 0%;
-        padding: map.get($summary-padding, 'comfortable');
+        padding-block: 0;
+
+        @if $variant != 'indigo' {
+            padding-inline: pad-inline(map.get($summary-padding-inline, 'compact'), map.get($summary-padding-inline, 'cosy'), map.get($summary-padding-inline, 'comfortable'));
+        } @else {
+            padding-inline: pad-inline(rem(8px), rem(12px), rem(16px));
+        }
+
         background: var-get($theme, 'background-color', inherit);
         overflow: hidden;
         outline-style: none;
 
         &::after {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            inset: 0;
         }
 
         &:focus::after {
             background: var-get($theme, 'focus-background-color');
         }
-    }
 
-    %igx-grid-summary--cosy {
-        padding: map.get($summary-padding, 'cosy');
-    }
-
-    %igx-grid-summary--compact {
-        padding: map.get($summary-padding, 'compact');
+        @if $variant == 'indigo' {
+            border-top: rem(1px) solid var-get($theme, 'border-color');
+        }
     }
 
     %igx-grid-summary--pinned {
@@ -163,39 +155,44 @@
     }
 
     %igx-grid-summary--pinned-last {
-        border-#{$right}: map.get($cell-pin, 'style') map.get($cell-pin, 'color');
+        border-inline-end: map.get($cell-pin, 'style') map.get($cell-pin, 'color');
         @media print {
-            border-right: map.get($cell-pin, 'style') #999;
+            border-inline-end: map.get($cell-pin, 'style') #999;
         }
     }
 
     %igx-grid-summary--pinned-first {
-        border-#{$left}: map.get($cell-pin, 'style') map.get($cell-pin, 'color');
+        border-inline-start: map.get($cell-pin, 'style') map.get($cell-pin, 'color');
         @media print {
-            border-left: map.get($cell-pin, 'style') #999;
+            border-inline-start: map.get($cell-pin, 'style') #999;
         }
     }
 
     %igx-grid-summary__item {
         display: flex;
         align-items: center;
-        padding: map.get($item-padding, 'comfortable');
-        font-size: rem(12px);
+        padding-block: pad(map.get($item-padding-block, 'compact'), map.get($item-padding-block, 'cosy'), map.get($item-padding-block, 'comfortable'));
+        padding-inline: 0;
+
+        @if $variant != 'indigo' {
+            font-size: rem(12px);
+        } @else {
+            min-height: sizable(rem(24px), rem(30px), rem(36px));
+        }
+
         position: relative;
-    }
-
-    %igx-grid-summary__item--cosy {
-        padding: map.get($item-padding, 'cosy');
-    }
-
-    %igx-grid-summary__item--compact {
-        padding: map.get($item-padding, 'compact');
     }
 
     %igx-grid-summary__label {
         color: var-get($theme, 'label-color');
         min-width: rem(30px);
-        margin-#{$right}: rem(3px);
+        margin-inline-end: rem(3px);
+
+        @if $variant == 'indigo' {
+            @include type-style('caption');
+
+            margin-inline-end: initial;
+        }
 
         &:hover {
             color: var-get($theme, 'label-hover-color');
@@ -203,10 +200,18 @@
     }
 
     %igx-grid-summary__result {
+        @if $variant == 'indigo' {
+            @include type-style('detail-2', false);
+        }
+
         color: var-get($theme, 'result-color');
-        font-weight: 600;
+
+        @if $variant != 'indigo' {
+            font-weight: 600;
+        }
+
         flex: 1 1 auto;
-        text-align: #{$right};
+        text-align: end;
     }
 
     %igx-grid-summary__label,

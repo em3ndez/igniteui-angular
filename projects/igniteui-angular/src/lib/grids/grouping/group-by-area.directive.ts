@@ -12,11 +12,10 @@ import {
     ViewChildren
 } from '@angular/core';
 import { IChipsAreaReorderEventArgs, IgxChipComponent } from '../../chips/public_api';
-import { DisplayDensity } from '../../core/displayDensity';
 import { PlatformUtil } from '../../core/utils';
 import { IGroupingExpression } from '../../data-operations/grouping-expression.interface';
 import { SortingDirection } from '../../data-operations/sorting-strategy';
-import { GridType } from '../common/grid.interface';
+import { FlatGridType, GridType } from '../common/grid.interface';
 import { IgxColumnMovingDragDirective } from '../moving/moving.drag.directive';
 
 /**
@@ -24,7 +23,7 @@ import { IgxColumnMovingDragDirective } from '../moving/moving.drag.directive';
  *
  * @hidden @internal
  */
- @Directive()
+@Directive()
 export abstract class IgxGroupByAreaDirective {
     /**
      * The drop area template if provided by the parent grid.
@@ -33,25 +32,12 @@ export abstract class IgxGroupByAreaDirective {
     @Input()
     public dropAreaTemplate: TemplateRef<void>;
 
-    @Input()
-    public density: DisplayDensity = DisplayDensity.comfortable;
-
     @HostBinding('class.igx-grid-grouparea')
-    public defaultClass =  true;
-
-    @HostBinding('class.igx-grid-grouparea--cosy')
-    public get cosyStyle() {
-        return this.density === 'cosy';
-    }
-
-    @HostBinding('class.igx-grid-grouparea--compact')
-    public get compactStyle() {
-        return this.density === 'compact';
-    }
+    public defaultClass = true;
 
     /** The parent grid containing the component. */
     @Input()
-    public grid: GridType;
+    public grid: FlatGridType | GridType;
 
     /**
      * The group-by expressions provided by the parent grid.
@@ -107,7 +93,7 @@ export abstract class IgxGroupByAreaDirective {
 
     public handleKeyDown(id: string, event: KeyboardEvent) {
         if (this.platform.isActivationKey(event)) {
-            this.updateSorting(id);
+            this.updateGroupSorting(id);
         }
     }
 
@@ -115,14 +101,14 @@ export abstract class IgxGroupByAreaDirective {
         if (!this.grid.getColumnByName(id).groupable) {
             return;
         }
-        this.updateSorting(id);
+        this.updateGroupSorting(id);
     }
 
-     public onDragDrop(event) {
+    public onDragDrop(event) {
         const drag: IgxColumnMovingDragDirective = event.detail.owner;
         if (drag instanceof IgxColumnMovingDragDirective) {
             const column = drag.column;
-            if (!this.grid.columnList.find(c => c === column)) {
+            if (!this.grid.columns.find(c => c === column)) {
                 return;
             }
 
@@ -130,7 +116,7 @@ export abstract class IgxGroupByAreaDirective {
             if (column.groupable && !isGrouped && !column.columnGroup && !!column.field) {
                 const groupingExpression = {
                     fieldName: column.field,
-                    dir: SortingDirection.Asc,
+                    dir: this.grid.sortingExpressions.find(expr => expr.fieldName === column.field)?.dir || SortingDirection.Asc,
                     ignoreCase: column.sortingIgnoreCase,
                     strategy: column.sortStrategy,
                     groupingComparer: column.groupingComparer
@@ -158,10 +144,13 @@ export abstract class IgxGroupByAreaDirective {
         return newExpressions;
     }
 
-    protected updateSorting(id: string) {
-        const expr = this.grid.sortingExpressions.find(e => e.fieldName === id);
+    protected updateGroupSorting(id: string) {
+        const expr = this.expressions.find(e => e.fieldName === id);
         expr.dir = 3 - expr.dir;
-        this.grid.sort(expr);
+        const expressionsChangeEvent = this.grid.groupingExpressionsChange || this.expressionsChange;
+        expressionsChangeEvent.emit(this.expressions);
+        this.grid.pipeTrigger++;
+        this.grid.notifyChanges();
     }
 
     protected expressionsChanged() {
@@ -184,11 +173,14 @@ export abstract class IgxGroupByAreaDirective {
  *
  * @hidden @internal
  */
-@Pipe({ name: 'igxGroupByMeta' })
+@Pipe({
+    name: 'igxGroupByMeta',
+    standalone: true
+})
 export class IgxGroupByMetaPipe implements PipeTransform {
 
-    public transform(key: string, grid: GridType) {
+    public transform(key: string, grid: GridType, _pipeTrigger?: number) {
         const column = grid.getColumnByName(key);
-        return { groupable: column.groupable, title: column.header || key };
+        return { groupable: !!column?.groupable, title: column?.header || key };
     }
 }

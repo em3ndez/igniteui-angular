@@ -7,6 +7,13 @@ import { IgxGridHeaderGroupComponent } from '../headers/grid-header-group.compon
 import { IgxPivotColumnResizingService } from '../resizing/pivot-grid/pivot-resizing.service';
 import { IPivotDimension, PivotRowHeaderGroupType } from './pivot-grid.interface';
 import { IgxPivotRowDimensionHeaderComponent } from './pivot-row-dimension-header.component';
+import { IgxHeaderGroupStylePipe } from '../headers/pipes';
+import { IgxPivotResizeHandleDirective } from '../resizing/pivot-grid/pivot-resize-handle.directive';
+import { IgxColumnMovingDropDirective } from '../moving/moving.drop.directive';
+import { IgxColumnMovingDragDirective } from '../moving/moving.drag.directive';
+import { NgIf, NgClass, NgStyle } from '@angular/common';
+import { IgxIconComponent } from '../../icon/icon.component';
+import { IMultiRowLayoutNode } from '../common/types';
 
 /**
  * @hidden
@@ -14,7 +21,8 @@ import { IgxPivotRowDimensionHeaderComponent } from './pivot-row-dimension-heade
 @Component({
     changeDetection: ChangeDetectionStrategy.OnPush,
     selector: 'igx-pivot-row-dimension-header-group',
-    templateUrl: './pivot-row-dimension-header-group.component.html'
+    templateUrl: './pivot-row-dimension-header-group.component.html',
+    imports: [IgxIconComponent, NgIf, IgxPivotRowDimensionHeaderComponent, NgClass, NgStyle, IgxColumnMovingDragDirective, IgxColumnMovingDropDirective, IgxPivotResizeHandleDirective, IgxHeaderGroupStylePipe]
 })
 export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroupComponent implements PivotRowHeaderGroupType {
 
@@ -25,11 +33,11 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
     public userSelect = 'none';
 
     constructor(private cdRef: ChangeDetectorRef,
-        @Inject(IGX_GRID_BASE) public grid: PivotGridType,
+        @Inject(IGX_GRID_BASE) public override grid: PivotGridType,
         private elementRef: ElementRef<HTMLElement>,
-        public colResizingService: IgxPivotColumnResizingService,
-        public filteringService: IgxFilteringService,
-        protected platform: PlatformUtil,
+        public override colResizingService: IgxPivotColumnResizingService,
+        filteringService: IgxFilteringService,
+        platform: PlatformUtil,
         protected zone: NgZone) {
         super(cdRef, grid, elementRef, colResizingService, filteringService, platform);
     }
@@ -42,6 +50,21 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
     public rowIndex: number;
 
     /**
+     * @hidden
+     * @internal
+     */
+    @Input()
+    public colIndex: number;
+
+
+    /**
+     * @hidden
+     * @internal
+     */
+    @Input()
+    public layout: IMultiRowLayoutNode;
+
+    /**
     * @hidden
     * @internal
     */
@@ -49,15 +72,15 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
     public parent: any;
 
     @ViewChild(IgxPivotRowDimensionHeaderComponent)
-    public header: IgxPivotRowDimensionHeaderComponent;
+    public override header: IgxPivotRowDimensionHeaderComponent;
 
     @HostBinding('attr.id')
-    public get headerID() {
+    public override get headerID() {
         return `${this.grid.id}_-2_${this.rowIndex}_${this.visibleIndex}`;
     }
 
     @HostBinding('attr.title')
-    public get title() {
+    public override get title() {
         return this.column.header;
     }
 
@@ -85,6 +108,10 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
      * @internal
      */
     public get visibleIndex(): number {
+        if (this.grid.hasHorizontalLayout) {
+            return this.colIndex;
+        }
+
         const field = this.column.field;
         const rows = this.grid.rowDimensions;
         const rootDimension = this.findRootDimension(field);
@@ -92,7 +119,7 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
     }
 
     @HostBinding('class.igx-grid-th--active')
-    public get active() {
+    public override get active() {
         const nav = this.grid.navigation;
         const node = nav.activeNode;
         return node && !this.column.columnGroup ?
@@ -102,18 +129,13 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
             false;
     }
 
-    public get activeGroup() {
-        const nav = this.grid.navigation;
-        const node = nav.activeNode;
-        return node ? nav.isRowHeaderActive && node.row === this.rowIndex && node.column === this.visibleIndex : false;
-    }
-
-    protected get activeNode() {
+    protected override get activeNode() {
         this.grid.navigation.isRowHeaderActive = true;
+        this.grid.navigation.isRowDimensionHeaderActive = false;
         return {
             row: this.rowIndex, column: this.visibleIndex, level: null,
             mchCache: null,
-            layout: null
+            layout: this.layout || null
         };
     }
 
@@ -134,7 +156,7 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
     }
 
 
-    public activate() {
+    public override activate() {
         this.grid.navigation.isRowHeader = true;
         this.grid.navigation.setActiveNode(this.activeNode);
     }
@@ -142,18 +164,18 @@ export class IgxPivotRowDimensionHeaderGroupComponent extends IgxGridHeaderGroup
     /**
      * @hidden @internal
      */
-    public pointerdown(_event: PointerEvent): void {
+    public override pointerdown(_event: PointerEvent): void {
         this.activate();
     }
 
     /**
      * @hidden @internal
      */
-    public onMouseDown(_event: MouseEvent): void {
+    public override onMouseDown(_event: MouseEvent): void {
         this.activate();
     }
 
-    public get selectable(): boolean {
+    public override get selectable(): boolean {
         return false;
     }
 }

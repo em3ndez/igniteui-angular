@@ -1,4 +1,3 @@
-
 /**
  * @hidden
  */
@@ -23,14 +22,15 @@ export class ExportUtilities {
     }
 
     public static saveBlobToFile(blob: Blob, fileName) {
-        const a = document.createElement('a');
+        const doc = globalThis.document;
+        const a = doc.createElement('a');
         const url = window.URL.createObjectURL(blob);
         a.download = fileName;
 
         a.href = url;
-        document.body.appendChild(a);
+        doc.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        doc.body.removeChild(a);
         window.URL.revokeObjectURL(url);
     }
 
@@ -38,9 +38,7 @@ export class ExportUtilities {
         const buf = new ArrayBuffer(s.length);
         const view = new Uint8Array(buf);
         for (let i = 0; i !== s.length; ++i) {
-            /* eslint-disable  no-bitwise */
             view[i] = s.charCodeAt(i) & 0xFF;
-            /* eslint-enable  no-bitwise */
         }
         return buf;
     }
@@ -57,5 +55,20 @@ export class ExportUtilities {
 
     public static isNullOrWhitespaces(value: string): boolean {
         return value === undefined || value === null || !value.trim();
+    }
+
+    public static sanitizeValue(value: any): string {
+        if (!this.hasValue(value)) {
+            return '';
+        } else {
+            const stringValue = String(value);
+            return stringValue.replace(/&/g, '&amp;')
+                              .replace(/</g, '&lt;')
+                              .replace(/>/g, '&gt;')
+                              .replace(/"/g, '&quot;')
+                              .replace(/'/g, '&apos;')
+                              // Bug #14944 - Remove the not supported null character (\u0000, \x00)
+                              .replace(/\x00/g, '');
+        }
     }
 }

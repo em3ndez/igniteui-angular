@@ -1,6 +1,8 @@
 import { Component, ViewChild, AfterContentInit } from '@angular/core';
-import { IgxRadioGroupDirective, RadioGroupAlignment } from 'igniteui-angular';
-import { FormGroup, FormBuilder } from '@angular/forms';
+import { NgFor, JsonPipe } from '@angular/common';
+import { UntypedFormGroup, UntypedFormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { IgxRadioGroupDirective, IgxLayoutDirective, IgxCardComponent, IgxCardHeaderComponent, IgxCardHeaderTitleDirective, IgxCardContentDirective, IgxCardActionsComponent, IgxRippleDirective, IgxButtonDirective, IgxRadioComponent, RadioGroupAlignment } from 'igniteui-angular';
+
 
 class Person {
     public favoriteSeason: string;
@@ -14,29 +16,32 @@ class Person {
 
 @Component({
     selector: 'app-radio-sample',
-    styleUrls: ['radio.sample.css'],
-    templateUrl: 'radio.sample.html'
+    styleUrls: ['radio.sample.scss'],
+    templateUrl: 'radio.sample.html',
+    imports: [IgxRadioGroupDirective, FormsModule, IgxLayoutDirective, NgFor, IgxCardComponent, IgxCardHeaderComponent, IgxCardHeaderTitleDirective, IgxCardContentDirective, IgxCardActionsComponent, IgxRippleDirective, IgxButtonDirective, IgxRadioComponent, ReactiveFormsModule, JsonPipe]
 })
 export class RadioSampleComponent implements AfterContentInit {
     @ViewChild('radioGroupZZ', { read: IgxRadioGroupDirective, static: true })
     public radioGroup: IgxRadioGroupDirective;
+    public disabled = false;
+    public invalid = false;
 
     public selectedValue: any;
     public options = [0, 1, 2, 3, 4];
     public initial = this.options[0];
     public seasons = [
-        'Winter',
-        'Spring',
-        'Summer',
-        'Autumn',
+        { name: 'Winter', disabled: false },
+        { name: 'Spring', disabled: true },
+        { name: 'Summer', disabled: false },
+        { name: 'Autumn', disabled: true }
     ];
-    public personBob: Person = new Person('Bob', this.seasons[2]);
+    public personBob: Person = new Person('Bob', this.seasons[2].name);
     public newPerson: Person;
-    public personKirk: Person = new Person('Kirk', this.seasons[1]);
-    public personKirkForm: FormGroup;
+    public personKirk: Person = new Person('Kirk', this.seasons[1].name);
+    public personKirkForm: UntypedFormGroup;
     public alignment: RadioGroupAlignment = RadioGroupAlignment.vertical;
 
-    constructor(private _formBuilder: FormBuilder) {
+    constructor(private _formBuilder: UntypedFormBuilder) {
         this._createPersonKirkForm();
     }
 
@@ -63,7 +68,7 @@ export class RadioSampleComponent implements AfterContentInit {
     }
 
     public onSubmit() {
-        this.personBob.favoriteSeason = this.seasons[1];
+        this.personBob.favoriteSeason = this.seasons[1].name;
     }
 
     private _createPersonKirkForm() {

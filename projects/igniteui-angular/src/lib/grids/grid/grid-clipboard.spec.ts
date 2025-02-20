@@ -1,32 +1,30 @@
-import { fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import {
-    IgxGridModule, IgxGridComponent
-} from './public_api';
+import { IgxGridComponent } from './public_api';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { IgxGridClipboardComponent } from '../../test-utils/grid-samples.spec';
 import { CancelableEventArgs } from '../../core/utils';
 import { take } from 'rxjs/operators';
+import { GridFunctions } from '../../test-utils/grid-functions.spec';
+import { IgxGridFilteringRowComponent } from '../filtering/base/grid-filtering-row.component';
+import { IgxInputDirective } from '../../input-group/public_api';
 
 describe('IgxGrid - Clipboard #grid', () => {
 
-    let fix;
+    let fix: ComponentFixture<IgxGridClipboardComponent>;
     let grid: IgxGridComponent;
     configureTestSuite((() => {
-        TestBed.configureTestingModule({
-            declarations: [
-                IgxGridClipboardComponent
-            ],
-            imports: [IgxGridModule, NoopAnimationsModule]
+        return TestBed.configureTestingModule({
+            imports: [IgxGridClipboardComponent, NoopAnimationsModule]
         });
     }));
 
-    beforeEach(fakeAsync(/** height/width setter rAF */() => {
+    beforeEach(() => {
         fix = TestBed.createComponent(IgxGridClipboardComponent);
         fix.detectChanges();
         grid = fix.componentInstance.grid;
-    }));
+    });
 
     it('Copy data with default settings', () => {
         const copySpy = spyOn<any>(grid.gridCopy, 'emit').and.callThrough();
@@ -37,7 +35,7 @@ describe('IgxGrid - Clipboard #grid', () => {
         const eventData = dispatchCopyEventOnGridBody(fix);
         expect(copySpy).toHaveBeenCalledTimes(1);
         expect(eventData).
-            // eslint-disable-next-line max-len
+             
             toEqual('ProductNameHeader\tDownloads\tReleased\r\n** Ignite UI for JavaScript **\t254\tfalse\r\n** NetAdvantage **\t127\ttrue\r\n');
     });
 
@@ -90,12 +88,12 @@ describe('IgxGrid - Clipboard #grid', () => {
     });
 
     it('Copy data when paging is enabled', () => {
-        grid.paging = true;
+        fix.componentInstance.paging = true;
         fix.detectChanges();
         grid.paginator.perPage = 5;
         fix.detectChanges();
 
-        grid.page = 1;
+        grid.paginator.page = 1;
         fix.detectChanges();
         const copySpy = spyOn<any>(grid.gridCopy, 'emit').and.callThrough();
         grid.clipboardOptions.copyHeaders = false;
@@ -147,7 +145,7 @@ describe('IgxGrid - Clipboard #grid', () => {
             data: grid.getSelectedData(true, true),
             cancel: true
         });
-        expect(eventData).toEqual('' || 'undefined');
+        expect(eventData).toEqual('undefined');
     });
 
     it('Copy when there is a cell in edit mode', fakeAsync(() => {
@@ -167,6 +165,27 @@ describe('IgxGrid - Clipboard #grid', () => {
         const eventData = dispatchCopyEventOnGridBody(fix);
         expect(copySpy).toHaveBeenCalledTimes(0);
         expect(eventData).toEqual('');
+    }));
+
+    it('Should be able to copy from quick filtering input', fakeAsync(() => {
+        fix.componentInstance.allowFiltering = true;
+        fix.detectChanges();
+        const productNameFilterCellChip = GridFunctions.getFilterChipsForColumn('ProductName', fix)[0];
+        productNameFilterCellChip.nativeElement.click();
+        tick(100);
+        fix.detectChanges();
+
+        const filteringRow = fix.debugElement.query(By.directive(IgxGridFilteringRowComponent));
+        const inputDebugElement = filteringRow.query(By.directive(IgxInputDirective));
+        const input = inputDebugElement.nativeElement;
+        const searchVal = 'aaa';
+
+        const ev = new ClipboardEvent('copy', {bubbles: true, clipboardData: new DataTransfer()});
+        ev.clipboardData.setData('text/plain', searchVal);
+        input.dispatchEvent(ev);
+        fix.detectChanges();
+        const eventData = ev.clipboardData.getData('text/plain');
+        expect(eventData).toEqual(searchVal);
     }));
 });
 

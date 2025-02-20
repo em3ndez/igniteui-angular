@@ -1,13 +1,11 @@
-import { IgxActionStripComponent } from './action-strip.component';
+import { IgxActionStripComponent, IgxActionStripMenuItemDirective } from './action-strip.component';
 import { Component, ViewChild, ElementRef, ViewContainerRef } from '@angular/core';
 import { configureTestSuite } from '../test-utils/configure-suite';
-import { IgxIconModule } from '../icon/public_api';
-import { TestBed, fakeAsync, waitForAsync } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { wait } from '../test-utils/ui-interactions.spec';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxToggleModule } from '../directives/toggle/toggle.directive';
-import { IgxActionStripModule } from './action-strip.module';
+import { IgxIconComponent } from '../icon/icon.component';
 
 const ACTION_STRIP_CONTAINER_CSS = 'igx-action-strip__actions';
 const DROP_DOWN_LIST = 'igx-drop-down__list';
@@ -19,53 +17,48 @@ describe('igxActionStrip', () => {
     let parentContainer: ElementRef;
     let innerContainer: ViewContainerRef;
 
-    describe('Unit tests: ', () => {
-        const mockViewContainerRef = jasmine.createSpyObj('ViewContainerRef', ['element']);
-        const mockRenderer2 = jasmine.createSpyObj('Renderer2', ['appendChild', 'removeChild']);
-        const mockContext = jasmine.createSpyObj('context', ['element']);
-        const mockDisplayDensity = jasmine.createSpyObj('IDisplayDensityOptions', ['displayDensity']);
-        const cdr = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
-
-        it('should properly get/set hidden', () => {
-            actionStrip = new IgxActionStripComponent(mockViewContainerRef, mockRenderer2, mockDisplayDensity, cdr);
-            expect(actionStrip.hidden).toBeFalsy();
-            actionStrip.hidden = true;
-            expect(actionStrip.hidden).toBeTruthy();
-        });
-
-        it('should properly show and hide using API', () => {
-            actionStrip = new IgxActionStripComponent(mockViewContainerRef, mockRenderer2, mockDisplayDensity, cdr);
-            actionStrip.show(mockContext);
-            expect(actionStrip.hidden).toBeFalsy();
-            expect(actionStrip.context).toBe(mockContext);
-            actionStrip.hide();
-            expect(actionStrip.hidden).toBeTruthy();
+    configureTestSuite(() => {
+        return TestBed.configureTestingModule({
+            imports: [
+                NoopAnimationsModule,
+                IgxActionStripComponent,
+                IgxActionStripTestingComponent,
+                IgxActionStripMenuTestingComponent,
+                IgxActionStripCombinedMenuTestingComponent
+            ]
         });
     });
 
+    describe('Unit tests: ', () => {
+
+        it('should properly show and hide using API', () => {
+            fixture = TestBed.createComponent(IgxActionStripComponent);
+            actionStrip = fixture.componentInstance as IgxActionStripComponent;
+            fixture.detectChanges();
+
+            const el = document.createElement('div');
+            fixture.debugElement.nativeElement.appendChild(el);
+            actionStrip.show(el);
+            expect(actionStrip.hidden).toBeFalsy();
+            expect(actionStrip.context).toBe(el);
+            actionStrip.hide();
+            expect(actionStrip.hidden).toBeTruthy();
+            fixture.debugElement.nativeElement.removeChild(el);
+        });
+
+    });
+
     describe('Initialization and rendering tests: ', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    IgxActionStripTestingComponent
-                ],
-                imports: [
-                    IgxActionStripModule,
-                    IgxIconModule,
-                    NoopAnimationsModule,
-                    IgxToggleModule
-                ]
-            }).compileComponents();
-        }));
-        beforeEach(fakeAsync(() => {
+
+        beforeEach(() => {
             fixture = TestBed.createComponent(IgxActionStripTestingComponent);
             fixture.detectChanges();
             actionStrip = fixture.componentInstance.actionStrip;
             actionStripElement = fixture.componentInstance.actionStripElement;
             parentContainer = fixture.componentInstance.parentContainer;
             innerContainer = fixture.componentInstance.innerContainer;
-        }));
+        });
+
         it('should be overlapping its parent container when no context is applied', () => {
             const parentBoundingRect = parentContainer.nativeElement.getBoundingClientRect();
             const actionStripBoundingRect = actionStripElement.nativeElement.getBoundingClientRect();
@@ -102,21 +95,6 @@ describe('igxActionStrip', () => {
     });
 
     describe('render content as menu', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    IgxActionStripMenuTestingComponent,
-                    IgxActionStripCombinedMenuTestingComponent
-                ],
-                imports: [
-                    IgxActionStripModule,
-                    IgxIconModule,
-                    NoopAnimationsModule,
-                    IgxToggleModule
-                ]
-            }).compileComponents();
-        }));
 
         it('should render tree-dot button which toggles the content as menu', () => {
             fixture = TestBed.createComponent(IgxActionStripMenuTestingComponent);
@@ -179,17 +157,18 @@ describe('igxActionStrip', () => {
 
 @Component({
     template: `
-<div #parent style="position:relative; height: 200px; width: 400px;">
-    <div #inner style="position:relative; height: 100px; width: 200px;">
-        <p>
-            Lorem ipsum dolor sit
-        </p>
+    <div #parent style="position:relative; height: 200px; width: 400px;">
+        <div #inner style="position:relative; height: 100px; width: 200px;">
+            <p>
+                Lorem ipsum dolor sit
+            </p>
+        </div>
+        <igx-action-strip #actionStrip>
+            <igx-icon class="asIcon" (click)="onIconClick()">alarm</igx-icon>
+        </igx-action-strip>
     </div>
-    <igx-action-strip #actionStrip>
-        <igx-icon class="asIcon" (click)="onIconClick()">alarm</igx-icon>
-    </igx-action-strip>
-</div>
-`
+    `,
+    imports: [IgxActionStripComponent, IgxIconComponent]
 })
 class IgxActionStripTestingComponent {
     @ViewChild('actionStrip', { read: IgxActionStripComponent, static: true })
@@ -225,7 +204,8 @@ class IgxActionStripTestingComponent {
             <span *igxActionStripMenuItem>Download</span>
         </igx-action-strip>
     </div>
-    `
+    `,
+    imports: [IgxActionStripComponent, IgxActionStripMenuItemDirective]
 })
 class IgxActionStripMenuTestingComponent {
     @ViewChild('actionStrip', { read: IgxActionStripComponent, static: true })
@@ -246,7 +226,8 @@ class IgxActionStripMenuTestingComponent {
             <span *igxActionStripMenuItem>Download</span>
         </igx-action-strip>
     </div>
-    `
+    `,
+    imports: [IgxActionStripComponent, IgxActionStripMenuItemDirective]
 })
 class IgxActionStripCombinedMenuTestingComponent {
     @ViewChild('actionStrip', { read: IgxActionStripComponent, static: true })

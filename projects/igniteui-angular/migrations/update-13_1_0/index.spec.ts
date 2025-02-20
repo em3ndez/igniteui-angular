@@ -1,30 +1,16 @@
 import * as path from 'path';
 
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 const version = '13.1.0';
 
 describe(`Update to ${version}`, () => {
     let appTree: UnitTestTree;
     const schematicRunner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-    };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     const migrationName = 'migration-23';
@@ -41,8 +27,7 @@ describe(`Update to ${version}`, () => {
         );
 
         const tree = await schematicRunner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, {}, appTree);
 
         expect(
             tree.readContent('/testSrc/appPrefix/component/test.component.html')
@@ -68,8 +53,7 @@ describe(`Update to ${version}`, () => {
         );
 
         const tree = await schematicRunner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, {}, appTree);
 
         expect(
             tree.readContent('/testSrc/appPrefix/component/test.component.html')
@@ -90,13 +74,13 @@ describe(`Update to ${version}`, () => {
         );
 
         const tree = await schematicRunner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, {}, appTree);
 
         expect(
-            tree.readContent('/testSrc/appPrefix/component/test.component.scss')
+            tree.readContent('/testSrc/appPrefix/component/test.component.scss').replace(/\n|\r\n/g, '')
         ).toEqual(
-`@use "igniteui-angular/theming" as igniteui;`
+`/* Line added via automated migrations. */
+@use "igniteui-angular/theming" as *;`.replace(/\n|\r\n/g, '')
         );
     });
 
@@ -124,8 +108,7 @@ describe(`Update to ${version}`, () => {
         );
 
         const tree = await schematicRunner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, {}, appTree);
 
         expect(
             tree.readContent('/testSrc/appPrefix/component/test.component.html')
@@ -170,8 +153,7 @@ describe(`Update to ${version}`, () => {
         );
 
         const tree = await schematicRunner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, {}, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/test1.component.html')
         ).toEqual(
@@ -194,7 +176,6 @@ describe(`Update to ${version}`, () => {
     });
 
     it('should rename hgridAPI to gridAPI for hierarchical grids', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             `/testSrc/appPrefix/component/test.component.html`,
             `
@@ -205,23 +186,26 @@ describe(`Update to ${version}`, () => {
         appTree.create(
             `/testSrc/appPrefix/component/test.component.ts`,
             `
+import { Component } from '@angular/core';
 import {
     IgxHierarchicalGridComponent
 } from 'igniteui-angular';
 @Component({
     selector: 'test.component',
-    templateUrl: 'test.component.html'
+    templateUrl: 'test.component.html',
+    standalone: true,
+    imports: [IgxHierarchicalGridComponent]
 })
 export class TestComponent {
+    public childGrid: IgxHierarchicalGridComponent;
     public get hasChildTransactions(): boolean {
-        return this.childGrid.gridAPI.getChildGrids().length > 0;
+        return this.childGrid.hgridAPI.getChildGrids().length > 0;
     }
 }
 `
         );
         const tree = await schematicRunner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, {}, appTree);
 
             expect(
                 tree.readContent('/testSrc/appPrefix/component/test.component.html')
@@ -236,17 +220,22 @@ export class TestComponent {
                 tree.readContent('/testSrc/appPrefix/component/test.component.ts')
             ).toEqual(
                 `
+import { Component } from '@angular/core';
 import {
     IgxHierarchicalGridComponent
 } from 'igniteui-angular';
 @Component({
     selector: 'test.component',
-    templateUrl: 'test.component.html'
+    templateUrl: 'test.component.html',
+    standalone: true,
+    imports: [IgxHierarchicalGridComponent]
 })
 export class TestComponent {
+    public childGrid: IgxHierarchicalGridComponent;
     public get hasChildTransactions(): boolean {
         return this.childGrid.gridAPI.getChildGrids().length > 0;
     }
+}
 `
             );
     });

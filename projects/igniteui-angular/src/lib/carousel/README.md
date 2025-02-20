@@ -13,28 +13,30 @@ A walkthrough of how to get started can be found [here](https://www.infragistics
 | `pause` | boolean | Should the carousel stop playing on user interaction. Defaults to `true`.  |
 | `interval` | number | The amount of time in milliseconds between slides transition. |
 | `navigation` | boolean | Controls should the carousel render the left/right navigation buttons. Defaults to `true`. |
-| `keyboardSupport` | boolean | Controls should the keyboard navigation should be supported. Defaults to `true`. |
+| `indicators` | boolean | Controls should the carousel render the indicators. Defaults to `true`. |
+| `vertical` | boolean | Controls should the carousel be rendered in vertical alignment. Defaults to `false`. |
+| `keyboardSupport` | boolean | Controls should the keyboard navigation should be supported. Defaults to `false`. |
 | `gesturesSupport` | boolean | Controls should the gestures should be supported. Defaults to `true`. |
-| `maximumIndicatorsCount` | number | The number of visible indicators. Defaults to `5`. |
-| `indicatorsOrientation` | CarouselIndicatorsOrientation | Controls whether the indicators should be previewed on top or on bottom of carousel. Defaults to `bottom`. |
-| `animationType` | HorizontalAnimationType | Controls what animation should be played when slides are changing. Defaults to `slide`. |
+| `maximumIndicatorsCount` | number | The number of visible indicators. Defaults to `10`. |
+| `indicatorsOrientation` | CarouselIndicatorsOrientation | Controls the orientation of the indicators. Defaults to `end`. |
+| `animationType` | CarouselAnimationType | Controls what animation should be played when slides are changing. Defaults to `slide`. |
 | `total` | number | The number of slides the carousel currently has.  |
 | `current` | number | The index of the slide currently showing. |
 | `isPlaying` | boolean | Returns whether the carousel is paused/playing. |
 | `isDestroyed` | boolean | If the carousel is destroyed (`ngOnDestroy` was called) |
-| `onSlideChanged` | event | Emitted on slide change |
-| `onSlideAdded` | event | Emitted when a slide is being added to the carousel |
-| `onSlideRemoved`| event | Emitted whe a slide is being removed from the carousel |
-| `onCarouselPaused` | event | Emitted when the carousel is pausing. |
-| `onCarouselPlaying`| event | Emitted when the carousel starts/resumes playing. |
-| `play()` | void | Emits `onCarouselPlaying` event and starts the transition between slides. |
-| `stop()` | void | Emits `onCarouselPaused` event and stops the transition between slides. |
-| `prev()` | void | Switches to the previous slide. Emits `onSlideChanged` event. |
-| `next()` | void | Switches to the next slide. Emits `onSlideChanged` event. |
-| `add(slide: IgxSlide)` | void | Adds a slide to the carousel. Emits `onSlideAdded` event. |
-| `remove(slide: IgxSlide)` | void | Removes an existing slide from the carousel. Emits `onSlideRemoved` event. |
+| `slideChanged` | event | Emitted on slide change |
+| `slideAdded` | event | Emitted when a slide is being added to the carousel |
+| `slideRemoved`| event | Emitted whe a slide is being removed from the carousel |
+| `carouselPaused` | event | Emitted when the carousel is pausing. |
+| `carouselPlaying`| event | Emitted when the carousel starts/resumes playing. |
+| `play()` | void | Emits `carouselPlaying` event and starts the transition between slides. |
+| `stop()` | void | Emits `carouselPaused` event and stops the transition between slides. |
+| `prev()` | void | Switches to the previous slide. Emits `slideChanged` event. |
+| `next()` | void | Switches to the next slide. Emits `slideChanged` event. |
+| `add(slide: IgxSlide)` | void | Adds a slide to the carousel. Emits `slideAdded` event. |
+| `remove(slide: IgxSlide)` | void | Removes an existing slide from the carousel. Emits `slideRemoved` event. |
 | `get(index: Number)` | IgxSlide or void | Returns the slide with the given index or null. |
-| `select(slide: IgxSlide, direction: Direction)`| void | Selects the slide and the direction to transition to. Emits `onSlideChanged` event. |
+| `select(slide: IgxSlide, direction: Direction)`| void | Selects the slide and the direction to transition to. Emits `slideChanged` event. |
 
 ### Keyboard navigation
 Keyboard navigation will be enabled when the **IgxCarousel** component is focused and `keyboardSupport` property is set to `true`:
@@ -61,7 +63,7 @@ The **IgxCarousel** supports templating indicators and navigation buttons
 <igx-carousel #carousel>
         ...
     <ng-template igxCarouselNextButton let-disabled>
-        <button igxButton="fab" igxRipple="white" [disabled]="disabled">
+        <button type="button" igxButton="fab" igxRipple="white" [disabled]="disabled">
             <igx-icon>add</igx-icon>
         </button>
     </ng-template>
@@ -73,7 +75,7 @@ The **IgxCarousel** supports templating indicators and navigation buttons
 <igx-carousel #carousel>
         ...
     <ng-template igxCarouselPrevButton let-disabled>
-        <button igxButton="fab" igxRipple="white" [disabled]="disabled">
+        <button type="button" igxButton="fab" igxRipple="white" [disabled]="disabled">
             <igx-icon>remove</igx-icon>
         </button>
     </ng-template>

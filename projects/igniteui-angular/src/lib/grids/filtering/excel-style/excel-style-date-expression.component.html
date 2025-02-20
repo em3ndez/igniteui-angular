@@ -1,24 +1,23 @@
 <igx-select #dropdownConditions
         type="box"
-        [displayDensity]="displayDensity"
         [placeholder]="conditionsPlaceholder"
         (selectionChanging)="onConditionsChanged($event)"
         [overlaySettings]="dropDownOverlaySettings">
     <igx-prefix>
-        <igx-icon *ngIf="expressionUI.expression.condition" family="imx-icons" [name]="getIconName()"></igx-icon>
-        <igx-icon *ngIf="!expressionUI.expression.condition">filter_list</igx-icon>
+        <igx-icon *ngIf="expressionUI.expression.condition" family="default" [name]="getIconName()"></igx-icon>
+        <igx-icon *ngIf="!expressionUI.expression.condition" family="default" name="filter_list"></igx-icon>
     </igx-prefix>
     <igx-select-item *ngFor="let condition of conditions" [value]="condition" [text]="getConditionFriendlyName(condition)" [selected]="isConditionSelected(condition)">
-        <igx-icon family="imx-icons" [name]="getCondition(condition).iconName"></igx-icon>
+        <igx-icon family="default" [name]="getCondition(condition).iconName"></igx-icon>
         <span>{{translateCondition(condition)}}</span>
     </igx-select-item>
 </igx-select>
 
 <igx-date-picker #picker *ngIf="column.dataType === 'date'"
+    [weekStart]="column.pipeArgs.weekStart ?? weekStart"
     [(value)]="expressionUI.expression.searchVal"
     [locale]="grid.locale"
     [outlet]="grid.outlet"
-    [displayDensity]="displayDensity"
     (click)="picker.open()"
     [readOnly]="true"
     [placeholder]="inputDatePlaceholder"
@@ -32,15 +31,14 @@
 </igx-date-picker>
 
 <igx-time-picker #picker *ngIf="column.dataType === 'time'"
-    [inputFormat]="column.defaultTimeFormat"
     [(value)]="expressionUI.expression.searchVal"
     [locale]="grid.locale"
     [outlet]="grid.outlet"
-    [displayDensity]="displayDensity"
     (click)="picker.open()"
     [readOnly]="true"
     [placeholder]="inputTimePlaceholder"
     [displayFormat]="column.pipeArgs.format"
+    [inputFormat]="column.editorOptions?.dateTimeFormat"
     [formatter]="column.formatter"
     [disabled]="expressionUI.expression.condition && expressionUI.expression.condition.isUnary"
     type="box">
@@ -49,22 +47,24 @@
      <igx-picker-clear></igx-picker-clear>
 </igx-time-picker>
 
-<igx-input-group #dropDownTarget *ngIf="column.dataType === 'dateTime'" #inputGroup type="box" [displayDensity]="displayDensity">
+<igx-input-group #dropDownTarget *ngIf="column.dataType === 'dateTime'" #inputGroup type="box">
     <input #input igxInput tabindex="0"
         [placeholder]="inputDatePlaceholder"
-        [igxDateTimeEditor]="column.defaultDateTimeFormat"
+        [locale]="column.grid.locale"
+        [igxDateTimeEditor]="column.editorOptions?.dateTimeFormat"
+        [defaultFormatType]="column.dataType"
+        [displayFormat]="column.pipeArgs.format"
         [(ngModel)]="expressionUI.expression.searchVal"
         [disabled]="expressionUI.expression.condition && expressionUI.expression.condition.isUnary"/>
 </igx-input-group>
 
-<button (click)="onRemoveButtonClick()" igxButton="icon" [displayDensity]="displayDensity" *ngIf="!isSingle" >
-    <igx-icon>cancel</igx-icon>
+<button type="button" (click)="onRemoveButtonClick()" igxIconButton="flat" *ngIf="!isSingle" >
+    <igx-icon family="default" name="remove"></igx-icon>
 </button>
 
 <igx-buttongroup #logicOperatorButtonGroup
-    *ngIf="!isLast"
-    [multiSelection]="false">
-    <span igxButton [displayDensity]="displayDensity"
+    *ngIf="!isLast">
+    <span igxButton
         #andButton
         (keydown)="onLogicOperatorKeyDown($event, 0)"
         tabindex="0"
@@ -74,7 +74,7 @@
         {{ grid.resourceStrings.igx_grid_filter_operator_and }}
     </span>
 
-    <span igxButton [displayDensity]="displayDensity"
+    <span igxButton
         #orButton
         tabindex="0"
         (keydown)="onLogicOperatorKeyDown($event, 1)"

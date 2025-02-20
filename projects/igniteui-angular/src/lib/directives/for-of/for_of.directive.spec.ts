@@ -1,9 +1,8 @@
-﻿import { NgForOfContext } from '@angular/common';
+﻿import { AsyncPipe, NgClass, NgFor, NgForOfContext, NgIf } from '@angular/common';
 import {
     AfterViewInit,
     ChangeDetectorRef,
     Component,
-    ComponentFactoryResolver,
     Directive,
     Injectable,
     IterableDiffers,
@@ -14,17 +13,18 @@ import {
     ViewChild,
     ViewChildren,
     ViewContainerRef,
-    DebugElement
+    DebugElement,
+    Pipe,
+    PipeTransform
 } from '@angular/core';
-import { TestBed, ComponentFixture, waitForAsync } from '@angular/core/testing';
+import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { IForOfState, IgxForOfDirective, IgxForOfModule } from './for_of.directive';
+import { IForOfState, IgxForOfDirective } from './for_of.directive';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
 
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { IgxForOfScrollSyncService } from './for_of.sync.service';
-import { TestNgZone } from '../../test-utils/helper-utils.spec';
 import { PlatformUtil } from '../../core/utils';
 
 describe('IgxForOf directive -', () => {
@@ -42,15 +42,10 @@ describe('IgxForOf directive -', () => {
     });
 
     describe('empty virtual component', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    EmptyVirtualComponent
-                ],
-                imports: [IgxForOfModule]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [EmptyVirtualComponent]
+            });
         }));
 
         it('should initialize empty directive', () => {
@@ -64,16 +59,10 @@ describe('IgxForOf directive -', () => {
     describe('horizontal virtual component', () => {
         let fix: ComponentFixture<HorizontalVirtualComponent>;
 
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    HorizontalVirtualComponent
-                ],
-                imports: [IgxForOfModule],
-                providers: [{ provide: NgZone, useFactory: () => new TestNgZone() }]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [HorizontalVirtualComponent]
+            });
         }));
 
         beforeEach(() => {
@@ -170,21 +159,73 @@ describe('IgxForOf directive -', () => {
 
             expect(parseInt(displayContainer.style.left, 10)).toEqual(0);
         });
+
+        it('should allow scroll in rtl direction.', () => {
+            fix.debugElement.nativeElement.dir = 'rtl';
+            fix.detectChanges();
+
+            fix.componentInstance.width = '500px';
+            fix.componentInstance.cols = [
+                { field: '1', width: 100 },
+                { field: '2', width: 200 },
+                { field: '3', width: 200 },
+                { field: '4', width: 200 },
+                { field: '5', width: 300 }
+            ];
+            fix.componentRef.hostView.detectChanges();
+            fix.detectChanges();
+
+            fix.componentInstance.scrollLeft(-50);
+            fix.detectChanges();
+            expect(parseInt(displayContainer.style.left, 10)).toEqual(50);
+
+            fix.componentInstance.scrollLeft(-250);
+            fix.detectChanges();
+            const state = fix.componentInstance.childVirtDirs.toArray()[0].state;
+            expect(state.startIndex).toBe(1);
+        });
+
+        it('should display the correct chunk items on resizing the container', async () => {
+            // initially the container's width is narrow enough to be scrollable
+            fix.componentInstance.width = '200px';
+            fix.componentInstance.cols = [
+                { field: '1', width: 100 },
+                { field: '2', width: 100 },
+                { field: '3', width: 100 },
+                { field: '4', width: 100 },
+                { field: '5', width: 100 }
+            ];
+            fix.detectChanges();
+
+            expect(displayContainer).not.toBeNull();
+
+            // scroll the container so that at least the first col is out of view
+            fix.componentInstance.scrollLeft(displayContainer.clientWidth);
+            fix.detectChanges();
+
+            fix.componentInstance.childVirtDirs.toArray().forEach(element => {
+                expect(element.state.startIndex).not.toBe(0);
+            });
+
+            // the container's width is assigned as wide as to display all cols
+            fix.componentInstance.width = '600px';
+            fix.detectChanges();
+            await wait(100);
+            fix.detectChanges();
+            const secondRecChildren = fix.nativeElement.querySelectorAll(DISPLAY_CONTAINER)[1].children;
+            for (let i = 0; i < secondRecChildren.length; i++) {
+                expect(secondRecChildren[i].textContent)
+                    .toBe(fix.componentInstance.data[1][i + 1].toString());
+            }
+        });
     });
 
     describe('vertical virtual component', () => {
         let fix: ComponentFixture<VerticalVirtualComponent>;
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    VerticalVirtualNoDataComponent,
-                    VerticalVirtualComponent
-                ],
-                imports: [IgxForOfModule],
-                providers: [{ provide: NgZone, useFactory: () => new TestNgZone() }]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [VerticalVirtualNoDataComponent, VerticalVirtualComponent]
+            });
         }));
 
         beforeEach(() => {
@@ -197,6 +238,11 @@ describe('IgxForOf directive -', () => {
             horizontalScroller = fix.nativeElement.querySelector('igx-horizontal-virtual-helper');
         });
 
+        afterEach(() => {
+            displayContainer = null;
+            verticalScroller = null;
+            horizontalScroller = null;
+        });
 
         it('should initialize directive with vertical virtualization', async () => {
             expect(displayContainer).not.toBeNull();
@@ -234,7 +280,6 @@ describe('IgxForOf directive -', () => {
 
         it('should apply the changes when itemSize is changed.', () => {
             const firstRecChildren = displayContainer.children[0].children;
-            // eslint-disable-next-line @typescript-eslint/prefer-for-of
             for (let i = 0; i < firstRecChildren.length; i++) {
                 expect(firstRecChildren[i].clientHeight)
                     .toBe(parseInt(fix.componentInstance.parentVirtDir.igxForItemSize, 10));
@@ -242,7 +287,6 @@ describe('IgxForOf directive -', () => {
 
             fix.componentInstance.itemSize = '100px';
             fix.detectChanges();
-            // eslint-disable-next-line @typescript-eslint/prefer-for-of
             for (let i = 0; i < firstRecChildren.length; i++) {
                 expect(firstRecChildren[i].clientHeight)
                     .toBe(parseInt(fix.componentInstance.parentVirtDir.igxForItemSize, 10));
@@ -262,29 +306,6 @@ describe('IgxForOf directive -', () => {
             expect(errorMessage).toBe('');
         });
 
-        it('should allow initially undefined value for igxForOf and then detect changes correctly once the value is updated', () => {
-            fix = TestBed.createComponent(VerticalVirtualNoDataComponent);
-            expect(() => {
-                fix.detectChanges();
-            }).not.toThrow();
-            displayContainer = fix.nativeElement.querySelector(DISPLAY_CONTAINER);
-            verticalScroller = fix.nativeElement.querySelector(VERTICAL_SCROLLER);
-            expect(displayContainer).not.toBeNull();
-            expect(verticalScroller).not.toBeNull();
-
-            fix.componentInstance.height = '400px';
-            fix.detectChanges();
-            fix.componentInstance.height = '500px';
-            fix.detectChanges();
-
-            let rowsRendered = displayContainer.querySelectorAll('div');
-            expect(rowsRendered.length).toBe(0);
-            fix.componentInstance.data = dg.generateVerticalData(fix.componentInstance.cols);
-            fix.detectChanges();
-            rowsRendered = displayContainer.querySelectorAll('div');
-            expect(rowsRendered.length).not.toBe(0);
-        });
-
         it('should always fill available space for last chunk size calculation - vertical virtualization', async () => {
             fix.componentInstance.height = '1900px';
             const virtualContainer = fix.componentInstance.parentVirtDir;
@@ -302,7 +323,7 @@ describe('IgxForOf directive -', () => {
                 { 1: '10', height: '150px' }
             ];
             fix.detectChanges();
-            await wait();
+            await wait(50);
             let chunkSize = (virtualContainer as any)._calcMaxChunkSize();
             expect(chunkSize).toEqual(9);
 
@@ -344,28 +365,67 @@ describe('IgxForOf directive -', () => {
             ];
             fix.detectChanges();
             await wait(200);
-            const cache = (fix.componentInstance.parentVirtDir as any).heightCache;
+            const cache = (fix.componentInstance.parentVirtDir as any).individualSizeCache;
             expect(cache).toEqual([130, 100, 100, 100, 100, 100, 100, 100, 100, 100]);
             fix.componentInstance.scrollTop(400);
             fix.detectChanges();
             await wait(200);
             expect(cache).toEqual([130, 100, 100, 100, 100, 100, 100, 130, 130, 130]);
         });
+
+        it('should render no more that initial chunk size elements when set if no containerSize', () => {
+            fix.componentInstance.height = undefined;
+            fix.componentInstance.initialChunkSize = 3;
+            fix.detectChanges();
+            expect(displayContainer).not.toBeNull();
+            expect(verticalScroller).not.toBeNull();
+            expect(horizontalScroller).toBeNull();
+            expect(displayContainer.children.length).toBe(3);
+        });
+    });
+
+    describe('vertical virtual component no data', () => {
+        let fix: ComponentFixture<VerticalVirtualComponent>;
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [VerticalVirtualNoDataComponent, VerticalVirtualComponent]
+            });
+        }));
+
+        beforeEach(() => {
+            fix = TestBed.createComponent(VerticalVirtualNoDataComponent);
+        });
+
+        it('should allow initially undefined value for igxForOf and then detect changes correctly once the value is updated', () => {
+            expect(() => {
+                fix.detectChanges();
+            }).not.toThrow();
+            displayContainer = fix.nativeElement.querySelector(DISPLAY_CONTAINER);
+            verticalScroller = fix.nativeElement.querySelector(VERTICAL_SCROLLER);
+            expect(displayContainer).not.toBeNull();
+            expect(verticalScroller).not.toBeNull();
+
+            fix.componentInstance.height = '400px';
+            fix.detectChanges();
+            fix.componentInstance.height = '500px';
+            fix.detectChanges();
+
+            let rowsRendered = displayContainer.querySelectorAll('div');
+            expect(rowsRendered.length).toBe(0);
+            fix.componentInstance.data = dg.generateVerticalData(fix.componentInstance.cols);
+            fix.detectChanges();
+            rowsRendered = displayContainer.querySelectorAll('div');
+            expect(rowsRendered.length).not.toBe(0);
+        });
     });
 
     describe('vertical and horizontal virtual component', () => {
         let fix: ComponentFixture<VirtualComponent>;
 
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    VirtualComponent
-                ],
-                imports: [IgxForOfModule],
-                providers: [{ provide: NgZone, useFactory: () => new TestNgZone() }]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [VirtualComponent]
+            });
         }));
 
         beforeEach(() => {
@@ -378,6 +438,12 @@ describe('IgxForOf directive -', () => {
             expect(displayContainer).not.toBeNull();
             expect(verticalScroller).not.toBeNull();
             expect(horizontalScroller).not.toBeNull();
+        });
+
+        afterEach(() => {
+            displayContainer = null;
+            verticalScroller = null;
+            horizontalScroller = null;
         });
 
         it('should initialize directive with vertical and horizontal virtualization', () => {
@@ -936,15 +1002,10 @@ describe('IgxForOf directive -', () => {
     });
 
     describe('variable size component', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    VirtualVariableSizeComponent
-                ],
-                imports: [IgxForOfModule]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [VirtualVariableSizeComponent]
+            });
         }));
 
         it('should update display container classes when content state changes from virtualized to non-virtualized.', () => {
@@ -982,15 +1043,10 @@ describe('IgxForOf directive -', () => {
     });
 
     describe('remote virtual component', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    RemoteVirtualizationComponent
-                ],
-                imports: [IgxForOfModule]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [RemoteVirtualizationComponent]
+            });
         }));
 
         it('should allow remote virtualization', async () => {
@@ -1024,15 +1080,10 @@ describe('IgxForOf directive -', () => {
     });
 
     describe('remote virtual component with specified igxForTotalItemCount', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    RemoteVirtCountComponent
-                ],
-                imports: [IgxForOfModule]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [RemoteVirtCountComponent]
+            });
         }));
 
         it('should apply remote virtualization correctly', async () => {
@@ -1066,15 +1117,10 @@ describe('IgxForOf directive -', () => {
     });
 
     describe('no width and height component', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    NoWidthAndHeightComponent
-                ],
-                imports: [IgxForOfModule]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [NoWidthAndHeightComponent]
+            });
         }));
 
         it('should use itemSize when no width or height are provided', () => {
@@ -1090,15 +1136,10 @@ describe('IgxForOf directive -', () => {
     });
 
     describe('even odd first last functions', () => {
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    LocalVariablesComponent
-                ],
-                imports: [IgxForOfModule]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [LocalVariablesComponent]
+            });
         }));
 
         it('should differentiate even odd items', () => {
@@ -1122,19 +1163,32 @@ describe('IgxForOf directive -', () => {
         });
     });
 
+    describe('`as` syntax', () => {
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [LocalVariablesAsComponent]
+            });
+        }));
+
+        it('should get correct data using `as` syntax', () => {
+            const fix = TestBed.createComponent(LocalVariablesAsComponent);
+            fix.detectChanges();
+            const allItems: DebugElement[] = fix.debugElement.queryAll(By.css(DISPLAY_CONTAINER))[0].children;
+            expect(allItems.length).toEqual(50);
+            for (let i = 0; i < allItems.length; i++) {
+                const itemElems = allItems[i].nativeElement.textContent.split(":");
+                expect(itemElems[1].trim()).toEqual(itemElems[2].trim());
+            }
+        });
+    });
+
     describe('on destroy', () => {
         let fix: ComponentFixture<VerticalVirtualDestroyComponent>;
 
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    TestIgxForOfDirective,
-                    VerticalVirtualDestroyComponent
-                ],
-                imports: [IgxForOfModule],
-                providers: [{ provide: NgZone, useFactory: () => new TestNgZone() }]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [VerticalVirtualDestroyComponent]
+            });
         }));
 
         beforeEach(() => {
@@ -1176,15 +1230,10 @@ describe('IgxForOf directive -', () => {
     describe('on create new instance', () => {
         let fix: ComponentFixture<VerticalVirtualCreateComponent>;
 
-        configureTestSuite();
-        beforeAll(waitForAsync(() => {
-            TestBed.configureTestingModule({
-                declarations: [
-                    VerticalVirtualCreateComponent
-                ],
-                imports: [IgxForOfModule],
-                providers: [{ provide: NgZone, useFactory: () => new TestNgZone() }]
-            }).compileComponents();
+        configureTestSuite((() => {
+            return TestBed.configureTestingModule({
+                imports: [VerticalVirtualCreateComponent]
+            });
         }));
 
         beforeEach(() => {
@@ -1268,21 +1317,24 @@ class DataGenerator {
 
     public generateData300x50000(instance) {
         if (this.data300x50000.length !== 0) {
-            instance.cols = [...this.cols300];
-            instance.data = [...this.data300x50000];
+            instance.cols = this.cols300;
+            instance.data = this.data300x50000;
         } else {
             const result = this.generateData(300, 50000);
-            this.data300x50000 = [...result.data];
-            this.cols300 = [...result.cols];
+            this.data300x50000 = result.data;
+            this.cols300 = result.cols;
 
-            instance.cols = [...this.cols300];
-            instance.data = [...this.data300x50000];
+            instance.cols = this.cols300;
+            instance.data = this.data300x50000;
         }
     }
 }
 
 /** igxFor for testing */
-@Directive({ selector: '[igxForTest]' })
+@Directive({
+    selector: '[igxForTest]',
+    standalone: true
+})
 export class TestIgxForOfDirective<T> extends IgxForOfDirective<T> {
     public scrStepArray = [];
     public scrTopArray = [];
@@ -1290,14 +1342,13 @@ export class TestIgxForOfDirective<T> extends IgxForOfDirective<T> {
         public viewContainer: ViewContainerRef,
         public template: TemplateRef<NgForOfContext<T>>,
         public differs: IterableDiffers,
-        public fResolver: ComponentFactoryResolver,
         public changeDet: ChangeDetectorRef,
         public zone: NgZone,
         protected syncService: IgxForOfScrollSyncService,
         platformUtil: PlatformUtil) {
         super(viewContainer, template, differs, changeDet, zone, syncService, platformUtil, document);
     }
-    public onScroll(evt) {
+    public override onScroll(evt) {
         const ind = this.scrTopArray.length - 1;
         const prevScrTop = ind < 0 ? 0 : this.scrTopArray[ind];
         this.scrTopArray.push(evt.target.scrollTop);
@@ -1341,7 +1392,8 @@ export class TestIgxForOfDirective<T> extends IgxForOfDirective<T> {
         <span #container>
             <ng-template igxForTest [igxForOf]="data"></ng-template>
         </span>
-    `
+    `,
+    imports: [TestIgxForOfDirective, IgxForOfDirective]
 })
 export class EmptyVirtualComponent {
 
@@ -1368,7 +1420,8 @@ export class EmptyVirtualComponent {
                 </div>
             </ng-template>
         </div>
-    `
+    `,
+    imports: [TestIgxForOfDirective, IgxForOfDirective]
 })
 export class VirtualComponent {
     @ViewChild('container', { read: ViewContainerRef, static: true })
@@ -1427,7 +1480,8 @@ export class VirtualComponent {
             <ng-template #scrollContainer igxForTest let-rowData [igxForOf]="data"
                 [igxForScrollOrientation]="'vertical'"
                 [igxForContainerSize]='height'
-                [igxForItemSize]='itemSize'>
+                [igxForItemSize]='itemSize'
+                [igxForInitialChunkSize]='initialChunkSize'>
                 <div [style.display]="'flex'"
                     [style.height]="rowData.height || itemSize || '50px'"
                     [style.margin-top]="rowData.margin || '0px'">
@@ -1439,20 +1493,23 @@ export class VirtualComponent {
                 </div>
             </ng-template>
         </div>
-    `
+    `,
+    selector: 'igx-vertical-virtual',
+    imports: [TestIgxForOfDirective, IgxForOfDirective]
 })
 export class VerticalVirtualComponent extends VirtualComponent {
-    public width = '450px';
-    public height = '300px';
-    public cols = [
+    public override width = '450px';
+    public override height = '300px';
+    public override cols = [
         { field: '1', width: '150px' },
         { field: '2', width: '70px' },
         { field: '3', width: '50px' },
         { field: '4', width: '80px' },
         { field: '5', width: '100px' }
     ];
-    public data = [];
+    public override data = [];
     public itemSize = '50px';
+    public initialChunkSize;
 }
 
 @Component({
@@ -1471,7 +1528,8 @@ export class VerticalVirtualComponent extends VirtualComponent {
                 </div>
             </ng-template>
         </div>
-    `
+    `,
+    imports: [TestIgxForOfDirective, IgxForOfDirective, NgIf]
 })
 export class VerticalVirtualDestroyComponent extends VerticalVirtualComponent {
     public exists = true;
@@ -1507,7 +1565,8 @@ export class VerticalVirtualDestroyComponent extends VerticalVirtualComponent {
                 </div>
             </ng-template>
         </div>
-    `
+    `,
+    imports: [IgxForOfDirective, NgIf]
 })
 export class VerticalVirtualCreateComponent extends VerticalVirtualComponent {
     @ViewChild('scrollContainer2', { read: IgxForOfDirective, static: false })
@@ -1536,19 +1595,20 @@ export class VerticalVirtualCreateComponent extends VerticalVirtualComponent {
                 </div>
             </div>
         </div>
-    `
+    `,
+    imports: [TestIgxForOfDirective, IgxForOfDirective, NgFor]
 })
 export class HorizontalVirtualComponent extends VirtualComponent {
-    public width = '800px';
-    public height = '400px';
-    public cols = [];
-    public data = [];
+    public override width = '800px';
+    public override height = '400px';
+    public override cols = [];
+    public override data = [];
 }
 
 /** Only vertically virtualized component */
 @Component({
     template: `
-        <div #container [style.width]='width' [style.height]='height'>
+        <div #container [style.height]='height'>
             <ng-template #scrollContainer igxForTest let-rowData [igxForOf]="data"
             [igxForScrollOrientation]="'vertical'"
                 [igxForContainerSize]='height'
@@ -1558,7 +1618,8 @@ export class HorizontalVirtualComponent extends VirtualComponent {
                 </div>
             </ng-template>
         </div>
-    `
+    `,
+    imports: [TestIgxForOfDirective, IgxForOfDirective]
 })
 export class VirtualVariableSizeComponent {
     @ViewChild('container', { static: true })
@@ -1592,7 +1653,9 @@ export class VirtualVariableSizeComponent {
                 </div>
             </ng-template>
         </div>
-    `
+    `,
+    selector: 'igx-vertical-virtual-no-data',
+    imports: [TestIgxForOfDirective, IgxForOfDirective]
 })
 export class VerticalVirtualNoDataComponent extends VerticalVirtualComponent {
 }
@@ -1640,7 +1703,7 @@ export class LocalService {
 /** Vertically virtualized component with remote virtualization */
 @Component({
     template: `
-        <div #container [style.width]='width' [style.height]='height'>
+        <div #container [style.height]='height'>
             <ng-template #scrollContainer let-rowData [igxForOf]="data | async" igxForTest
                 [igxForScrollOrientation]="'vertical'"
                 [igxForContainerSize]='height'
@@ -1652,7 +1715,8 @@ export class LocalService {
             </ng-template>
         </div>
     `,
-    providers: [LocalService]
+    providers: [LocalService],
+    imports: [TestIgxForOfDirective, IgxForOfDirective, AsyncPipe]
 })
 export class RemoteVirtualizationComponent implements OnInit, AfterViewInit {
     @ViewChild('scrollContainer', { read: TestIgxForOfDirective, static: true })
@@ -1684,7 +1748,7 @@ export class RemoteVirtualizationComponent implements OnInit, AfterViewInit {
 
 @Component({
     template: `
-        <div #container [style.width]='width' [style.height]='height'>
+        <div #container [style.height]='height'>
             <ng-template #scrollContainer let-rowData [igxForOf]="data | async" igxForTest
                 [igxForTotalItemCount]="count | async"
                 [igxForContainerSize]='height'
@@ -1696,7 +1760,8 @@ export class RemoteVirtualizationComponent implements OnInit, AfterViewInit {
             </ng-template>
         </div>
     `,
-    providers: [LocalService]
+    providers: [LocalService],
+    imports: [TestIgxForOfDirective, IgxForOfDirective, AsyncPipe]
 })
 export class RemoteVirtCountComponent implements OnInit, AfterViewInit {
     @ViewChild('scrollContainer', { read: TestIgxForOfDirective, static: true })
@@ -1750,7 +1815,8 @@ export class RemoteVirtCountComponent implements OnInit, AfterViewInit {
     }`, `.forOfElement {
         flex: 0 0 60px;
         border-right: 1px solid #888;
-    }`]
+    }`],
+    imports: [TestIgxForOfDirective, IgxForOfDirective]
 })
 
 export class NoWidthAndHeightComponent {
@@ -1775,7 +1841,6 @@ export class NoWidthAndHeightComponent {
         <ng-template igxFor let-item [igxForOf]="data" #virtDirVertical
             [igxForScrollOrientation]="'vertical'"
             [igxForContainerSize]='"500px"'
-            [igxForItemSize]='itemSize'
             let-rowIndex="index"
             let-odd="odd"
             let-even="even"
@@ -1788,15 +1853,47 @@ export class NoWidthAndHeightComponent {
                     last: last,
                     even: even,
                     odd: odd
-                }"
-                [style.height]='itemSize'>
+                }">
                     {{rowIndex}} : {{item.text}}
             </div>
         </ng-template>
     </div>
     `,
+    imports: [IgxForOfDirective, NgClass]
 })
 export class LocalVariablesComponent {
+    public data = [];
+
+    constructor() {
+        for (let i = 0; i < 100; i++) {
+            this.data.push({ text: i + '' });
+        }
+    }
+}
+
+
+@Pipe({
+    name: "customSlice",
+    standalone: true
+})
+export class CustomSlicePipe implements PipeTransform {
+    public transform(value: any[], start: number, end: number): any[] {
+        return value.slice(start, end);
+    }
+}
+
+@Component({
+    template: `
+    <div class='container'>
+        <div #markupItem
+            *igxFor="let item of data | customSlice:0:50 as localData; index as rowIndex; scrollOrientation: 'vertical'; containerSize: '500px'">
+            {{rowIndex}} : {{item.text}} : {{localData[rowIndex].text}}
+        </div>
+    </div>
+    `,
+    imports: [IgxForOfDirective, CustomSlicePipe, NgClass]
+})
+export class LocalVariablesAsComponent {
     public data = [];
 
     constructor() {

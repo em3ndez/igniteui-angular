@@ -1,11 +1,12 @@
 import { Component, ViewChild, ViewEncapsulation } from '@angular/core';
-import { IgxToastComponent } from 'igniteui-angular';
-
+import { NgFor } from '@angular/common';
+import { IGX_LIST_DIRECTIVES, IgxAvatarComponent, IgxButtonDirective, IgxIconComponent, IgxRippleDirective, IgxToastComponent } from 'igniteui-angular';
 @Component({
     selector: 'app-list-panning-sample',
-    styleUrls: ['list-panning.sample.css'],
+    styleUrls: ['list-panning.sample.scss'],
     templateUrl: 'list-panning.sample.html',
-    encapsulation: ViewEncapsulation.None
+    encapsulation: ViewEncapsulation.None,
+    imports: [NgFor, IgxRippleDirective, IgxAvatarComponent, IgxIconComponent, IgxToastComponent, IgxButtonDirective, IGX_LIST_DIRECTIVES]
 })
 export class ListPanningSampleComponent {
     @ViewChild('toast', { static: true })

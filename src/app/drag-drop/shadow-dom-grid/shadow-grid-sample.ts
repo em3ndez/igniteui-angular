@@ -1,11 +1,13 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { IgxColumnComponent } from 'igniteui-angular';
+import { IgxGridComponent } from '../../../../projects/igniteui-angular/src/lib/grids/grid/grid.component';
 
 @Component({
-  selector: 'app-shadow-grid-sample',
-  templateUrl: './shadow-grid-sample.html',
-  styleUrls: ['./shadow-grid-sample.scss'],
-  encapsulation: ViewEncapsulation.ShadowDom
+    selector: 'app-shadow-grid-sample',
+    templateUrl: './shadow-grid-sample.html',
+    styleUrls: ['./shadow-grid-sample.scss'],
+    encapsulation: ViewEncapsulation.ShadowDom,
+    imports: [IgxGridComponent]
 })
 export class ShadowGridSampleComponent implements OnInit {
   public localData: any[];

@@ -1,34 +1,43 @@
-import { CommonModule } from '@angular/common';
 import {
-    Component, QueryList, Input, Output, EventEmitter, ContentChild, Directive,
-    NgModule, TemplateRef, OnInit, AfterViewInit, ContentChildren, OnDestroy, HostBinding, ElementRef, Optional, Inject
+    Component,
+    QueryList,
+    Input,
+    Output,
+    EventEmitter,
+    ContentChild,
+    Directive,
+    TemplateRef,
+    OnInit,
+    AfterViewInit,
+    ContentChildren,
+    OnDestroy,
+    HostBinding,
+    ElementRef,
+    booleanAttribute,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { growVerIn, growVerOut } from '../animations/grow';
-import { IgxCheckboxModule } from '../checkbox/checkbox.component';
-import { DisplayDensityBase, DisplayDensityToken, IDisplayDensityOptions } from '../core/displayDensity';
-import { IgxExpansionPanelModule } from '../expansion-panel/public_api';
+import { takeUntil, throttleTime } from 'rxjs/operators';
+
 import { ToggleAnimationSettings } from '../expansion-panel/toggle-animation-component';
-import { IgxIconModule } from '../icon/public_api';
-import { IgxInputGroupModule } from '../input-group/public_api';
-import { IgxProgressBarModule } from '../progressbar/progressbar.component';
 import {
     IGX_TREE_COMPONENT, IgxTreeSelectionType, IgxTree, ITreeNodeToggledEventArgs,
     ITreeNodeTogglingEventArgs, ITreeNodeSelectionEvent, IgxTreeNode, IgxTreeSearchResolver
 } from './common';
 import { IgxTreeNavigationService } from './tree-navigation.service';
-import { IgxTreeNodeComponent, IgxTreeNodeLinkDirective } from './tree-node/tree-node.component';
+import { IgxTreeNodeComponent } from './tree-node/tree-node.component';
 import { IgxTreeSelectionService } from './tree-selection.service';
 import { IgxTreeService } from './tree.service';
+import { growVerIn, growVerOut } from 'igniteui-angular/animations';
+import { resizeObservable } from '../core/utils';
 
 /**
  * @hidden @internal
  * Used for templating the select marker of the tree
  */
 @Directive({
-    selector: '[igxTreeSelectMarker]'
+    selector: '[igxTreeSelectMarker]',
+    standalone: true
 })
 export class IgxTreeSelectMarkerDirective {
 }
@@ -38,11 +47,41 @@ export class IgxTreeSelectMarkerDirective {
  * Used for templating the expand indicator of the tree
  */
 @Directive({
-    selector: '[igxTreeExpandIndicator]'
+    selector: '[igxTreeExpandIndicator]',
+    standalone: true
 })
 export class IgxTreeExpandIndicatorDirective {
 }
 
+/**
+ * IgxTreeComponent allows a developer to show a set of nodes in a hierarchical fashion.
+ *
+ * @igxModule IgxTreeModule
+ * @igxKeywords tree
+ * @igxTheme igx-tree-theme
+ * @igxGroup Grids & Lists
+ *
+ * @remark
+ * The Angular Tree Component allows users to represent hierarchical data in a tree-view structure,
+ * maintaining parent-child relationships, as well as to define static tree-view structure without a corresponding data model.
+ * Its primary purpose is to allow end-users to visualize and navigate within hierarchical data structures.
+ * The Ignite UI for Angular Tree Component also provides load on demand capabilities, item activation,
+ * bi-state and cascading selection of items through built-in checkboxes, built-in keyboard navigation and more.
+ *
+ * @example
+ * ```html
+ * <igx-tree>
+ *   <igx-tree-node>
+ *      I am a parent node 1
+ *      <igx-tree-node>
+ *          I am a child node 1
+ *      </igx-tree-node>
+ *      ...
+ *   </igx-tree-node>
+ *	 ...
+ * </igx-tree>
+ * ```
+ */
 @Component({
     selector: 'igx-tree',
     templateUrl: 'tree.component.html',
@@ -51,9 +90,10 @@ export class IgxTreeExpandIndicatorDirective {
         IgxTreeSelectionService,
         IgxTreeNavigationService,
         { provide: IGX_TREE_COMPONENT, useExisting: IgxTreeComponent },
-    ]
+    ],
+    standalone: true
 })
-export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnInit, AfterViewInit, OnDestroy {
+export class IgxTreeComponent implements IgxTree, OnInit, AfterViewInit, OnDestroy {
 
     @HostBinding('class.igx-tree')
     public cssClass = 'igx-tree';
@@ -89,8 +129,25 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
      * this.tree.singleBranchExpand = false;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public singleBranchExpand = false;
+
+    /** Get/Set if nodes should be expanded/collapsed when clicking over them.
+     *
+     * ```html
+     * <igx-tree [toggleNodeOnClick]="true">
+     * ...
+     * </igx-tree>
+     * ```
+     *
+     * ```typescript
+     * const tree: IgxTree = this.tree;
+     * this.tree.toggleNodeOnClick = false;
+     * ```
+     */
+    @Input({ transform: booleanAttribute })
+    public toggleNodeOnClick = false;
+
 
     /** Get/Set the animation settings that branches should use when expanding/collpasing.
      *
@@ -258,6 +315,9 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
     /** @hidden @internal */
     public forceSelect = [];
 
+    /** @hidden @internal */
+    public resizeNotify = new Subject<void>();
+
     private _selection: IgxTreeSelectionType = IgxTreeSelectionType.None;
     private destroy$ = new Subject<void>();
     private unsubChildren$ = new Subject<void>();
@@ -267,8 +327,7 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
         private selectionService: IgxTreeSelectionService,
         private treeService: IgxTreeService,
         private element: ElementRef<HTMLElement>,
-        @Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions?: IDisplayDensityOptions) {
-        super(_displayDensityOptions);
+    ) {
         this.selectionService.register(this);
         this.treeService.register(this);
         this.navService.register(this);
@@ -332,7 +391,7 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
      * Returns all of the nodes that match the passed searchTerm.
      * Accepts a custom comparer function for evaluating the search term against the nodes.
      *
-     * @remark
+     * @remarks
      * Default search compares the passed `searchTerm` against the node's `data` Input.
      * When using `findNodes` w/o a `comparer`, make sure all nodes have `data` passed.
      *
@@ -377,7 +436,6 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
 
     /** @hidden @internal */
     public ngOnInit() {
-        super.ngOnInit();
         this.disabledChange.pipe(takeUntil(this.destroy$)).subscribe((e) => {
             this.navService.update_disabled_cache(e);
         });
@@ -385,12 +443,16 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
             this.expandToNode(this.navService.activeNode);
             this.scrollNodeIntoView(node?.header?.nativeElement);
         });
-        this.onDensityChanged.pipe(takeUntil(this.destroy$)).subscribe(() => {
+        this.subToCollapsing();
+        this.resizeNotify.pipe(
+            throttleTime(40, null, { trailing: true }),
+            takeUntil(this.destroy$)
+        )
+        .subscribe(() => {
             requestAnimationFrame(() => {
                 this.scrollNodeIntoView(this.navService.activeNode?.header.nativeElement);
             });
         });
-        this.subToCollapsing();
     }
 
     /** @hidden @internal */
@@ -400,6 +462,7 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
         });
         this.scrollNodeIntoView(this.navService.activeNode?.header?.nativeElement);
         this.subToChanges();
+        resizeObservable(this.nativeElement).pipe(takeUntil(this.destroy$)).subscribe(() => this.resizeNotify.next());
     }
 
     /** @hidden @internal */
@@ -470,46 +533,10 @@ export class IgxTreeComponent extends DisplayDensityBase implements IgxTree, OnI
         if (shouldScroll && this.nativeElement.scrollHeight > this.nativeElement.clientHeight) {
             // this.nativeElement.scrollTop = nodeRect.y - treeRect.y - nodeRect.height;
             this.nativeElement.scrollTop =
-            this.nativeElement.scrollTop + bottomOffset + topOffset + (topOffset ? -1 : +1) * nodeRect.height;
+                this.nativeElement.scrollTop + bottomOffset + topOffset + (topOffset ? -1 : +1) * nodeRect.height;
         }
     }
 
     private _comparer = <T>(data: T, node: IgxTreeNodeComponent<T>) => node.data === data;
 
-}
-
-/**
- * @hidden
- *
- * NgModule defining the components and directives needed for `igx-tree`
- */
-@NgModule({
-    declarations: [
-        IgxTreeSelectMarkerDirective,
-        IgxTreeExpandIndicatorDirective,
-        IgxTreeNodeLinkDirective,
-        IgxTreeComponent,
-        IgxTreeNodeComponent
-    ],
-    imports: [
-        CommonModule,
-        FormsModule,
-        IgxIconModule,
-        IgxInputGroupModule,
-        IgxCheckboxModule,
-        IgxProgressBarModule
-    ],
-    exports: [
-        IgxTreeSelectMarkerDirective,
-        IgxTreeExpandIndicatorDirective,
-        IgxTreeNodeLinkDirective,
-        IgxTreeComponent,
-        IgxTreeNodeComponent,
-        IgxIconModule,
-        IgxInputGroupModule,
-        IgxCheckboxModule,
-        IgxExpansionPanelModule
-    ]
-})
-export class IgxTreeModule {
 }

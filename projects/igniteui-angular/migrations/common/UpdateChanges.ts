@@ -2,21 +2,22 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 import * as tss from 'typescript/lib/tsserverlibrary';
-import { SchematicContext, Tree, FileVisitor } from '@angular-devkit/schematics';
-import { WorkspaceSchema } from '@schematics/angular/utility/workspace-models';
+import type { SchematicContext, Tree, FileVisitor } from '@angular-devkit/schematics';
+import type { WorkspaceSchema } from '@schematics/angular/utility/workspace-models';
 import {
     ClassChanges, BindingChanges, SelectorChange,
     SelectorChanges, ThemeChanges, ImportsChanges, MemberChanges, ThemeChange, ThemeType
 } from './schema';
 import {
-    getLanguageService, getRenamePositions, getIdentifierPositions, replaceMatch,
-    createProjectService, isMemberIgniteUI, NG_LANG_SERVICE_PACKAGE_NAME, NG_CORE_PACKAGE_NAME, findMatches
+    getLanguageService, getRenamePositions, getIdentifierPositions,
+    isMemberIgniteUI, NG_LANG_SERVICE_PACKAGE_NAME, NG_CORE_PACKAGE_NAME, findMatches
 } from './tsUtils';
 import {
-    getProjectPaths, getWorkspace, getProjects, escapeRegExp,
+    getProjectPaths, getWorkspace, getProjects, escapeRegExp, replaceMatch,
     getPackageManager, canResolvePackage, tryInstallPackage, tryUninstallPackage, getPackageVersion
 } from './util';
 import { ServerHost } from './ServerHost';
+import { serviceContainer } from './project-service-container';
 
 const TSCONFIG_PATH = 'tsconfig.json';
 
@@ -38,32 +39,33 @@ interface AppliedChange {
 /* eslint-disable arrow-parens */
 export class UpdateChanges {
     protected tsconfigPath = TSCONFIG_PATH;
-    protected _projectService: tss.server.ProjectService;
-    public get projectService(): tss.server.ProjectService {
-        if (!this._projectService) {
-            this._projectService = createProjectService(this.serverHost);
-            // Force Angular service to compile project on initial load w/ configure project
-            // otherwise if the first compilation occurs on an HTML file the project won't have proper refs
-            // and no actual angular metadata will be resolved for the rest of the migration
-            const wsProject = this.workspace.projects[this.workspace.defaultProject] || this.workspace.projects[0];
-            const mainRelPath = wsProject.architect?.build?.options['main'] ?
-                path.join(wsProject.root, wsProject.architect?.build?.options['main']) :
-                `src/main.ts`;
-            // patch TSConfig so it includes angularOptions.strictTemplates
-            // ivy ls requires this in order to function properly on templates
-            this.patchTsConfig();
-            const mainAbsPath = path.resolve(this._projectService.currentDirectory, mainRelPath);
-            const scriptInfo = this._projectService.getOrCreateScriptInfoForNormalizedPath(tss.server.toNormalizedPath(mainAbsPath), false);
-            this._projectService.openClientFile(scriptInfo.fileName);
 
-
-            const project = this._projectService.findProject(scriptInfo.containingProjects[0].projectName);
-            project.getLanguageService().getSemanticDiagnostics(mainAbsPath);
+    public _shouldInvokeLS = true;
+    public get shouldInvokeLS(): boolean {
+        return this._shouldInvokeLS;
+    }
+    public set shouldInvokeLS(val: boolean) {
+        if (val === undefined || val === null) {
+            // call LS by default
+            this.shouldInvokeLS = true;
+            return;
         }
-        return this._projectService;
+        this._shouldInvokeLS = val;
     }
 
-    protected serverHost: ServerHost;
+    public get projectService(): tss.server.ProjectService {
+        const projectService = serviceContainer.projectService;
+        if (!serviceContainer.configured) {
+            this.configureForAngularLS(projectService);
+            serviceContainer.configured = true;
+        }
+
+        return projectService;
+    }
+
+    protected get serverHost(): ServerHost {
+        return serviceContainer.serverHost;
+    }
     protected workspace: WorkspaceSchema;
     protected sourcePaths: string[];
     protected classChanges: ClassChanges;
@@ -152,7 +154,8 @@ export class UpdateChanges {
         this.themeChanges = this.loadConfig('theme-changes.json');
         this.importsChanges = this.loadConfig('imports.json');
         this.membersChanges = this.loadConfig('members.json');
-        this.serverHost = new ServerHost(this.host);
+        // update LS server host with the schematics tree:
+        this.serverHost.host = this.host;
     }
 
     /** Apply configured changes to the Host Tree */
@@ -172,7 +175,9 @@ export class UpdateChanges {
 
         this.updateTemplateFiles();
         this.updateTsFiles();
-        this.updateMembers();
+        if (this.shouldInvokeLS) {
+            this.updateMembers();
+        }
         /** Sass files */
         if (this.themeChanges && this.themeChanges.changes.length) {
             for (const entryPath of this.sassFiles) {
@@ -206,7 +211,7 @@ export class UpdateChanges {
     /** Path must be absolute. If calling externally, use this.getAbsolutePath */
     protected getDefaultLanguageService(entryPath: string): tss.LanguageService | undefined {
         const project = this.getDefaultProjectForFile(entryPath);
-        return project.getLanguageService();
+        return project?.getLanguageService();
     }
 
     protected updateSelectors(entryPath: string) {
@@ -324,7 +329,7 @@ export class UpdateChanges {
             }
             switch (change.owner.type) {
                 case 'component':
-                    searchPattern = String.raw`\<${change.owner.selector}[^\>]*\>`;
+                    searchPattern = String.raw`\<${change.owner.selector}(?=[\s\>])[^\>]*\>`;
                     break;
                 case 'directive':
                     searchPattern = String.raw`\<[^\>]*[\s\[]${change.owner.selector}[^\>]*\>`;
@@ -452,7 +457,8 @@ export class UpdateChanges {
     protected updateSassVariables(entryPath: string) {
         let fileContent = this.host.read(entryPath).toString();
         let overwrite = false;
-        const allowedStartCharacters = new RegExp('(\:|\,)\s?', 'g');
+        const allowedStartCharacters = new RegExp(/(:|,)\s?/, 'g');
+        // eslint-disable-next-line no-control-regex
         const allowedEndCharacters = new RegExp('[;),: \r\n]', 'g');
         for (const change of this.themeChanges.changes) {
             if (change.type !== ThemeType.Variable) {
@@ -483,19 +489,19 @@ export class UpdateChanges {
             if (change.type !== ThemeType.Function && change.type !== ThemeType.Mixin) {
                 continue;
             }
+
             let occurrences: number[] = [];
             if (aliases.length > 0 && !aliases.includes('*')) {
-                for (const alias of aliases) {
-                    occurrences = occurrences.concat(findMatches(fileContent, alias + '.' + change.name));
-                }
+                aliases.forEach(a => occurrences = occurrences.concat(findMatches(fileContent, a + '.' + change.name)));
                 if (occurrences.length > 0) {
                     ({ overwrite, fileContent } = this.tryReplaceScssFunctionWithAlias(occurrences, aliases, fileContent, change, overwrite));
+                    continue;
                 }
-            } else {
-                occurrences = findMatches(fileContent, change.name);
-                if (occurrences.length > 0) {
-                    ({ overwrite, fileContent } = this.tryReplaceScssFunction(occurrences, fileContent, change, overwrite));
-                }
+            }
+
+            occurrences = findMatches(fileContent, change.name);
+            if (occurrences.length > 0) {
+                ({ overwrite, fileContent } = this.tryReplaceScssFunction(occurrences, fileContent, change, overwrite));
             }
         }
         if (overwrite) {
@@ -504,31 +510,21 @@ export class UpdateChanges {
     }
 
     protected getAliases(entryPath: string) {
-        let fileContent = this.host.read(entryPath).toString();
-        const allUses = [
-            `@use 'igniteui-angular/theming' as `,
-            `@use 'igniteui-angular/theme' as `,
-            `@use 'igniteui-angular/lib/core/styles/themes/index' as `
-        ]
-        let urls = [];
-        for (let i = 0; i < allUses.length; i++) {
-            if (fileContent.includes(allUses[i])) {
-                urls.push(allUses[i].substring(5, allUses[i].length - 4));
-            }
-        }
+        const fileContent = this.host.read(entryPath).toString();
+        // B.P. 18/05/22 #11577 - Use RegEx to distinguish themed imports.
+        const matchers = [
+            /@use(\s+)('|")igniteui-angular\/theming\2\1as\1(\w+)/g,
+            /@use(\s+)('|")igniteui-angular\/theme\2\1as\1(\w+)/g,
+            /@use(\s+)('|")igniteui-angular\/lib\/core\/styles\/themes\/index\2\1as\1(\w+)/g
+        ];
 
-        return this.formatAliases(urls, fileContent);
-    }
-
-    protected formatAliases(urls: string[], fileContent: string) {
-        let aliases = [];
-        for (const url of urls) {
-            const matcher = new RegExp(String.raw`@use\s+${escapeRegExp(url)}\s+as\s+(\w+)`, 'g');
-            const match = matcher.exec(fileContent);
+        const aliases = [];
+        matchers.forEach(m => {
+            const match = m.exec(fileContent);
             if (match) {
-                aliases.push(match[1]); // access the first captured match
+                aliases.push(match[3]); // access the captured alias
             }
-        }
+        });
 
         return aliases;
     }
@@ -554,7 +550,7 @@ export class UpdateChanges {
         }
     }
 
-    protected updateClassMembers(entryPath: string, memberChanges: MemberChanges) {
+    protected updateClassMembers(entryPath: string, memberChanges: MemberChanges): void {
         let content = this.host.read(entryPath).toString();
         const absPath = tss.server.toNormalizedPath(path.join(process.cwd(), entryPath));
         // use the absolute path for ALL LS operations
@@ -567,6 +563,9 @@ export class UpdateChanges {
             }
 
             langServ = langServ || this.getDefaultLanguageService(absPath);
+            if (!langServ) {
+                return;
+            }
             let matches: number[];
             if (entryPath.endsWith('.ts')) {
                 const source = langServ.getProgram().getSourceFile(absPath);
@@ -654,7 +653,7 @@ export class UpdateChanges {
                 this._initialTsConfig = originalContent;
             }
         }
-    };
+    }
 
     private ensureTsConfigPath(): void {
         if (this.host.exists(this.tsconfigPath)) {
@@ -662,7 +661,7 @@ export class UpdateChanges {
         }
 
         // attempt to find a main tsconfig from workspace:
-        const wsProject = this.workspace.projects[this.workspace.defaultProject] || this.workspace.projects[0];
+        const wsProject = Object.values(this.workspace.projects)[0];
         // technically could be per-project, but assuming there's at least one main tsconfig for IDE support
         const projectConfig = wsProject.architect?.build?.options['tsConfig'];
 
@@ -680,7 +679,7 @@ export class UpdateChanges {
         if (!result.error && result.config.extends) {
             this.tsconfigPath = path.posix.join(path.posix.dirname(projectConfig), result.config.extends);
         }
-    };
+    }
 
     private loadConfig(configJson: string) {
         const filePath = path.join(this.rootPath, 'changes', configJson);
@@ -805,11 +804,66 @@ export class UpdateChanges {
     }
 
     private getDefaultProjectForFile(entryPath: string): tss.server.Project {
-        const scriptInfo = this.projectService.getOrCreateScriptInfoForNormalizedPath(tss.server.asNormalizedPath(entryPath), false);
+        const scriptInfo = this.projectService?.getOrCreateScriptInfoForNormalizedPath(tss.server.asNormalizedPath(entryPath), false);
+        if (!scriptInfo) {
+            return null;
+        }
         this.projectService.openClientFile(scriptInfo.fileName);
-        const project = this.projectService.findProject(scriptInfo.containingProjects[0].projectName);
+        const project = this.projectService.findProject(scriptInfo.containingProjects[0].getProjectName());
         project.addMissingFileRoot(scriptInfo.fileName);
         return project;
+    }
+
+    /**
+     * Force Angular service to compile project on initial load w/ configured project
+     * otherwise if the first compilation occurs on an HTML file the project won't have proper refs
+     * and no actual angular metadata will be resolved for the rest of the migration
+     */
+    private configureForAngularLS(projectService: ts.server.ProjectService): void {
+        // TODO: this pattern/issue might be obsolete
+        const mainRelPath = this.getWorkspaceProjectEntryPath();
+        if (!mainRelPath) {
+            return;
+        }
+
+        // patch TSConfig so it includes angularOptions.strictTemplates
+        // ivy ls requires this in order to function properly on templates
+        this.patchTsConfig();
+        const mainAbsPath = path.resolve(projectService.currentDirectory, mainRelPath);
+        const scriptInfo = projectService.getOrCreateScriptInfoForNormalizedPath(tss.server.toNormalizedPath(mainAbsPath), false);
+        projectService.openClientFile(scriptInfo.fileName);
+
+
+        try {
+            const project = projectService.findProject(scriptInfo.containingProjects[0].getProjectName());
+            project.getLanguageService().getSemanticDiagnostics(mainAbsPath);
+        } catch (err) {
+            this.context.logger.warn(
+                "An error occurred during TypeScript project service setup. Some migrations relying on language services might not be applied."
+            );
+        }
+    }
+
+    private getWorkspaceProjectEntryPath(): string | null {
+        const projectKeys = Object.keys(this.workspace.projects);
+        if (!projectKeys.length) {
+            this.context.logger.info(
+`Could not resolve project from directory ${this.serverHost.getCurrentDirectory()}. Some migrations may not be applied.`);
+            return null;
+        }
+
+        // grab the first possible main path:
+        for (const key of projectKeys) {
+            const wsProject = this.workspace.projects[key];
+            // intentionally compare against string values of the enum to avoid hard import
+            if (wsProject.projectType == "application" && wsProject.architect?.build?.options) {
+                return wsProject.architect.build.options['browser'] || wsProject.architect.build.options['main'];
+            } else if (wsProject.projectType == "library") {
+                // TODO: attempt to resolve from project ng-package.json or tsConfig
+            }
+        }
+
+        return null;
     }
 }
 

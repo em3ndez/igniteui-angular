@@ -1,4 +1,4 @@
-import { cloneValue } from '../../core/utils';
+import { IDataCloneStrategy } from '../../data-operations/data-clone-strategy';
 import { DataUtil, GridColumnDataType } from '../../data-operations/data-util';
 import { FilteringLogic } from '../../data-operations/filtering-expression.interface';
 import { FilteringExpressionsTree } from '../../data-operations/filtering-expressions-tree';
@@ -6,24 +6,23 @@ import { ISortingExpression } from '../../data-operations/sorting-strategy';
 import { PivotGridType } from '../common/grid.interface';
 import { IGridSortingStrategy, IgxSorting } from '../common/strategy';
 import { IgxPivotAggregate, IgxPivotDateAggregate, IgxPivotNumericAggregate, IgxPivotTimeAggregate } from './pivot-grid-aggregate';
-import { IPivotAggregator, IPivotConfiguration, IPivotDimension, IPivotGridRecord, IPivotKeys, IPivotValue, PivotDimensionType } from './pivot-grid.interface';
+import { IPivotAggregator, IPivotConfiguration, IPivotDimension, IPivotGridRecord, IPivotKeys, IPivotValue, PivotDimensionType, PivotSummaryPosition } from './pivot-grid.interface';
 
 export class PivotUtil {
 
     // go through all children and apply new dimension groups as child
-    public static processGroups(recs: IPivotGridRecord[], dimension: IPivotDimension, pivotKeys: IPivotKeys) {
+    public static processGroups(recs: IPivotGridRecord[], dimension: IPivotDimension, pivotKeys: IPivotKeys, cloneStrategy: IDataCloneStrategy) {
         for (const rec of recs) {
             // process existing children
             if (rec.children && rec.children.size > 0) {
                 // process hierarchy in dept
-                rec.children.forEach((values, key) => {
-                    this.processGroups(values, dimension, pivotKeys);
+                rec.children.forEach((values) => {
+                    this.processGroups(values, dimension, pivotKeys, cloneStrategy);
                 });
             }
             // add children for current dimension
             const hierarchyFields = PivotUtil
-                .getFieldsHierarchy(rec.records, [dimension], PivotDimensionType.Row, pivotKeys);
-            const values = Array.from(hierarchyFields.values()).find(x => x.dimension.memberName === dimension.memberName);
+                .getFieldsHierarchy(rec.records, [dimension], PivotDimensionType.Row, pivotKeys, cloneStrategy);
             const siblingData = PivotUtil
                 .processHierarchy(hierarchyFields, pivotKeys, 0);
             rec.children.set(dimension.memberName, siblingData);
@@ -87,6 +86,97 @@ export class PivotUtil {
             }
         }
     }
+
+    public static flattenGroupsHorizontally(data: IPivotGridRecord[],
+                                            dimension: IPivotDimension,
+                                            expansionStates,
+                                            defaultExpand: boolean,
+                                            visibleDimensions: IPivotDimension[],
+                                            summariesPosition: PivotSummaryPosition,
+                                            parent?: IPivotDimension,
+                                            parentRec?: IPivotGridRecord) {
+        for (let i = 0; i < data.length; i++) {
+            const rec = data[i];
+            const field = dimension.memberName;
+            if (!field) {
+                continue;
+            }
+
+            if (!visibleDimensions.find(recDim => recDim.memberName === rec.dimensions[0].memberName)) {
+                visibleDimensions.push(rec.dimensions[0]);
+            }
+
+            let recordsData = rec.children.get(field);
+            if (!recordsData && parent) {
+                // check parent
+                recordsData = rec.children.get(parent.memberName);
+                if (recordsData) {
+                    dimension = parent;
+                }
+            }
+
+            if (parentRec) {
+                parentRec.dimensionValues.forEach((value, key) => {
+                    rec.dimensionValues.set(key, value);
+                    const dim = parentRec.dimensions.find(x => x.memberName === key);
+                    rec.dimensions.unshift(dim);
+                });
+            }
+
+            const expansionRowKey = PivotUtil.getRecordKey(rec, dimension);
+            const isExpanded = expansionStates.get(expansionRowKey) === undefined ?
+                defaultExpand :
+                expansionStates.get(expansionRowKey);
+            const shouldExpand = isExpanded || !dimension.childLevel || !rec.dimensionValues.get(dimension.memberName);
+            if (shouldExpand && recordsData && !rec.totalRecordDimensionName) {
+                if (dimension.childLevel) {
+                    this.flattenGroupsHorizontally(recordsData, dimension.childLevel, expansionStates, defaultExpand, visibleDimensions, summariesPosition, dimension, rec);
+                } else {
+                    // copy parent values and dims in child
+                    recordsData.forEach(x => {
+                        rec.dimensionValues.forEach((value, key) => {
+                            if (dimension.memberName !== key) {
+                                x.dimensionValues.set(key, value);
+                                const dim = rec.dimensions.find(y => y.memberName === key);
+                                x.dimensions.unshift(dim);
+                            }
+
+                        });
+                    });
+                }
+
+                recordsData.forEach((childRec) => {
+                    if (childRec.dimensions.length === 1) {
+                        rec.dimensionValues.forEach((value: string, key) => {
+                            childRec.dimensionValues.set(key, value);
+                        });
+                    }
+
+                    childRec.dimensions.forEach((dim) => {
+                        if (!visibleDimensions.find(recDim => recDim.memberName === dim.memberName)) {
+                            visibleDimensions.push(dim);
+                        }
+                    });
+                });
+
+                const curDimValue = rec.dimensionValues.get(dimension.memberName);
+                if (dimension.horizontalSummary && curDimValue) {
+                    rec.totalRecordDimensionName = dimension.memberName;
+                    rec.dimensionValues.set(dimension.memberName, `${curDimValue} Total`);
+                    if (summariesPosition === PivotSummaryPosition.Top) {
+                        recordsData.unshift(rec);
+                    } else {
+                        recordsData.push(rec);
+                    }
+                }
+
+                data.splice(i, 1, ...recordsData);
+                i += recordsData.length - 1;
+
+            }
+        }
+    }
+
     public static assignLevels(dims) {
         for (const dim of dims) {
             let currDim = dim;
@@ -100,17 +190,17 @@ export class PivotUtil {
         }
     }
     public static getFieldsHierarchy(data: any[], dimensions: IPivotDimension[],
-        dimensionType: PivotDimensionType, pivotKeys: IPivotKeys): Map<string, any> {
+        dimensionType: PivotDimensionType, pivotKeys: IPivotKeys, cloneStrategy: IDataCloneStrategy): Map<string, any> {
         const hierarchy = new Map<string, any>();
         for (const rec of data) {
             const vals = dimensionType === PivotDimensionType.Column ?
                 this.extractValuesForColumn(dimensions, rec, pivotKeys) :
-                this.extractValuesForRow(dimensions, rec, pivotKeys);
-            for (const [key, val] of vals) { // this should go in depth also vals.children
+                this.extractValuesForRow(dimensions, rec, pivotKeys, cloneStrategy);
+            for (const [_key, val] of vals) { // this should go in depth also vals.children
                 if (hierarchy.get(val.value) != null) {
                     this.applyHierarchyChildren(hierarchy, val, rec, pivotKeys);
                 } else {
-                    hierarchy.set(val.value, cloneValue(val));
+                    hierarchy.set(val.value, cloneStrategy.clone(val));
                     this.applyHierarchyChildren(hierarchy, val, rec, pivotKeys);
                 }
             }
@@ -143,12 +233,12 @@ export class PivotUtil {
         return lvl;
     }
 
-    public static extractValuesForRow(dims: IPivotDimension[], recData: any, pivotKeys: IPivotKeys) {
+    public static extractValuesForRow(dims: IPivotDimension[], recData: any, pivotKeys: IPivotKeys, cloneStrategy: IDataCloneStrategy) {
         const values = new Map<string, any>();
         for (const col of dims) {
             if (recData[pivotKeys.level] && recData[pivotKeys.level] > 0) {
                 const childData = recData[pivotKeys.records];
-                return this.getFieldsHierarchy(childData, [col], PivotDimensionType.Row, pivotKeys);
+                return this.getFieldsHierarchy(childData, [col], PivotDimensionType.Row, pivotKeys, cloneStrategy);
             }
 
             const value = this.extractValueFromDimension(col, recData);
@@ -156,7 +246,7 @@ export class PivotUtil {
             objValue['value'] = value;
             objValue['dimension'] = col;
             if (col.childLevel) {
-                const childValues = this.extractValuesForRow([col.childLevel], recData, pivotKeys);
+                const childValues = this.extractValuesForRow([col.childLevel], recData, pivotKeys, cloneStrategy);
                 objValue[pivotKeys.children] = childValues;
             }
             values.set(value, objValue);
@@ -185,11 +275,13 @@ export class PivotUtil {
 
     public static flatten(arr, lvl = 0) {
         const newArr = arr.reduce((acc, item) => {
-            item.level = lvl;
-            acc.push(item);
-            if (item.childLevel) {
-                item.expandable = true;
-                acc = acc.concat(this.flatten([item.childLevel], lvl + 1));
+            if (item) {
+                item.level = lvl;
+                acc.push(item);
+                if (item.childLevel) {
+                    item.expandable = true;
+                    acc = acc.concat(this.flatten([item.childLevel], lvl + 1));
+                }
             }
             return acc;
         }, []);
@@ -233,10 +325,28 @@ export class PivotUtil {
     public static aggregate(records, values: IPivotValue[]) {
         const result = {};
         for (const pivotValue of values) {
-            result[pivotValue.member] = pivotValue.aggregate.aggregator(records.map(r => r[pivotValue.member]), records);
+            const aggregator = PivotUtil.getAggregatorForType(pivotValue.aggregate, pivotValue.dataType);
+            if (!aggregator) {
+                throw `No valid aggregator found for ${pivotValue.member}. Please set either a valid aggregatorName or aggregator`;
+            }
+            result[pivotValue.member] = aggregator(records.map(r => r[pivotValue.member]), records);
         }
 
         return result;
+    }
+
+    public static getAggregatorForType(aggregate: IPivotAggregator, dataType: GridColumnDataType) {
+        let aggregator = aggregate.aggregator;
+        if (aggregate.aggregatorName) {
+            let aggregators = IgxPivotNumericAggregate.aggregators();
+            if (!dataType || dataType === 'date' || dataType === 'dateTime') {
+                aggregators = aggregators.concat(IgxPivotDateAggregate.aggregators())
+            } else if (dataType === 'time') {
+                aggregators = aggregators.concat(IgxPivotTimeAggregate.aggregators());
+            }
+            aggregator = aggregators.find(x => x.key.toLocaleLowerCase() === aggregate.aggregatorName.toLocaleLowerCase())?.aggregator;
+        }
+        return aggregator;
     }
 
     public static processHierarchy(hierarchies, pivotKeys, level = 0, rootData = false): IPivotGridRecord[] {
@@ -279,62 +389,21 @@ export class PivotUtil {
         return leafs;
     }
 
-    public static getRecordKey(rec: IPivotGridRecord, currentDim: IPivotDimension,) {
+    public static getRecordKey(rec: IPivotGridRecord, currentDim: IPivotDimension) {
         const parentFields = [];
+
         const currentDimIndex = rec.dimensions.findIndex(x => x.memberName === currentDim.memberName) + 1;
         const prevDims = rec.dimensions.slice(0, currentDimIndex);
         for (const prev of prevDims) {
             const prevValue = rec.dimensionValues.get(prev.memberName);
             parentFields.push(prevValue);
         }
+
         return parentFields.join('-');
     }
 
-    public static getTotalLvl(rec, pivotKeys: IPivotKeys) {
-        let total = 0;
-        Object.keys(rec).forEach(key => {
-            if (key.indexOf(pivotKeys.rowDimensionSeparator + pivotKeys.level) !== -1 &&
-                key.indexOf(pivotKeys.level + pivotKeys.rowDimensionSeparator) === -1 &&
-                key.indexOf(pivotKeys.records) === -1) {
-                total += rec[key] || 0;
-            }
-        });
-        return total;
-    }
-
-    public static flattenColumnHierarchy(hierarchies: any, values: IPivotValue[], pivotKeys: IPivotKeys) {
-        const flatData = [];
-        hierarchies.forEach((h, key) => {
-            const obj = {};
-            const multipleValues = values.length > 1;
-            for (const value of values) {
-                if (h[pivotKeys.aggregations]) {
-                    if (multipleValues) {
-                        obj[key + pivotKeys.columnDimensionSeparator + value.member] = h[pivotKeys.aggregations][value.member];
-                    } else {
-                        obj[key] = h[pivotKeys.aggregations][value.member];
-                    }
-                }
-                obj[pivotKeys.records] = h[pivotKeys.records];
-                flatData.push(obj);
-                if (h[pivotKeys.children]) {
-                    const records = this.flattenColumnHierarchy(h[pivotKeys.children], values, pivotKeys);
-                    for (const record of records) {
-                        delete record[pivotKeys.records];
-                        const childKeys = Object.keys(record);
-                        for (const childKey of childKeys) {
-                            obj[childKey] = record[childKey];
-                        }
-                    }
-                }
-            }
-        });
-
-        return flatData;
-    }
-
     public static buildExpressionTree(config: IPivotConfiguration) {
-        const allDimensions = (config.rows || []).concat((config.columns || [])).concat(config.filters || []).filter(x => x !== null && x !== undefined);
+        const allDimensions = (config?.rows || []).concat((config?.columns || [])).concat(config?.filters || []).filter(x => x !== null && x !== undefined);
         const enabledDimensions = allDimensions.filter(x => x && x.enabled);
 
         const expressionsTree = new FilteringExpressionsTree(FilteringLogic.And);
@@ -374,7 +443,7 @@ export class PivotUtil {
             }
         } else {
             const hierarchyChild = hierarchyValue[childKey];
-            for (const [key, child] of childCollection) {
+            for (const [_key, child] of childCollection) {
                 let hierarchyChildValue = hierarchyChild.get(child.value);
                 if (!hierarchyChildValue) {
                     hierarchyChild.set(child.value, child);

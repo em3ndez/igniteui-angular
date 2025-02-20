@@ -1,5 +1,6 @@
-import { IGridResourceStrings } from '../../core/i18n/grid-resources';
-import { CurrentResourceStrings } from '../../core/i18n/resources';
+import { GridResourceStringsEN, IGridResourceStrings } from '../../core/i18n/grid-resources';
+import { getCurrentResourceStrings } from '../../core/i18n/resources';
+import { GridColumnDataType } from '../../data-operations/data-util';
 import { IPivotDimension } from './pivot-grid.interface';
 import { PivotUtil } from './pivot-util';
 
@@ -16,6 +17,8 @@ export interface IPivotDateDimensionOptions {
     fullDate?: boolean;
 }
 
+/* blazorAlternateBaseType: PivotDimension */
+/* alternateBaseType: PivotDimension */
 // Equals to pretty much this configuration:
 // {
 //     member: () => 'All Periods',
@@ -47,7 +50,13 @@ export class IgxPivotDateDimension implements IPivotDimension {
     /** Enables/Disables a particular dimension from pivot structure. */
     public enabled = true;
 
-    /** Default options used for initialization. */
+    /**
+     * Gets/Sets data type
+     */
+    public dataType?: GridColumnDataType;
+
+    /* blazorSuppress */
+    /** Default options. */
     public defaultOptions = {
         total: true,
         years: true,
@@ -69,11 +78,41 @@ export class IgxPivotDateDimension implements IPivotDimension {
         return this._resourceStrings;
     }
 
+    /**
+     * Gets/Sets the base dimension that is used by this class to determine the other dimensions and their values.
+     * Having base dimension set is required in order for the Date Dimensions to show.
+     */
+    public get baseDimension(): IPivotDimension {
+        return this._baseDimension;
+    }
+    public set baseDimension(value: IPivotDimension) {
+        this._baseDimension = value;
+        this.initialize(this.baseDimension, this.options);
+    }
+
+    /**
+     * Gets/Sets the options for the predefined date dimensions whether to show quarter, years and etc.
+     */
+    public get options(): IPivotDateDimensionOptions {
+        return this._options;
+    }
+    public set options(value: IPivotDateDimensionOptions) {
+        this._options = value;
+        if (this.baseDimension) {
+            this.initialize(this.baseDimension, this.options);
+        }
+    }
+
     /** @hidden @internal */
     public childLevel?: IPivotDimension;
     /** @hidden @internal */
     public memberName = 'AllPeriods';
-    private _resourceStrings = CurrentResourceStrings.GridResStrings;
+    public displayName: string;
+    private _resourceStrings = getCurrentResourceStrings(GridResourceStringsEN);
+    private _baseDimension: IPivotDimension;
+    private _options: IPivotDateDimensionOptions = {};
+    private _monthIntl = new Intl.DateTimeFormat('default', { month: 'long' });
+
 
     /**
      * Creates additional pivot date dimensions based on a provided dimension describing date data:
@@ -86,20 +125,29 @@ export class IgxPivotDateDimension implements IPivotDimension {
      * new IgxPivotDateDimension({ memberName: 'Date', enabled: true }, { total: false, months: false });
      * ```
      */
-    constructor(public inBaseDimension: IPivotDimension, public inOptions: IPivotDateDimensionOptions = {}) {
+    constructor(inBaseDimension: IPivotDimension = null, inOptions: IPivotDateDimensionOptions = {}) {
+        this._baseDimension = inBaseDimension;
+        this._options = inOptions;
+        if (this.baseDimension && this.options) {
+            this.initialize(this.baseDimension, this.options);
+        }
+    }
+
+    protected initialize(inBaseDimension, inOptions) {
         const options = { ...this.defaultOptions, ...inOptions };
 
-        if (!inBaseDimension) {
-            console.warn(`Please provide data child level to the pivot dimension.`);
-            return;
-        }
+        this.dataType = GridColumnDataType.Date;
+        inBaseDimension.dataType = GridColumnDataType.Date;
+
+        this.enabled = inBaseDimension.enabled;
+        this.displayName = inBaseDimension.displayName || this.resourceStrings.igx_grid_pivot_date_dimension_total;
 
         const baseDimension = options.fullDate ? inBaseDimension : null;
         const monthDimensionDef: IPivotDimension = {
             memberName: 'Months',
             memberFunction: (rec) => {
                 const recordValue = PivotUtil.extractValueFromDimension(inBaseDimension, rec);
-                return recordValue ? new Date(recordValue).toLocaleString('default', { month: 'long' }) : rec['Months'];
+                return recordValue ? this._monthIntl.format(new Date(recordValue)) : rec['Months'];
             },
             enabled: true,
             childLevel: baseDimension
@@ -117,7 +165,7 @@ export class IgxPivotDateDimension implements IPivotDimension {
         };
         const quarterDimension = options.quarters ? quarterDimensionDef : monthDimension;
 
-        const yearsDimensionDef = {
+        const yearsDimensionDef: IPivotDimension = {
             memberName: 'Years',
             memberFunction: (rec) => {
                 const recordValue = PivotUtil.extractValueFromDimension(inBaseDimension, rec);
@@ -133,6 +181,7 @@ export class IgxPivotDateDimension implements IPivotDimension {
             this.memberName = yearsDimension.memberName;
             this.memberFunction = yearsDimension.memberFunction;
             this.childLevel = yearsDimension.childLevel;
+            this.displayName = yearsDimension.displayName;
         }
     }
 

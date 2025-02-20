@@ -1,0 +1,16 @@
+.wrapper {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.badges {
+    place-items: center;
+    display: grid;
+    grid-template-columns: subgrid;
+    gap: 24px;
+}
+
+.avatar-sample {
+    display: flex;
+    align-items: center;
+}

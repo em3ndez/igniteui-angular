@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/ban-types */
-/* eslint-disable @typescript-eslint/member-delimiter-style */
-/* eslint-disable @typescript-eslint/naming-convention */
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { registerLocaleData } from '@angular/common';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { registerLocaleData, NgFor } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+
 import localeBG from '@angular/common/locales/bg';
 import localeEN from '@angular/common/locales/en';
 import localeDE from '@angular/common/locales/de';
@@ -16,24 +15,25 @@ import localeHant from '@angular/common/locales/zh-Hant';
 import localeHI from '@angular/common/locales/hi';
 import { DATA } from '../shared/financialData';
 
-import { IgxGridComponent, IResourceStrings, changei18n, getCurrentResourceStrings } from 'igniteui-angular';
 import {
     IgxResourceStringsBG, IgxResourceStringsDE, IgxResourceStringsES, IgxResourceStringsFR, IgxResourceStringsIT,
     IgxResourceStringsJA, IgxResourceStringsKO, IgxResourceStringsZHHANS, IgxResourceStringsZHHANT
 } from 'igniteui-angular-i18n';
+import { IResourceStrings, GridResourceStringsEN, IgxColumnComponent, IgxGridComponent, IgxSelectComponent, IgxSelectItemComponent, IgxGridToolbarComponent, IgxGridToolbarTitleComponent } from 'igniteui-angular';
 
 @Component({
     selector: 'app-grid-localization',
-    styleUrls: ['./grid-localization.sample.css'],
-    templateUrl: 'grid-localization.sample.html'
+    styleUrls: ['./grid-localization.sample.scss'],
+    templateUrl: 'grid-localization.sample.html',
+    imports: [IgxGridComponent, IgxColumnComponent, IgxGridToolbarComponent, IgxGridToolbarTitleComponent, IgxSelectComponent, FormsModule, NgFor, IgxSelectItemComponent]
 })
 
-export class GridLocalizationSampleComponent implements OnInit, OnDestroy {
+export class GridLocalizationSampleComponent implements OnInit {
     @ViewChild('grid', { read: IgxGridComponent, static: true })
     public grid: IgxGridComponent;
     public data: any[];
     public locale: string;
-    public locales: { type: string, resource: object }[];
+    public locales: { type: string, resource: IResourceStrings }[];
     public selectLocales = ['HI', 'BG', 'EN', 'DE', 'ES', 'FR', 'IT', 'JA', 'KO', 'zh-Hans', 'zh-Hant'];
     public cashedLocalizationEN: IResourceStrings;
     public partialCustomHindi: IResourceStrings;
@@ -52,7 +52,7 @@ export class GridLocalizationSampleComponent implements OnInit, OnDestroy {
         registerLocaleData(localeHant);
         registerLocaleData(localeHI);
         this.data = DATA;
-        this.cashedLocalizationEN = Object.assign({}, getCurrentResourceStrings());
+        this.cashedLocalizationEN = Object.assign({}, GridResourceStringsEN);
         // Creating a custom locale (HI) for specific grid strings.
         // Similarly can localize all needed strings in a separate IgxResourceStringsHI file (feel free to contribute)
         this.partialCustomHindi = {
@@ -82,11 +82,6 @@ export class GridLocalizationSampleComponent implements OnInit, OnDestroy {
 
     public updateLocale() {
         const newLocale = this.locales.find(x => x.type === this.locale).resource;
-        changei18n(newLocale);
-    }
-
-    // Required only for Infragistics documentation page
-    public ngOnDestroy(): void {
-        changei18n(this.cashedLocalizationEN);
+        this.grid.resourceStrings = newLocale;
     }
 }

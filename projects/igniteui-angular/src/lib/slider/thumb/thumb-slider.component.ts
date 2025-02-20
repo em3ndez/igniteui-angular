@@ -8,12 +8,14 @@ import {
     EventEmitter,
     OnInit,
     OnDestroy,
-    TemplateRef
+    TemplateRef,
+    booleanAttribute
 } from '@angular/core';
 import { takeUntil } from 'rxjs/operators';
 import { SliderHandle } from '../slider.common';
 import { Subject } from 'rxjs';
 import { IgxDirectionality } from '../../services/direction/directionality';
+import { NgClass } from '@angular/common';
 
 /**
  * @hidden
@@ -21,18 +23,19 @@ import { IgxDirectionality } from '../../services/direction/directionality';
 @Component({
     selector: 'igx-thumb',
     templateUrl: 'thumb-slider.component.html',
+    imports: [NgClass]
 })
 export class IgxSliderThumbComponent implements OnInit, OnDestroy {
     @Input()
     public value: any;
 
-    @Input()
+    @Input({ transform: booleanAttribute })
     public continuous: boolean;
 
     @Input()
-    public thumbLabelVisibilityDuration;
+    public thumbLabelVisibilityDuration: number;
 
-    @Input()
+    @Input({ transform: booleanAttribute })
     public disabled: boolean;
 
     @Input()
@@ -53,8 +56,17 @@ export class IgxSliderThumbComponent implements OnInit, OnDestroy {
     @Input()
     public type: SliderHandle;
 
-    @Input()
+    @Input({ transform: booleanAttribute })
     public deactiveState: boolean;
+
+    @Input()
+    public min: number;
+
+    @Input()
+    public max: number;
+
+    @Input()
+    public labels: any[];
 
     @Output()
     public thumbValueChange = new EventEmitter<number>();
@@ -63,13 +75,58 @@ export class IgxSliderThumbComponent implements OnInit, OnDestroy {
     public thumbChange = new EventEmitter<any>();
 
     @Output()
+    public thumbBlur = new EventEmitter<void>();
+
+    @Output()
     public hoverChange = new EventEmitter<boolean>();
 
     @HostBinding('attr.tabindex')
     public tabindex = 0;
 
+    @HostBinding('attr.role')
+    public role = 'slider';
+
+    @HostBinding('attr.aria-valuenow')
+    public get ariaValueNow() {
+        return this.value;
+    }
+
+    @HostBinding('attr.aria-valuemin')
+    public get ariaValueMin() {
+        return this.min;
+    }
+
+    @HostBinding('attr.aria-valuemax')
+    public get ariaValueMax() {
+        return this.max;
+    }
+
+    @HostBinding('attr.aria-valuetext')
+    public get ariaValueText() {
+        if (this.labels && this.labels[this.value] !== undefined) {
+            return this.labels[this.value];
+        }
+        return this.value;
+    }
+
+    @HostBinding('attr.aria-label')
+    public get ariaLabelAttr() {
+        return `Slider thumb ${this.type}`;
+    }
+
+    @HostBinding('attr.aria-orientation')
+    public ariaOrientation = 'horizontal';
+
+    @HostBinding(`attr.aria-disabled`)
+    public get ariaDisabled() {
+        return this.disabled;
+    }
+
     @HostBinding('attr.z-index')
     public zIndex = 0;
+
+    @HostBinding('class.igx-slider-thumb-to--focused')
+    public focused = false;
 
     @HostBinding('class.igx-slider-thumb-from')
     public get thumbFromClass() {
@@ -141,13 +198,20 @@ export class IgxSliderThumbComponent implements OnInit, OnDestroy {
     constructor(private _elementRef: ElementRef, private _dir: IgxDirectionality) { }
 
     @HostListener('pointerenter')
-    public onPinterEnter() {
+    public onPointerEnter() {
+        this.focused = false;
         this.hoverChange.emit(true);
     }
 
     @HostListener('pointerleave')
     public onPointerLeave() {
         this.hoverChange.emit(false);
+    }
+
+    @HostListener('keyup', ['$event'])
+    public onKeyUp(event: KeyboardEvent) {
+        event.stopPropagation();
+        this.focused = true;
     }
 
     @HostListener('keydown', ['$event'])
@@ -157,10 +221,11 @@ export class IgxSliderThumbComponent implements OnInit, OnDestroy {
         }
 
         let increment = 0;
+        const stepWithDir = (rtl: boolean) => rtl ? this.step * -1 : this.step;
         if (event.key.endsWith('Left')) {
-            increment = this.step * - 1;
+            increment = stepWithDir(!this._dir.rtl);
         } else if (event.key.endsWith('Right')) {
-            increment = this.step;
+            increment = stepWithDir(this._dir.rtl);
         } else {
             return;
         }
@@ -173,6 +238,8 @@ export class IgxSliderThumbComponent implements OnInit, OnDestroy {
     public onBlur() {
         this.isActive = false;
         this.zIndex = 0;
+        this.focused = false;
+        this.thumbBlur.emit();
     }
 
     @HostListener('focus')

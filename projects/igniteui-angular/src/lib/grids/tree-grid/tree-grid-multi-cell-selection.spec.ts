@@ -1,4 +1,4 @@
-import { TestBed, fakeAsync, tick, waitForAsync } from '@angular/core/testing';
+import { TestBed, waitForAsync } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import {
@@ -8,8 +8,7 @@ import {
     IgxTreeGridFKeySelectionWithTransactionComponent
 } from '../../test-utils/tree-grid-components.spec';
 import { IgxStringFilteringOperand } from '../../data-operations/filtering-condition';
-import { IgxTreeGridModule } from './tree-grid.module';
-import { setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
+import { clearGridSubs, setupGridScrollDetection } from '../../test-utils/helper-utils.spec';
 import { UIInteractions, wait } from '../../test-utils/ui-interactions.spec';
 import { GridSelectionFunctions, GridSummaryFunctions, GridFunctions } from '../../test-utils/grid-functions.spec';
 import { GridSelectionMode } from '../common/enums';
@@ -19,13 +18,13 @@ describe('IgxTreeGrid - Multi Cell selection #tGrid', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 IgxTreeGridSelectionKeyComponent,
                 IgxTreeGridSelectionComponent,
                 IgxTreeGridSelectionWithTransactionComponent,
                 IgxTreeGridFKeySelectionWithTransactionComponent
-            ],
-            imports: [NoopAnimationsModule, IgxTreeGridModule]
+            ]
         }).compileComponents();
     }));
 
@@ -34,13 +33,17 @@ describe('IgxTreeGrid - Multi Cell selection #tGrid', () => {
         let treeGrid;
         let detect;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridSelectionKeyComponent);
             fix.detectChanges();
             treeGrid = fix.componentInstance.treeGrid;
             setupGridScrollDetection(fix, treeGrid);
             detect = () => treeGrid.cdr.detectChanges();
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('Should select a region', () => {
             verifySelectingRegion(fix, treeGrid);
@@ -554,14 +557,17 @@ describe('IgxTreeGrid - Multi Cell selection #tGrid', () => {
         let treeGrid;
         let detect;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridSelectionComponent);
             fix.detectChanges();
-            tick(16);
             treeGrid = fix.componentInstance.treeGrid;
             setupGridScrollDetection(fix, treeGrid);
             detect = () => treeGrid.cdr.detectChanges();
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('Should select a region', () => {
             verifySelectingRegion(fix, treeGrid);
@@ -663,14 +669,16 @@ describe('IgxTreeGrid - Multi Cell selection #tGrid', () => {
         let fix;
         let treeGrid;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridSelectionWithTransactionComponent);
             fix.detectChanges();
-            tick(16);
             treeGrid = fix.componentInstance.treeGrid;
             setupGridScrollDetection(fix, treeGrid);
-            tick(16);
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('CRUD: selected range should not change when delete row', () => {
             const range = { rowStart: 0, rowEnd: 3, columnStart: 'ID', columnEnd: 'Age' };
@@ -791,14 +799,16 @@ describe('IgxTreeGrid - Multi Cell selection #tGrid', () => {
         let fix;
         let treeGrid;
 
-        beforeEach(fakeAsync(/** height/width setter rAF */() => {
+        beforeEach(() => {
             fix = TestBed.createComponent(IgxTreeGridFKeySelectionWithTransactionComponent);
             fix.detectChanges();
-            tick(16);
             treeGrid = fix.componentInstance.treeGrid;
             setupGridScrollDetection(fix, treeGrid);
-            tick(16);
-        }));
+        });
+
+        afterEach(() => {
+            clearGridSubs();
+        });
 
         it('CRUD: selected range should not change when delete row', () => {
             const range = { rowStart: 0, rowEnd: 3, columnStart: 'ID', columnEnd: 'Age' };

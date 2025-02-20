@@ -1,28 +1,34 @@
 import {
-    AfterViewInit, ContentChildren, Directive, ElementRef, EventEmitter,
-    Inject, Input, LOCALE_ID, OnDestroy, Optional, Output, QueryList
+    AfterContentChecked,
+    AfterViewInit, booleanAttribute, ContentChildren, Directive, ElementRef, EventEmitter,
+    Inject, Input, LOCALE_ID, OnDestroy, Optional, Output, QueryList, ViewChild
 } from '@angular/core';
+import { getLocaleFirstDayOfWeek } from "@angular/common";
+
 import { merge, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { DisplayDensityBase, DisplayDensityToken, IDisplayDensityOptions } from '../core/density';
+
 import { EditorProvider } from '../core/edit-provider';
 import { IToggleView } from '../core/navigation';
 import { IBaseCancelableBrowserEventArgs, IBaseEventArgs } from '../core/utils';
-import { DateRange } from '../date-range-picker/public_api';
 import { IgxOverlayOutletDirective } from '../directives/toggle/toggle.directive';
-import { IgxInputGroupType, IGX_INPUT_GROUP_TYPE } from '../input-group/public_api';
 import { OverlaySettings } from '../services/overlay/utilities';
 import { IgxPickerToggleComponent } from './picker-icons.common';
 import { PickerInteractionMode } from './types';
+import { WEEKDAYS } from '../calendar/calendar';
+import { DateRange } from '../date-range-picker/date-range-picker-inputs.common';
+import { IGX_INPUT_GROUP_TYPE, IgxInputGroupType } from '../input-group/inputGroupType';
+import { IgxPrefixDirective } from '../directives/prefix/prefix.directive';
+import { IgxSuffixDirective } from '../directives/suffix/suffix.directive';
+import { IgxInputGroupComponent } from '../input-group/input-group.component';
 
 @Directive()
-export abstract class PickerBaseDirective extends DisplayDensityBase implements IToggleView, EditorProvider, AfterViewInit, OnDestroy {
+export abstract class PickerBaseDirective implements IToggleView, EditorProvider, AfterViewInit, AfterContentChecked, OnDestroy {
     /**
      * The editor's input mask.
      *
      * @remarks
      * Also used as a placeholder when none is provided.
-     * Default is `"'MM/dd/yyyy'"`
      *
      * @example
      * ```html
@@ -91,25 +97,55 @@ export abstract class PickerBaseDirective extends DisplayDensityBase implements 
      * <igx-date-picker [disabled]="'true'"></igx-date-picker>
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public disabled = false;
 
     /**
-     * Locale settings used for value formatting and calendar or time spinner.
-     *
-     * @remarks
-     * Uses Angular's `LOCALE_ID` by default. Affects both input mask and display format if those are not set.
-     * If a `locale` is set, it must be registered via `registerLocaleData`.
-     * Please refer to https://angular.io/guide/i18n#i18n-pipes.
-     * If it is not registered, `Intl` will be used for formatting.
-     *
      * @example
      * ```html
      * <igx-date-picker locale="jp"></igx-date-picker>
      * ```
      */
+    /**
+     * Gets the `locale` of the date-picker.
+     * If not set, defaults to applciation's locale..
+     */
     @Input()
-    public locale: string;
+    public get locale(): string {
+        return this._locale;
+    }
+
+    /**
+     * Sets the `locale` of the date-picker.
+     * Expects a valid BCP 47 language tag.
+     */
+    public set locale(value: string) {
+        this._locale = value;
+        // if value is invalid, set it back to _localeId
+        try {
+            getLocaleFirstDayOfWeek(this._locale);
+        } catch (e) {
+            this._locale = this._localeId;
+        }
+    }
+
+    /**
+     * Gets the start day of the week.
+     * Can return a numeric or an enum representation of the week day.
+     * If not set, defaults to the first day of the week for the application locale.
+     */
+    @Input()
+    public get weekStart(): WEEKDAYS | number {
+        return this._weekStart ?? getLocaleFirstDayOfWeek(this._locale);
+    }
+
+    /**
+     * Sets the start day of the week.
+     * Can be assigned to a numeric value or to `WEEKDAYS` enum value.
+     */
+    public set weekStart(value: WEEKDAYS | number) {
+        this._weekStart = value;
+    }
 
     /**
      * The container used for the pop-up element.
@@ -203,10 +239,22 @@ export abstract class PickerBaseDirective extends DisplayDensityBase implements 
     @ContentChildren(IgxPickerToggleComponent, { descendants: true })
     public toggleComponents: QueryList<IgxPickerToggleComponent>;
 
+    @ContentChildren(IgxPrefixDirective, { descendants: true })
+    protected prefixes: QueryList<IgxPrefixDirective>;
+
+    @ContentChildren(IgxSuffixDirective, { descendants: true })
+    protected suffixes: QueryList<IgxSuffixDirective>;
+
+    @ViewChild(IgxInputGroupComponent)
+    protected inputGroup: IgxInputGroupComponent;
+
+    protected _locale: string;
     protected _collapsed = true;
     protected _type: IgxInputGroupType;
     protected _minValue: Date | string;
     protected _maxValue: Date | string;
+    protected _weekStart: WEEKDAYS | number;
+    protected abstract get toggleContainer(): HTMLElement | undefined;
 
     /**
      * Gets the picker's pop-up state.
@@ -225,7 +273,19 @@ export abstract class PickerBaseDirective extends DisplayDensityBase implements 
         return this.mode === PickerInteractionMode.DropDown;
     }
 
-    protected _destroy$ = new Subject();
+    /**
+     * Returns if there's focus within the picker's element OR popup container
+     * @hidden @internal
+     */
+    public get isFocused(): boolean {
+        const document = this.element.nativeElement?.getRootNode() as Document | ShadowRoot;
+        if (!document?.activeElement) return false;
+
+        return this.element.nativeElement.contains(document.activeElement)
+            || !this.collapsed && this.toggleContainer.contains(document.activeElement);
+    }
+
+    protected _destroy$ = new Subject<void>();
 
     // D.P. EventEmitter<string | Date | DateRange | null> throws on strict checks for more restrictive overrides
     // w/ TS2416 Type 'string | Date ...' not assignable to type 'DateRange' due to observer method check
@@ -233,9 +293,7 @@ export abstract class PickerBaseDirective extends DisplayDensityBase implements 
 
     constructor(public element: ElementRef,
         @Inject(LOCALE_ID) protected _localeId: string,
-        @Optional() @Inject(DisplayDensityToken) protected _displayDensityOptions?: IDisplayDensityOptions,
         @Optional() @Inject(IGX_INPUT_GROUP_TYPE) protected _inputGroupType?: IgxInputGroupType) {
-        super(_displayDensityOptions || { displayDensity: 'comfortable' });
         this.locale = this.locale || this._localeId;
     }
 
@@ -247,19 +305,30 @@ export abstract class PickerBaseDirective extends DisplayDensityBase implements 
     }
 
     /** @hidden @internal */
+    public ngAfterContentChecked(): void {
+        if (this.inputGroup && this.prefixes?.length > 0) {
+            this.inputGroup.prefixes = this.prefixes;
+        }
+
+        if (this.inputGroup && this.suffixes?.length > 0) {
+            this.inputGroup.suffixes = this.suffixes;
+        }
+    }
+
+    /** @hidden @internal */
     public ngOnDestroy(): void {
         this._destroy$.next();
         this._destroy$.complete();
     }
 
     /** Subscribes to the click events of toggle/clear icons in a query */
-    protected subToIconsClicked(components: QueryList<IgxPickerToggleComponent>, next: () => any) {
+    protected subToIconsClicked(components: QueryList<IgxPickerToggleComponent>, next: () => any): void {
         components.forEach(toggle => {
             toggle.clicked
                 .pipe(takeUntil(merge(components.changes, this._destroy$)))
                 .subscribe(next);
         });
-    };
+    }
 
     public abstract select(value: Date | DateRange | string): void;
     public abstract open(settings?: OverlaySettings): void;

@@ -1,14 +1,15 @@
 import { fakeAsync, TestBed, tick, flush, waitForAsync } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxTooltipModule, IgxTooltipTargetDirective, IgxTooltipDirective } from './';
-import { IgxTooltipSingleTargetComponent, IgxTooltipMultipleTargetsComponent, IgxTooltipPlainStringComponent } from '../../test-utils/tooltip-components.spec';
+import { IgxTooltipSingleTargetComponent, IgxTooltipMultipleTargetsComponent, IgxTooltipPlainStringComponent, IgxTooltipWithToggleActionComponent } from '../../test-utils/tooltip-components.spec';
 import { UIInteractions } from '../../test-utils/ui-interactions.spec';
 import { configureTestSuite } from '../../test-utils/configure-suite';
 import { HorizontalAlignment, VerticalAlignment, AutoPositionStrategy } from '../../services/public_api';
+import { IgxTooltipDirective } from './tooltip.directive';
+import { IgxTooltipTargetDirective } from './tooltip-target.directive';
 
 const HIDDEN_TOOLTIP_CLASS = 'igx-tooltip--hidden';
-const TOOLTIP_CLASS = 'igx-tooltip--desktop';
+const TOOLTIP_CLASS = 'igx-tooltip';
 
 describe('IgxTooltip', () => {
     configureTestSuite();
@@ -19,12 +20,13 @@ describe('IgxTooltip', () => {
 
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
+            imports: [
+                NoopAnimationsModule,
                 IgxTooltipSingleTargetComponent,
                 IgxTooltipMultipleTargetsComponent,
-                IgxTooltipPlainStringComponent
-            ],
-            imports: [NoopAnimationsModule, IgxTooltipModule]
+                IgxTooltipPlainStringComponent,
+                IgxTooltipWithToggleActionComponent
+            ]
         }).compileComponents();
         UIInteractions.clearOverlay();
     }));
@@ -551,6 +553,36 @@ describe('IgxTooltip', () => {
             verifyTooltipPosition(tooltipNativeElement, buttonTwo, true);
             // Tooltip is NOT visible and positioned relative to buttonOne
             verifyTooltipPosition(tooltipNativeElement, buttonOne, false);
+        }));
+    });
+
+    describe('Tooltip integration', () => {
+        beforeEach(waitForAsync(() => {
+            fix = TestBed.createComponent(IgxTooltipWithToggleActionComponent);
+            fix.detectChanges();
+            tooltipNativeElement = fix.debugElement.query(By.directive(IgxTooltipDirective)).nativeElement;
+            tooltipTarget = fix.componentInstance.tooltipTarget as IgxTooltipTargetDirective;
+            button = fix.debugElement.query(By.directive(IgxTooltipTargetDirective));
+        }));
+
+        it('Correctly sets tooltip target when defined before igxToggleAction directive on same host - issue #14196', fakeAsync(() => {
+            expect(tooltipTarget.target.element).toBe(tooltipNativeElement);
+            expect(fix.componentInstance.toggleDir.collapsed).toBe(true);
+
+            hoverElement(button);
+            flush();
+
+            verifyTooltipVisibility(tooltipNativeElement, tooltipTarget, true);
+
+            UIInteractions.simulateClickEvent(button.nativeElement);
+            fix.detectChanges();
+
+            verifyTooltipVisibility(tooltipNativeElement, tooltipTarget, false);
+
+            UIInteractions.simulateClickEvent(button.nativeElement);
+            fix.detectChanges();
+
+            expect(fix.componentInstance.toggleDir.collapsed).toBe(false);
         }));
     });
 });

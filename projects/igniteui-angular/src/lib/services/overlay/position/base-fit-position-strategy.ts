@@ -5,11 +5,21 @@ export abstract class BaseFitPositionStrategy extends ConnectedPositioningStrate
     protected _initialSize: Size;
     protected _initialSettings: PositionSettings;
 
-    /** @inheritdoc */
-    public position(
+    /**
+     * Position the element based on the PositionStrategy implementing this interface.
+     *
+     * @param contentElement The HTML element to be positioned
+     * @param size Size of the element
+     * @param document reference to the Document object
+     * @param initialCall should be true if this is the initial call to the method
+     * @param target attaching target for the component to show
+     * ```typescript
+     * settings.positionStrategy.position(content, size, document, true);
+     * ```
+     */
+    public override position(
         contentElement: HTMLElement, size: Size, document?: Document, initialCall?: boolean, target?: Point | HTMLElement): void {
-        const targetElement = target || this.settings.target;
-        const rects = super.calculateElementRectangles(contentElement, targetElement);
+        const rects = super.calculateElementRectangles(contentElement, target);
         const connectedFit: ConnectedFit = {};
         if (initialCall) {
             connectedFit.targetRect = rects.targetRect;

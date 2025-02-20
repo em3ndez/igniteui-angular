@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsKO_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Korean resource strings for IgxGrid
+ */
+export const GridResourceStringsKO = {
     igx_grid_groupByArea_message: '열 머리글을 끌어서 여기에 놓아 해당 열을 기준으로 그룹화합니다.',
     igx_grid_emptyFilteredGrid_message: '기록이 없습니다.',
     igx_grid_emptyGrid_message: '그리드에 데이터가 없습니다.',
@@ -87,7 +90,8 @@ const GridResourceStringsKO_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: '불린 필터',
     igx_grid_excel_currency_filter: '통화 필터',
     igx_grid_excel_custom_filter: '사용자 필터...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: '일치하는 항목 없음',
+    igx_grid_excel_matches_count: '일치하는 항목 {0} 개',
     igx_grid_advanced_filter_title: '고급 필터링',
     igx_grid_advanced_filter_and_group: '그룹 "그리고"',
     igx_grid_advanced_filter_or_group: '그룹 "또는"',
@@ -110,6 +114,7 @@ const GridResourceStringsKO_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: '모두 고정 해제',
     igx_grid_row_edit_btn_done: '완료',
     igx_grid_row_edit_btn_cancel: '취소',
+    igx_grid_row_edit_text: '이 행에는 {0}개의 변경 사항과 {1}개의 숨겨진 열이 있습니다.',
     igx_grid_toolbar_actions_filter_prompt: '필터 열 목록 ...',
     igx_grid_toolbar_pinning_button_tooltip: '열 고정 드롭 다운 열기',
     igx_grid_toolbar_hiding_button_tooltip: '열 숨기기 드롭 다운 열기',
@@ -134,34 +139,35 @@ const GridResourceStringsKO_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: '고정 해제',
     igx_grid_actions_jumpUp_label: '위로 이동',
     igx_grid_actions_jumpDown_label: '아래로 이동',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
-    igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-
-/**
- * Korean resource strings for IgxGrid
- */
-export const GridResourceStringsKO = GridResourceStringsKO_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_date_dimension_total: '모든 기간',
+    igx_grid_pivot_aggregate_count: '총계',
+    igx_grid_pivot_aggregate_min: '최소',
+    igx_grid_pivot_aggregate_max: '최고',
+    igx_grid_pivot_aggregate_sum: '합계',
+    igx_grid_pivot_aggregate_avg: '평균',
+    igx_grid_pivot_aggregate_date_latest: '최신 날짜',
+    igx_grid_pivot_aggregate_date_earliest: '가장 빠른 날짜',
+    igx_grid_pivot_aggregate_time_latest: '최근 시간',
+    igx_grid_pivot_aggregate_time_earliest: '가장 이른 시간',
+    igx_grid_pivot_empty_row_drop_area: '여기에 행 필드를 드롭.',
+    igx_grid_pivot_empty_column_drop_area: '여기에 열 필드를 드롭.',
+    igx_grid_pivot_empty_filter_drop_area: '여기에 필터 필드를 드롭.',
+    igx_grid_pivot_empty_value_drop_area: '여기에 값 필드를 드롭.',
+    igx_grid_pivot_row_drop_chip: '행으로 사용하려면 여기에 드롭',
+    igx_grid_pivot_column_drop_chip: '열로 사용하려면 여기에 드롭',
+    igx_grid_pivot_filter_drop_chip: '필터로 사용하려면 여기에 드롭',
+    igx_grid_pivot_value_drop_chip: '값으로 사용하려면 여기에 드롭',
+    igx_grid_pivot_selector_filters: '필터',
+    igx_grid_pivot_selector_rows: '행',
+    igx_grid_pivot_selector_columns: '열',
+    igx_grid_pivot_selector_values: '값',
+    igx_grid_pivot_selector_panel_empty: '항목을 여기로 끌어',
+    igx_grid_pivot_empty_message: '피벗 그리드에는 차원과 값이 없습니다.',
+    igx_grid_required_validation_error: '이 필드는 필수입니다',
+    igx_grid_min_validation_error: '최소 {0} 의 값을 입력해야합니다',
+    igx_grid_max_validation_error: '{0} 이하의 값을 입력해야합니다',
+    igx_grid_min_length_validation_error: '항목은 {0} 자 이상이어야합니다',
+    igx_grid_max_length_validation_error: '항목은 {0} 자 이상이어야합니다',
+    igx_grid_email_validation_error: '유효한 이메일 주소를 입력해야합니다',
+    igx_grid_pattern_validation_error: '항목이 필요한 패턴과 일치하지 않습니다'
+} satisfies MakeRequired<IGridResourceStrings>;

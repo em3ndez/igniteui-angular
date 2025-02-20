@@ -1,4 +1,6 @@
-import { Component, OnInit, ViewChild, Inject, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, HostBinding } from '@angular/core';
+import { NgFor } from '@angular/common';
+
 import {
     IgxGridComponent,
     ColumnPinningPosition,
@@ -6,27 +8,34 @@ import {
     IgxGridStateDirective,
     IgxExcelExporterService,
     IgxExcelExporterOptions,
-    DisplayDensityToken,
-    DisplayDensity,
-    IDisplayDensityOptions,
     GridSelectionMode,
     IPinningConfig,
     IgxIconService,
-    RowType
+    RowType,
+    IGX_HIERARCHICAL_GRID_DIRECTIVES,
+    IgxTreeGridComponent,
+    IgxIconComponent,
+    IgxSwitchComponent,
+    IgxButtonDirective
 } from 'igniteui-angular';
 import { pinLeft, unpinLeft } from '@igniteui/material-icons-extended';
+import { GridSearchBoxComponent } from '../grid-search-box/grid-search-box.component';
 
 @Component({
     selector: 'app-grid-row-pinning-sample',
-    styleUrls: ['grid-row-pinning.sample.css'],
+    styleUrls: ['grid-row-pinning.sample.scss'],
     templateUrl: 'grid-row-pinning.sample.html',
     providers: [
-        { provide: DisplayDensityToken, useValue: { displayDensity: DisplayDensity.comfortable} },
         IgxIconService
     ],
+    imports: [NgFor, IGX_HIERARCHICAL_GRID_DIRECTIVES, IgxGridComponent, IgxTreeGridComponent, IgxIconComponent, GridSearchBoxComponent, IgxSwitchComponent, IgxButtonDirective]
 })
 
 export class GridRowPinningSampleComponent implements OnInit, AfterViewInit {
+    @HostBinding('style.--ig-size')
+    protected get sizeStyle() {
+        return `var(--ig-size-${this.size})`;
+    }
     @ViewChild('grid1', { static: true })
     private grid1: IgxGridComponent;
 
@@ -48,7 +57,7 @@ export class GridRowPinningSampleComponent implements OnInit, AfterViewInit {
         pinningConfig: true
     };
     public selectionMode;
-
+    public size = 'large';
     public data: any[];
     public hierarchicalData: any[];
     public columns: any[];
@@ -56,7 +65,7 @@ export class GridRowPinningSampleComponent implements OnInit, AfterViewInit {
     public treeColumns: any[];
     public treeData: any[];
 
-    constructor(@Inject(DisplayDensityToken) public displayDensityOptions: IDisplayDensityOptions,
+    constructor(
                 private iconService: IgxIconService,
                 private excelExportService: IgxExcelExporterService) {
     }
@@ -104,7 +113,6 @@ export class GridRowPinningSampleComponent implements OnInit, AfterViewInit {
         ];
 
         this.data = [
-            /* eslint-disable max-len */
             { ID: 'ALFKI', CompanyName: 'Alfreds Futterkiste', ContactName: 'Maria Anders', ContactTitle: 'Sales Representative', Address: 'Obere Str. 57', City: 'Berlin', Region: null, PostalCode: '12209', Country: 'Germany', Phone: '030-0074321', Fax: '030-0076545' },
             { ID: 'ANATR', CompanyName: 'Ana Trujillo Emparedados y helados', ContactName: 'Ana Trujillo', ContactTitle: 'Owner', Address: 'Avda. de la Constitución 2222', City: 'México D.F.', Region: null, PostalCode: '05021', Country: 'Mexico', Phone: '(5) 555-4729', Fax: '(5) 555-3745' },
             { ID: 'ANTON', CompanyName: 'Antonio Moreno Taquería', ContactName: 'Antonio Moreno', ContactTitle: 'Owner', Address: 'Mataderos 2312', City: 'México D.F.', Region: null, PostalCode: '05023', Country: 'Mexico', Phone: '(5) 555-3932', Fax: null },
@@ -177,7 +185,6 @@ export class GridRowPinningSampleComponent implements OnInit, AfterViewInit {
             { Salary: 1500, employeeID: 23, PID: 20, firstName: 'Jeremy', lastName: 'Donaldson', Title: 'Software Developer' }
         ];
         this.selectionMode = GridSelectionMode.multiple;
-        /* eslint-enable max-len */
     }
 
     public ngAfterViewInit() {
@@ -252,10 +259,10 @@ export class GridRowPinningSampleComponent implements OnInit, AfterViewInit {
     }
 
     public toggleDensity() {
-        switch (this.displayDensityOptions.displayDensity ) {
-            case DisplayDensity.comfortable: this.displayDensityOptions.displayDensity = DisplayDensity.compact; break;
-            case DisplayDensity.compact: this.displayDensityOptions.displayDensity = DisplayDensity.cosy; break;
-            case DisplayDensity.cosy: this.displayDensityOptions.displayDensity = DisplayDensity.comfortable; break;
+        switch (this.size ) {
+            case 'large': this.size = 'small'; break;
+            case 'small': this.size ='medium'; break;
+            case 'medium': this.size = 'small'; break;
         }
     }
 }

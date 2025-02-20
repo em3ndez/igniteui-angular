@@ -1,6 +1,6 @@
-import { Component, OnDestroy, Input, HostBinding, Output, EventEmitter, ElementRef, AfterContentChecked } from '@angular/core';
+import { Component, OnDestroy, Input, HostBinding, Output, EventEmitter, ElementRef, AfterContentChecked, booleanAttribute, Inject } from '@angular/core';
 import { Subject } from 'rxjs';
-import { Direction, IgxSlideComponentBase } from './carousel-base';
+import { Direction, ICarouselComponentBase, IGX_CAROUSEL_COMPONENT, IgxSlideComponentBase } from './carousel-base';
 
 /**
  * A slide component that usually holds an image and/or a caption text.
@@ -16,15 +16,15 @@ import { Direction, IgxSlideComponentBase } from './carousel-base';
  */
 @Component({
     selector: 'igx-slide',
-    templateUrl: 'slide.component.html'
+    templateUrl: 'slide.component.html',
+    standalone: true
 })
-
 export class IgxSlideComponent implements AfterContentChecked, OnDestroy, IgxSlideComponentBase {
     /**
      * Gets/sets the `index` of the slide inside the carousel.
      * ```html
      * <igx-carousel>
-     *  <igx-slide index = "1"></igx-slide>
+     *  <igx-slide index="1"></igx-slide>
      * <igx-carousel>
      * ```
      *
@@ -57,7 +57,7 @@ export class IgxSlideComponent implements AfterContentChecked, OnDestroy, IgxSli
      */
     @HostBinding('attr.tabindex')
     public get tabIndex() {
-        return this.active ? 0 : null;
+        return this.active && this.carousel.keyboardSupport ? 0 : null;
     }
 
     /**
@@ -108,18 +108,18 @@ export class IgxSlideComponent implements AfterContentChecked, OnDestroy, IgxSli
      * @memberof IgxSlideComponent
      */
     @HostBinding('class.igx-slide--current')
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get active(): boolean {
         return this._active;
     }
 
     public set active(value) {
-        this._active = !!value;
+        this._active = value;
         this.activeChange.emit(this._active);
     }
 
     @HostBinding('class.igx-slide--previous')
-    @Input() public previous = false;
+    @Input({ transform: booleanAttribute }) public previous = false;
 
     /**
      * @hidden
@@ -129,7 +129,10 @@ export class IgxSlideComponent implements AfterContentChecked, OnDestroy, IgxSli
     private _active = false;
     private _destroy$ = new Subject<boolean>();
 
-    constructor(private elementRef: ElementRef) { }
+    constructor(
+        private elementRef: ElementRef,
+        @Inject(IGX_CAROUSEL_COMPONENT) private carousel: ICarouselComponentBase
+    ) { }
 
     /**
      * Returns a reference to the carousel element in the DOM.
@@ -147,7 +150,7 @@ export class IgxSlideComponent implements AfterContentChecked, OnDestroy, IgxSli
      * @hidden
      */
     public get isDestroyed(): Subject<boolean> {
-    return this._destroy$;
+        return this._destroy$;
     }
 
     public ngAfterContentChecked() {

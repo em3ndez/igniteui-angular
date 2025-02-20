@@ -1,15 +1,15 @@
 <div class="wrapper">
-    <button (click)="grid1.addRow({'ID': 'TEST', 'CompanyName': 'Test'})">Add Row</button>
-    <button (click)="exportButtonHandler()">Export</button>
+    <button igxButton="contained" (click)="grid1.addRow({'ID': 'TEST', 'CompanyName': 'Test'})">Add Row</button>
+    <button igxButton="contained"(click)="exportButtonHandler()">Export</button>
     <div class="sample-column">
-        <div>igxGrid</div>
+        <h4 class="sample-title">igxGrid</h4>
         <div>
-            <input igxButton="raised" type="button" name="Density" (click)="toggleDensity()" value="Density" />
-            <span> Current: {{displayDensityOptions.displayDensity}}</span>
+            <input igxButton="contained" type="button" name="Density" (click)="toggleDensity()" value="Density" />
+            <span> Current: {{size}}</span>
         </div>
         <div class="sample-buttons">
-            <button igxButton="raised" (click)="saveGridState()">Save state</button>
-            <button igxButton="raised" (click)="restoreGridState()">Restore state</button>
+            <button igxButton="contained" (click)="saveGridState()">Save state</button>
+            <button igxButton="contained" (click)="restoreGridState()">Restore state</button>
         </div>
         <div class="sample-switches">
             <igx-switch (change)='onRowChange()' style="padding-left: 10px"> Bottom Row Pinning toggle</igx-switch>
@@ -18,7 +18,7 @@
         <igx-grid [rowEditable]="true" [batchEditing]="true" [igxGridState]="options" [allowFiltering]="true"
             primaryKey="ID" [pinning]="pinningConfig" #grid1 [data]="data" [width]="'800px'" [height]="'600px'"
             [rowSelection]="'multiple'" [moving]="true">
-            <igx-grid-toolbar [displayDensity]="grid1.displayDensity">
+            <igx-grid-toolbar >
                 <app-grid-search-box [grid]="grid1" [style.width]="'400px'"></app-grid-search-box>
                 <igx-grid-toolbar-actions>
                     <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
@@ -32,14 +32,14 @@
                     <div><span class='categoryStyle'>Address:</span> {{dataItem.Address}}</div>
                 </div>
             </ng-template>
-            <igx-column width='150px' [filterable]='false'>
+            <igx-column width='150px' [filterable]="false">
                 <ng-template igxCell let-cell="cell" let-val>
-                    <igx-icon class="pin-icon" (mouseup)="togglePining(cell.row, $event)" family="imx-icons"
-                        name="{{cell.row.pinned ? 'unpin-left' : 'pin-left'}}">
+                    <igx-icon class="pin-icon" (mouseup)="togglePining(cell.row, $event)" family="default"
+                        name="{{cell.row.pinned ? 'unpin' : 'pin'}}">
                     </igx-icon>
                 </ng-template>
             </igx-column>
-            <igx-column width='100px' [filterable]='false'>
+            <igx-column width='100px' [filterable]="false">
                 <ng-template igxCell let-cell="cell" let-val>
                     <button (click)="grid1.deleteRow(cell.row.key)">Delete</button>
                 </ng-template>
@@ -51,26 +51,25 @@
             <igx-paginator></igx-paginator>
         </igx-grid>
     </div>
-    <br />
     <div class="sample-column">
-        <div>igxHierarchicalGrid</div>
+        <h4 class="sample-title">igxHierarchicalGrid</h4>
         <igx-hierarchical-grid #hGrid [width]="'800px'" [height]="'600px'" [primaryKey]='"ID"' [allowFiltering]="true"
             [showExpandAll]='true' [data]="hierarchicalData" [pinning]="pinningConfig" rowSelection="multiple">
-            <igx-grid-toolbar [displayDensity]="hGrid.displayDensity">
+            <igx-grid-toolbar >
                 <app-grid-search-box [grid]="hGrid" [style.width]="'400px'"></app-grid-search-box>
                 <igx-grid-toolbar-actions>
                     <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
                     <igx-grid-toolbar-hiding></igx-grid-toolbar-hiding>
                 </igx-grid-toolbar-actions>
             </igx-grid-toolbar>
-            <igx-column width='70px' [filterable]='false'>
+            <igx-column width='70px' [filterable]="false">
                 <ng-template igxCell let-cell="cell" let-val>
                     <igx-icon class="pin-icon" (mouseup)="togglePining(cell.row, $event)">
                         {{cell.row.pinned ? 'lock' : 'lock_open'}}
                     </igx-icon>
                 </ng-template>
             </igx-column>
-            <igx-column width='100px' [filterable]='false'>
+            <igx-column width='100px' [filterable]="false">
                 <ng-template igxCell let-cell="cell" let-val>
                     <button (click)="hGrid.deleteRow(cell.id.rowID)">Delete</button>
                 </ng-template>
@@ -88,11 +87,11 @@
     </div>
 
     <div class="sample-column">
-        <div>igxTreeGrid</div>
+        <h4 class="sample-title">igxTreeGrid</h4>
         <igx-tree-grid [pinning]="pinningConfig" #treegrid [allowFiltering]="true" [data]="treeData"
             primaryKey="employeeID" foreignKey="PID" [rowSelection]="selectionMode" [width]="'900px'"
             [height]="'800px'">
-            <igx-grid-toolbar [displayDensity]="treegrid.displayDensity">
+            <igx-grid-toolbar>
                 <app-grid-search-box [grid]="treegrid" [style.width]="'450px'"></app-grid-search-box>
                 <igx-grid-toolbar-actions>
                     <igx-grid-toolbar-pinning></igx-grid-toolbar-pinning>
@@ -103,7 +102,7 @@
                     </igx-grid-toolbar-exporter>
                 </igx-grid-toolbar-actions>
             </igx-grid-toolbar>
-            <igx-column width='150px' [filterable]='false'>
+            <igx-column width='150px' [filterable]="false">
                 <ng-template igxCell let-cell="cell" let-val>
                     <igx-icon class="pin-icon" (mouseup)="togglePining(cell.row, $event)">
                         {{cell.row.pinned ? 'lock' : 'lock_open'}}

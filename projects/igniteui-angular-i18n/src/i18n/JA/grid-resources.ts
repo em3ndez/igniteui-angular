@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsJA_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Japanese resource strings for IgxGrid
+ */
+export const GridResourceStringsJA = {
     igx_grid_groupByArea_message: '列ヘッダーをここへドラッグして列をグループ化します。',
     igx_grid_emptyFilteredGrid_message: 'レコードは見つかりませんでした。',
     igx_grid_emptyGrid_message: 'グリッドにデータがありません。',
@@ -87,7 +90,8 @@ const GridResourceStringsJA_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'ブール値フィルター',
     igx_grid_excel_currency_filter: '通貨フィルター',
     igx_grid_excel_custom_filter: 'カスタム フィルター...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: '一致がありませんでした',
+    igx_grid_excel_matches_count: '{0} 件の一致',
     igx_grid_advanced_filter_title: '高度なフィルター',
     igx_grid_advanced_filter_and_group: '"And" グループ',
     igx_grid_advanced_filter_or_group: '"Or" グループ',
@@ -110,6 +114,7 @@ const GridResourceStringsJA_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'すべて固定解除',
     igx_grid_row_edit_btn_done: '完了',
     igx_grid_row_edit_btn_cancel: 'キャンセル',
+    igx_grid_row_edit_text: 'この行には {0} 個の変更があり、{1} 個の非表示の列があります',
     igx_grid_toolbar_actions_filter_prompt: '列リストのフィルター',
     igx_grid_toolbar_pinning_button_tooltip: '列ピン固定のドロップダウンを開く',
     igx_grid_toolbar_hiding_button_tooltip: '列非表示のドロップダウンを開く',
@@ -134,33 +139,35 @@ const GridResourceStringsJA_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: '固定解除',
     igx_grid_actions_jumpUp_label: '上へ移動',
     igx_grid_actions_jumpDown_label: '下へ移動',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
-    igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Japanese resource strings for IgxGrid
- */
-export const GridResourceStringsJA = GridResourceStringsJA_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_date_dimension_total: 'すべての期間',
+    igx_grid_pivot_aggregate_count: 'カウント',
+    igx_grid_pivot_aggregate_min: '最小値',
+    igx_grid_pivot_aggregate_max: '最大値',
+    igx_grid_pivot_aggregate_sum: '合計',
+    igx_grid_pivot_aggregate_avg: '平均',
+    igx_grid_pivot_aggregate_date_latest: '最新の日付',
+    igx_grid_pivot_aggregate_date_earliest: '最も早い日付',
+    igx_grid_pivot_aggregate_time_latest: '最新の時刻',
+    igx_grid_pivot_aggregate_time_earliest: '最も早い時刻',
+    igx_grid_pivot_empty_row_drop_area: '行フィールドをここにドロップします。',
+    igx_grid_pivot_empty_column_drop_area: '列フィールドをここにドロップします。',
+    igx_grid_pivot_empty_filter_drop_area: 'フィルター フィールドをここにドロップします。',
+    igx_grid_pivot_empty_value_drop_area: '値フィールドをここにドロップします。',
+    igx_grid_pivot_row_drop_chip: 'ここにドロップして行として使用',
+    igx_grid_pivot_column_drop_chip: 'ここにドロップして列として使用',
+    igx_grid_pivot_filter_drop_chip: 'ここにドロップしてフィルターとして使用',
+    igx_grid_pivot_value_drop_chip: 'ここにドロップして値として使用',
+    igx_grid_pivot_selector_filters: 'フィルター',
+    igx_grid_pivot_selector_rows: '行',
+    igx_grid_pivot_selector_columns: '列',
+    igx_grid_pivot_selector_values: '値',
+    igx_grid_pivot_selector_panel_empty: 'ここに項目をドラッグして',
+    igx_grid_pivot_empty_message: 'ピボット グリッドにはディメンションと値がありません。',
+    igx_grid_required_validation_error: 'このフィールドは必須フィールドです。',
+    igx_grid_min_validation_error: "{0} 以上の値を入力してください",
+    igx_grid_max_validation_error: "{0} 以下の値を入力してください",
+    igx_grid_min_length_validation_error: '入力の長さは少なくとも {0} 文字である必要があります',
+    igx_grid_max_length_validation_error: '入力の長さは {0} 文字以下である必要があります',
+    igx_grid_email_validation_error: '有効なメール アドレスを入力してください',
+    igx_grid_pattern_validation_error: '入力が所定のパターンに一致しません'
+} satisfies MakeRequired<IGridResourceStrings>;

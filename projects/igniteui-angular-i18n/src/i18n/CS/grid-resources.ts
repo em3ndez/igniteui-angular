@@ -1,7 +1,10 @@
 import { IGridResourceStrings } from 'igniteui-angular';
 
-// exported below as re-cast to create declaration type with expanded properties
-const GridResourceStringsCS_: ExpandRequire<IGridResourceStrings> = {
+// only use `satisfies` operator so export is typed by its schema
+/**
+ * Czech resource strings for IgxGrid
+ */
+export const GridResourceStringsCS = {
     igx_grid_groupByArea_message: 'Přetáhněte záhlaví sloupce a přetáhněte jej sem a seskupte podle tohoto sloupce.',
     igx_grid_groupByArea_select_message: 'Vyberte všechny řádky ve skupině s názvem pole {0} a hodnotou {1}.',
     igx_grid_groupByArea_deselect_message: 'Zrušit výběr všech řádky ve skupině s názvem pole {0} a hodnotou {1}.',
@@ -89,7 +92,8 @@ const GridResourceStringsCS_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_excel_boolean_filter: 'Booleovský filtr',
     igx_grid_excel_currency_filter: 'Filtr měn',
     igx_grid_excel_custom_filter: 'Vlastní filtr ...',
-    igx_grid_excel_no_matches: 'No matches',
+    igx_grid_excel_no_matches: 'Žádné shody',
+    igx_grid_excel_matches_count: 'Počet shod: {0}',
     igx_grid_advanced_filter_title: 'Pokročilé filtrování',
     igx_grid_advanced_filter_and_group: '"A" skupina',
     igx_grid_advanced_filter_or_group: '"Nebo" skupina',
@@ -112,6 +116,7 @@ const GridResourceStringsCS_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_pinning_uncheck_all_label: 'Odepnout vše',
     igx_grid_row_edit_btn_done: 'Hotovo',
     igx_grid_row_edit_btn_cancel: 'Storno',
+    igx_grid_row_edit_text: 'V tomto řádku máte {0} změn a {1} skryté sloupce',
     igx_grid_toolbar_actions_filter_prompt: 'Filtrovat seznam sloupců ...',
     igx_grid_toolbar_pinning_button_tooltip: 'Otevřít rozevírací nabídku připnout sloupec',
     igx_grid_toolbar_hiding_button_tooltip: 'Otevřít rozevírací nabídku skrýt sloupec',
@@ -134,33 +139,35 @@ const GridResourceStringsCS_: ExpandRequire<IGridResourceStrings> = {
     igx_grid_actions_unpin_label: 'Odepnout',
     igx_grid_actions_jumpUp_label: 'Vyskočit',
     igx_grid_actions_jumpDown_label: 'Skočit dolů',
-    igx_grid_pivot_date_dimension_total: 'All Periods',
-    igx_grid_pivot_aggregate_count: 'Count',
-    igx_grid_pivot_aggregate_min: 'Minimum',
-    igx_grid_pivot_aggregate_max: 'Maximum',
-    igx_grid_pivot_aggregate_sum: 'Sum',
-    igx_grid_pivot_aggregate_avg: 'Average',
-    igx_grid_pivot_aggregate_date_latest: 'Latest Date',
-    igx_grid_pivot_aggregate_date_earliest: 'Earliest Date',
-    igx_grid_pivot_aggregate_time_latest: 'Latest Time',
-    igx_grid_pivot_aggregate_time_earliest: 'Earliest Time',
-    igx_grid_pivot_empty_row_drop_area: 'Drop Row Fields here.',
-    igx_grid_pivot_empty_column_drop_area: 'Drop Column Fields here.',
-    igx_grid_pivot_empty_filter_drop_area: 'Drop Filter Fields here.',
-    igx_grid_pivot_empty_value_drop_area: 'Drop Value Fields here.',
-    igx_grid_pivot_row_drop_chip: 'Drop here to use as row',
-    igx_grid_pivot_column_drop_chip: 'Drop here to use as column',
-    igx_grid_pivot_filter_drop_chip: 'Drop here to use as filter',
-    igx_grid_pivot_value_drop_chip: 'Drop here to use as value',
-    igx_grid_pivot_selector_filters: 'Filters',
-    igx_grid_pivot_selector_rows: 'Rows',
-    igx_grid_pivot_selector_columns: 'Columns',
-    igx_grid_pivot_selector_values: 'Values',
-    igx_grid_pivot_selector_panel_empty: 'Drag Items Here',
-    igx_grid_pivot_empty_message: 'Pivot grid has no dimensions and values.'
-};
-
-/**
- * Czech resource strings for IgxGrid
- */
-export const GridResourceStringsCS = GridResourceStringsCS_ as ExpandRequire<IGridResourceStrings>;
+    igx_grid_pivot_date_dimension_total: 'Všechna období',
+    igx_grid_pivot_aggregate_count: 'Počet',
+    igx_grid_pivot_aggregate_min: 'Minimální',
+    igx_grid_pivot_aggregate_max: 'Maximální',
+    igx_grid_pivot_aggregate_sum: 'Součet',
+    igx_grid_pivot_aggregate_avg: 'Průměrný',
+    igx_grid_pivot_aggregate_date_latest: 'Poslední datum',
+    igx_grid_pivot_aggregate_date_earliest: 'Nejstarší datum',
+    igx_grid_pivot_aggregate_time_latest: 'Poslední čas',
+    igx_grid_pivot_aggregate_time_earliest: 'Nejčasnější čas',
+    igx_grid_pivot_empty_row_drop_area: 'Sem přetáhněte pole sloupců.',
+    igx_grid_pivot_empty_column_drop_area: 'Sem přetáhněte pole filtru.',
+    igx_grid_pivot_empty_filter_drop_area: 'Sem přetáhněte pole řádků.',
+    igx_grid_pivot_empty_value_drop_area: 'Sem přetáhněte pole hodnot.',
+    igx_grid_pivot_row_drop_chip: 'Přetáhněte sem, chcete-li použít jako řádek',
+    igx_grid_pivot_column_drop_chip: 'Přetáhněte sem, chcete-li použít jako sloupec',
+    igx_grid_pivot_filter_drop_chip: 'Přetáhněte sem, chcete-li použít jako filtr',
+    igx_grid_pivot_value_drop_chip: 'Přetáhněte sem, chcete-li použít jako hodnotu',
+    igx_grid_pivot_selector_filters: 'Filtry',
+    igx_grid_pivot_selector_rows: 'Řádky',
+    igx_grid_pivot_selector_columns: 'Sloupce',
+    igx_grid_pivot_selector_values: 'Hodnoty',
+    igx_grid_pivot_selector_panel_empty: 'Přetažením položek sem',
+    igx_grid_pivot_empty_message: 'Pivot Grid nemá žádné rozměry a hodnoty.',
+    igx_grid_required_validation_error: 'Toto pole je povinné',
+    igx_grid_min_validation_error: 'Je třeba zadat hodnotu alespoň {0}',
+    igx_grid_max_validation_error: 'Měla by být zadána hodnota nejvýše {0}',
+    igx_grid_min_length_validation_error: 'Záznam by měl mít alespoň {0} znaků',
+    igx_grid_max_length_validation_error: 'Záznam by neměl mít více než {0} znaků',
+    igx_grid_email_validation_error: 'Je třeba zadat platnou e-mailovou adresu',
+    igx_grid_pattern_validation_error: 'Položka neodpovídá požadovanému vzoru'
+} satisfies MakeRequired<IGridResourceStrings>;

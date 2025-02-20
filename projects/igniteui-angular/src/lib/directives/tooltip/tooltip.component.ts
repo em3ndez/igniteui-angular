@@ -4,6 +4,7 @@ import { IgxTooltipDirective } from './tooltip.directive';
 @Component({
     selector: 'igx-tooltip',
     templateUrl: 'tooltip.component.html',
+    imports: [IgxTooltipDirective]
 })
 
 export class IgxTooltipComponent {

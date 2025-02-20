@@ -10,7 +10,8 @@ import { IgxDirectionality } from '../../services/direction/directionality';
 @Component({
     selector: 'igx-tab-header',
     templateUrl: 'tab-header.component.html',
-    providers: [{ provide: IgxTabHeaderBase, useExisting: IgxTabHeaderComponent }]
+    providers: [{ provide: IgxTabHeaderBase, useExisting: IgxTabHeaderComponent }],
+    standalone: true
 })
 export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements AfterViewInit, OnDestroy {
 
@@ -34,10 +35,10 @@ export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements Afte
 
     /** @hidden @internal */
     constructor(
-        protected tabs: IgxTabsComponent,
+        protected override tabs: IgxTabsComponent,
         tab: IgxTabItemDirective,
         elementRef: ElementRef<HTMLElement>,
-        protected platform: PlatformUtil,
+        platform: PlatformUtil,
         private ngZone: NgZone,
         private dir: IgxDirectionality
     ) {
@@ -52,6 +53,7 @@ export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements Afte
         const previousIndex = itemsArray.indexOf(this.tab);
         let newIndex = previousIndex;
         const hasDisabledItems = itemsArray.some((item) => item.disabled);
+
         switch (event.key) {
             case this.platform.KEYMAP.ARROW_RIGHT:
                 newIndex = this.getNewSelectionIndex(newIndex, itemsArray, event.key, hasDisabledItems);
@@ -74,14 +76,9 @@ export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements Afte
                 }
                 break;
             case this.platform.KEYMAP.ENTER:
-                if (!this.tab.panelComponent) {
-                    this.nativeElement.click();
-                }
-                unsupportedKey = true;
-                break;
             case this.platform.KEYMAP.SPACE:
                 event.preventDefault();
-                if (!this.tab.panelComponent) {
+                if (this.tabs.activation === 'manual') {
                     this.nativeElement.click();
                 }
                 unsupportedKey = true;
@@ -92,8 +89,8 @@ export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements Afte
         }
 
         if (!unsupportedKey) {
-            itemsArray[newIndex].headerComponent.nativeElement.focus({preventScroll:true});
-            if (this.tab.panelComponent) {
+            itemsArray[newIndex].headerComponent.nativeElement.focus({ preventScroll: true });
+            if (this.tabs.activation === 'auto') {
                 this.tabs.selectedIndex = newIndex;
             }
         }
@@ -102,10 +99,12 @@ export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements Afte
     /** @hidden @internal */
     public ngAfterViewInit(): void {
         this.ngZone.runOutsideAngular(() => {
-            this._resizeObserver = new (getResizeObserver())(() => {
-                this.tabs.realignSelectedIndicator();
-            });
-            this._resizeObserver.observe(this.nativeElement);
+            if (this.platform.isBrowser) {
+                this._resizeObserver = new (getResizeObserver())(() => {
+                    this.tabs.realignSelectedIndicator();
+                });
+                this._resizeObserver.observe(this.nativeElement);
+            }
         });
     }
 
@@ -131,4 +130,3 @@ export class IgxTabHeaderComponent extends IgxTabHeaderDirective implements Afte
         return newIndex;
     }
 }
-

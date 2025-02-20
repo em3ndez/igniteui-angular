@@ -1,23 +1,22 @@
 import { Component, ViewChild } from '@angular/core';
 import { TestBed, fakeAsync, tick, waitForAsync, ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { BrowserAnimationsModule, NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { IgxSnackbarComponent, IgxSnackbarModule } from './snackbar.component';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { IgxSnackbarComponent } from './snackbar.component';
 import { configureTestSuite } from '../test-utils/configure-suite';
-import { HorizontalAlignment, PositionSettings, slideInLeft, slideInRight, VerticalAlignment } from 'igniteui-angular';
 import { useAnimation } from '@angular/animations';
+import { HorizontalAlignment, PositionSettings, VerticalAlignment } from '../services/public_api';
+import { slideInLeft, slideInRight } from 'igniteui-angular/animations';
+import { IgxButtonDirective } from '../directives/button/button.directive';
 
 describe('IgxSnackbar', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                SnackbarInitializeTestComponent,
-                SnackbarCustomContentComponent
-            ],
             imports: [
                 NoopAnimationsModule,
-                IgxSnackbarModule
+                SnackbarInitializeTestComponent,
+                SnackbarCustomContentComponent
             ]
         }).compileComponents();
     }));
@@ -192,12 +191,9 @@ describe('IgxSnackbar with custom content', () => {
     configureTestSuite();
     beforeAll(waitForAsync(() => {
         TestBed.configureTestingModule({
-            declarations: [
-                SnackbarCustomContentComponent
-            ],
             imports: [
-                BrowserAnimationsModule,
-                IgxSnackbarModule
+                NoopAnimationsModule,
+                SnackbarCustomContentComponent
             ]
         }).compileComponents();
     }));
@@ -221,13 +217,17 @@ describe('IgxSnackbar with custom content', () => {
         const customContent = fixture.debugElement.query(By.css('.igx-snackbar__content'));
         expect(customContent).toBeTruthy('Custom content is not found');
 
+        // Verify the custom button is displayed instead of the snackbar actionText
+        const button = fixture.debugElement.query(By.css('.igx-button'));
+        expect(button.nativeElement.innerText).toEqual('Read More');
+        expect(button.nativeElement.innerText).not.toContain(snackbar.actionText);
+
         // Verify the message is displayed on the left side of the custom content
         const messageElRect = messageEl.nativeElement.getBoundingClientRect();
         const customContentRect = customContent.nativeElement.getBoundingClientRect();
         expect(messageElRect.left <= customContentRect.left).toBe(true, 'The message is not on the left of the custom content');
 
         // Verify the custom content element is on the left side of the button
-        const button = fixture.debugElement.query(By.css('.igx-snackbar__button'));
         const buttonRect = button.nativeElement.getBoundingClientRect();
         expect(customContentRect.right <= buttonRect.left).toBe(true, 'The custom element is not on the left of the button');
         expect(messageElRect.right <= buttonRect.left).toBe(true, 'The button is not on the right side of the snackbar content');
@@ -257,7 +257,8 @@ describe('IgxSnackbar with custom content', () => {
 
 @Component({
     template: `<igx-snackbar #snackbar [actionText]="text">
-               </igx-snackbar>`
+               </igx-snackbar>`,
+    imports: [IgxSnackbarComponent]
 })
 class SnackbarInitializeTestComponent {
     @ViewChild(IgxSnackbarComponent, { static: true }) public snackbar: IgxSnackbarComponent;
@@ -267,7 +268,9 @@ class SnackbarInitializeTestComponent {
 @Component({
     template: `<igx-snackbar #snackbar [actionText]="text">
                     <span class="igx-snackbar__content">Custom content</span>
-               </igx-snackbar>`
+                    <button igxButton>Read More</button>
+               </igx-snackbar>`,
+    imports: [IgxSnackbarComponent, IgxButtonDirective]
 })
 class SnackbarCustomContentComponent {
     @ViewChild(IgxSnackbarComponent, { static: true }) public snackbar: IgxSnackbarComponent;

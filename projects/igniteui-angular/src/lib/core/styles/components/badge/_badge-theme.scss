@@ -12,44 +12,28 @@
 /// If only background color is specified, text/icon color
 /// will be assigned automatically to a contrasting color.
 ///
-/// @param {Map} $palette [null] - The palette used as basis for styling the component.
-/// @param {Map} $schema [$light-schema] - The schema used as basis for styling the component.
-/// @param {Map} $elevations [null] - The elevations (shadows) map to be used.
+/// @param {Map} $schema [$light-material-schema] - The schema used as basis for styling the component.
 /// @param {Color} $icon-color [null] - The icon color used.
 /// @param {Color} $text-color [null] - The text color used.
 /// @param {Color} $border-color [null] - The border color used.
-/// @param {Number} $border-width [null] - The border width of the badge component.
 /// @param {Color} $background-color [null] - The background color used.
 /// @param {box-shadow} $shadow [null] - Sets a shadow to be used for the badge.
-/// @param {border-radius} $border-radius [null] - The border radius used for badge component.
+/// @param {Number} $border-radius [null] - The border radius used for badge component.
 ///
-/// @requires $default-palette
-/// @requires $light-schema
-/// @requires apply-palette
-/// @requires extend
-/// @requires elevation
-/// @requires text-contrast
-/// @requires rem
-/// @requires round-borders
+/// @requires $light-material-schema
 ///
 /// @example scss Change the text and icon colors in a badge
 ///   $my-badge-theme: badge-theme($icon-color: black, $background-color: white);
-///   // IE Supported theme - Pass the theme to the badge component mixin
-///   @include badge($my-badge-theme);
-///
-///   // Theming using css variables (not supported in IE11):
+///   // Pass the theme to the css-vars() mixin
 ///   @include css-vars($my-badge-theme);
 @function badge-theme(
-    $palette: null,
-    $schema: $light-schema,
-    $elevations: null,
+    $schema: $light-material-schema,
 
     $icon-color: null,
     $text-color: null,
 
     $border-color: null,
     $border-radius: null,
-    $border-width: null,
 
     $background-color: null,
     $shadow: null,
@@ -57,17 +41,14 @@
     $name: 'igx-badge';
     $badge-schema: ();
 
-    @if map.has-key($schema, $name) {
-        $badge-schema: map.get($schema, $name);
+    @if map.has-key($schema, 'badge') {
+        $badge-schema: map.get($schema, 'badge');
     } @else {
         $badge-schema: $schema;
     }
 
-    $theme: apply-palette($badge-schema, $palette);
-
-    $border-radius: round-borders(
-        if($border-radius, $border-radius, map.get($badge-schema, 'border-radius')), 0, 11px
-    );
+    $theme: digest-schema($badge-schema);
+    $meta: map.get($theme, '_meta');
 
     @if not($icon-color) and $background-color {
         $icon-color: text-contrast($background-color);
@@ -79,95 +60,111 @@
 
     @if not($shadow) {
         $elevation: map.get($badge-schema, 'elevation');
-        $shadow: elevation($elevations, $elevation);
+        $shadow: elevation($elevation);
     }
 
     @return extend($theme, (
         name: $name,
-        palette: $palette,
         icon-color: $icon-color,
         text-color: $text-color,
         border-color: $border-color,
         border-radius: $border-radius,
         background-color: $background-color,
         shadow: $shadow,
-        border-width: $border-width
+        theme: map.get($schema, '_meta', 'theme'),
+        _meta: map.merge(if($meta, $meta, ()), (
+            variant: map.get($schema, '_meta', 'theme'),
+        )),
     ));
 }
 
+/// @deprecated Use the `css-vars` mixin instead.
+/// @see {mixin} css-vars
 /// @param {Map} $theme - The theme used to style the component.
-/// @requires {mixin} css-vars
-/// @requires color
-/// @requires rem
-/// @requires var-get
 @mixin badge($theme) {
     @include css-vars($theme);
 
-    $palette: map.get($theme, 'palette');
-
-    $badge-width: 22px;
-    $badge-height: $badge-width;
-
-    $badge-font-size: rem(11px);
-    $badge-font-weight: normal;
-
-    $badge-icon-font-size: rem(12px);
-
-    $badge-value-padding: rem(4px);
-    $border-type: solid;
+    $variant: map.get($theme, '_meta', 'variant');
 
     %igx-badge-display {
-        display: flex;
+        --size: #{rem(22px)};
+        --_badge-size: var(--size);
+
+        display: inline-flex;
         justify-content: center;
         align-items: center;
-        min-width: $badge-width;
-        height: $badge-height;
-        font-size: $badge-font-size;
-        font-weight: $badge-font-weight;
+        min-width: var(--_badge-size);
+        min-height: var(--_badge-size);
         color: var-get($theme, 'text-color');
-        line-height: 1;
         background: var-get($theme, 'background-color');
-        border-radius: var-get($theme, 'border-radius');
+        border-radius: calc(var(--size) / 2);
         box-shadow: var-get($theme, 'shadow');
-        border-width: var-get($theme, 'border-width');
-        border-color: var-get($theme, 'border-color');
-        border-style: $border-type;
         overflow: hidden;
 
         igx-icon {
+            --size: var(--igx-icon-size, calc(var(--_badge-size) / 2));
+
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            width: $badge-width - 2px;
-            height: $badge-width - 2px;
-            font-size: $badge-icon-font-size;
-            font-weight: $badge-font-weight;
+            font-weight: 400;
             color: var-get($theme, 'icon-color');
         }
+
+        @if $variant == 'indigo' {
+            igx-icon {
+                $icon-size: rem(12px);
+
+                --ig-icon-size: #{$icon-size};
+                --igx-icon-size: #{$icon-size};
+            }
+        }
+    }
+
+    %igx-badge--outlined {
+        box-shadow: inset 0 0 0 rem(if($variant != 'bootstrap', 2px, 1px)) var-get($theme, 'border-color');
+    }
+
+    %igx-badge--square {
+        border-radius: var-get($theme, 'border-radius');
     }
 
     %igx-badge-value {
         white-space: nowrap;
-        padding: $badge-value-padding;
+        padding-inline: rem(4px);
     }
 
     %igx-badge--success {
-        background: color($palette, 'success');
+        background: color($color: 'success');
     }
 
     %igx-badge--info {
-        background: color($palette, 'info');
+        background: color($color: 'info');
     }
 
     %igx-badge--warn {
-        background: color($palette, 'warn');
+        background: color($color: 'warn');
     }
 
     %igx-badge--error {
-        background: color($palette, 'error');
+        background: color($color: 'error');
     }
 
     %igx-badge--hidden {
         visibility: hidden;
+    }
+}
+
+/// Adds typography styles for the igx-badge component.
+/// Uses the 'caption' category from the typographic scale.
+/// @group typography
+/// @param {Map} $categories [(text: 'caption')] - The categories from the typographic scale used for type styles.
+@mixin badge-typography($categories: (text: 'caption')) {
+    $text: map.get($categories, 'text');
+
+    %igx-badge-display {
+        @include type-style($text) {
+            margin: 0;
+        }
     }
 }

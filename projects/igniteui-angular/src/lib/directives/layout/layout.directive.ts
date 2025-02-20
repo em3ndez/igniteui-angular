@@ -1,7 +1,8 @@
-import { Directive, HostBinding, Input, NgModule } from '@angular/core';
+import { Directive, HostBinding, Input, booleanAttribute } from '@angular/core';
 
 @Directive({
-    selector: '[igxLayout]'
+    selector: '[igxLayout]',
+    standalone: true
 })
 export class IgxLayoutDirective {
     /**
@@ -36,7 +37,7 @@ export class IgxLayoutDirective {
      * </div>
      * ```
      */
-    @Input('igxLayoutReverse') public reverse = false;
+    @Input({ alias: 'igxLayoutReverse', transform: booleanAttribute }) public reverse = false;
 
     /**
      * By default the immediate children will all try to fit onto one line.
@@ -140,7 +141,8 @@ export class IgxLayoutDirective {
 }
 
 @Directive({
-    selector: '[igxFlex]'
+    selector: '[igxFlex]',
+    standalone: true
 })
 export class IgxFlexDirective {
 
@@ -232,12 +234,3 @@ export class IgxFlexDirective {
         return this.order || 0;
     }
 }
-
-/**
- * @hidden
- */
-@NgModule({
-    declarations: [IgxFlexDirective, IgxLayoutDirective],
-    exports: [IgxFlexDirective, IgxLayoutDirective]
-})
-export class IgxLayoutModule { }

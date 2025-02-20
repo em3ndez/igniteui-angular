@@ -243,10 +243,10 @@ When defining one of them, you need to reference list of predefined names, as fo
 ## Keyboard Navigation
 
 When the combo is closed and focused:
-- `ArrowDown` or `Alt` + `ArrowDown` will open the dropdown and will move focus to the selected item, if no selected item is present, the first item in the list will lbe focused.
+- `ArrowDown` or `Alt` + `ArrowDown` will open the dropdown and will move focus to the selected item, if no selected item is present, the first item in the list will be focused.
 
 When the combo is opened:
-- `ArrowUp` will close the dropdown and will move focus to the input while also selecting all of the text in the input if the currently focused item is the first item in the list. Otherwise `ArrowUp` will move to the previous list item.
+- `ArrowUp` will close the dropdown if the search input is focused. If the active item is the first one in the list, the focus will be moved back to the search input while also selecting all of the text in the input. Otherwise `ArrowUp` will move to the previous list item.
 - `ArrowDown` will move focus from the search input to the first list item. If list is empty and custom values are enabled will move it to the Add new item button.
 - `Alt` + `ArrowUp` will close the dropdown.
 
@@ -263,17 +263,13 @@ When the combo is opened, allow custom values are enabled and add item button is
 
 <div class="divider--half"></div>
 
-## Display Density
-**igx-simple-combo** supports setting of different display densities.
-Display density is received through Angular's DI engine or can be set through the `[displayDensity]` input. The possible display densities are `compact`, `cosy` and `comfortable` (default).
-Setting `[displayDensity]` affects the control's items' and inputs' css properties, most notably heights, padding, font-size.
-
 ### Properties
 | Name                     | Description                                       | Type                        |
 |--------------------------|---------------------------------------------------|-----------------------------|
 | `id`                    | The combo's id.                                          | `string`              |
-| `data`                  | The combo's data source.                                 | `any`                  |
-| `value`                 | The combo's value.                                       | `string`                |
+| `data`                  | The combo's data source.                                 | `any[]`                  |
+| `value`                 | The combo's value.                                       | `any`                |
+| `selection`             | The combo's selected item.                               | `any`                |
 | `allowCustomValue`      | Enables/disables combo custom value.                | `boolean`                     |
 | `valueKey`              | Determines which column in the data source is used to determine the value. | `string` |
 | `displayKey`            | Determines which column in the data source is used to determine the display value. | `string` |
@@ -291,7 +287,9 @@ Setting `[displayDensity]` affects the control's items' and inputs' css properti
 | `ariaLabelledBy`        | Defines label ID related to combo.                 | `boolean`                     |
 | `valid`                 | gets if control is valid, when used in a form.     | `boolean`                     |
 | `overlaySettings`       | Controls how the dropdown is displayed.            | `OverlaySettings`            |
-| `selected`                | Get current selection state.                       | `Array<any>`                |
+| `selected`              | Get current selection state.                       | `Array<any>`                |
+| `filteringOptions`      | Configures the way combo items will be filtered    | IComboFilteringOptions      |
+| `filterFunction`        | Gets/Sets the custom filtering function of the combo | `(collection: any[], searchValue: any, caseSensitive: boolean) => any[]` |
 
 
 ### Methods

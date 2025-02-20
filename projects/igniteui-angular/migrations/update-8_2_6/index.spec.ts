@@ -1,27 +1,13 @@
 import * as path from 'path';
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update 8.2.6', () => {
     let appTree: UnitTestTree;
     const schematicRunner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-      };
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it('should update igx-carousel-theme prop', async () => {
@@ -44,8 +30,7 @@ describe('Update 8.2.6', () => {
                 $item-focus-text-color: null
               );`
         );
-        const tree = await schematicRunner.runSchematicAsync('migration-12', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-12', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.scss'))
             .toEqual(
                 `$my-toolbar-theme: igx-grid-toolbar-theme(
@@ -73,8 +58,7 @@ describe('Update 8.2.6', () => {
             }
             $dark-grid-paginator-schema: extend($_dark-grid-pagination,());`
         );
-        const tree = await schematicRunner.runSchematicAsync('migration-12', {}, appTree)
-            .toPromise();
+        const tree = await schematicRunner.runSchematic('migration-12', {}, appTree);
         expect(tree.readContent('/testSrc/appPrefix/component/test.component.scss'))
         .toEqual(
             `@import '~igniteui-angular/lib/core/styles/components/paginator/paginator-component';

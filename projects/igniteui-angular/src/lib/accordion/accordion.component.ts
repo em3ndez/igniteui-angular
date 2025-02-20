@@ -1,10 +1,14 @@
-import { AfterContentInit, AfterViewInit, ChangeDetectorRef, Component, ContentChildren, EventEmitter,
-    HostBinding, Input, OnDestroy, Output, QueryList } from '@angular/core';
+import {
+    AfterContentInit, AfterViewInit, ChangeDetectorRef, Component, ContentChildren, EventEmitter,
+    HostBinding, Input, OnDestroy, Output, QueryList, booleanAttribute
+} from '@angular/core';
 import { fromEvent, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ACCORDION_NAVIGATION_KEYS } from '../core/utils';
-import { IExpansionPanelCancelableEventArgs,
-    IExpansionPanelEventArgs, IgxExpansionPanelBase } from '../expansion-panel/expansion-panel.common';
+import {
+    IExpansionPanelCancelableEventArgs,
+    IExpansionPanelEventArgs, IgxExpansionPanelBase
+} from '../expansion-panel/expansion-panel.common';
 import { IgxExpansionPanelComponent } from '../expansion-panel/expansion-panel.component';
 import { ToggleAnimationSettings } from '../expansion-panel/toggle-animation-component';
 
@@ -31,7 +35,7 @@ let NEXT_ID = 0;
  *
  * @igxGroup Layouts
  *
- * @remark
+ * @remarks
  * The Ignite UI for Angular Accordion component enables the user to navigate among multiple collapsing panels
  * displayed in a single container.
  * The accordion offers keyboard navigation and API to control the underlying panels' expansion state.
@@ -47,7 +51,8 @@ let NEXT_ID = 0;
  */
 @Component({
     selector: 'igx-accordion',
-    templateUrl: 'accordion.component.html'
+    templateUrl: 'accordion.component.html',
+    standalone: true
 })
 export class IgxAccordionComponent implements AfterContentInit, AfterViewInit, OnDestroy {
     /**
@@ -112,7 +117,7 @@ export class IgxAccordionComponent implements AfterContentInit, AfterViewInit, O
      * this.accordion.singleBranchExpand = false;
      * ```
      */
-    @Input()
+    @Input({ transform: booleanAttribute })
     public get singleBranchExpand(): boolean {
         return this._singleBranchExpand;
     }
@@ -248,7 +253,7 @@ export class IgxAccordionComponent implements AfterContentInit, AfterViewInit, O
      */
     public expandAll(): void {
         if (this.singleBranchExpand) {
-            for(let i = 0; i < this.panels.length - 1; i++) {
+            for (let i = 0; i < this.panels.length - 1; i++) {
                 this.panels[i].collapse();
             }
             this._panels.last.expand();
@@ -276,7 +281,7 @@ export class IgxAccordionComponent implements AfterContentInit, AfterViewInit, O
                 p.collapsed = true;
             }
         });
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
     }
 
     private handleKeydown(event: KeyboardEvent, panel: IgxExpansionPanelComponent): void {
@@ -324,7 +329,7 @@ export class IgxAccordionComponent implements AfterContentInit, AfterViewInit, O
                 this._enabledPanels.forEach(p => p.collapse());
             } else {
                 if (this.singleBranchExpand) {
-                    for(let i = 0; i < this._enabledPanels.length - 1; i++) {
+                    for (let i = 0; i < this._enabledPanels.length - 1; i++) {
                         this._enabledPanels[i].collapse();
                     }
                     this._enabledPanels[this._enabledPanels.length - 1].expand();

@@ -6,6 +6,7 @@ import { UIInteractions, wait } from './ui-interactions.spec';
 import { GridFunctions } from './grid-functions.spec';
 import { IgxRowDirective } from '../grids/row.directive';
 import { IgxGridCellComponent } from '../grids/cell.component';
+import { DebugElement } from '@angular/core';
 
 // CSS class should end with a number that specified the row's level
 const TREE_CELL_DIV_INDENTATION_CSS_CLASS = '.igx-grid__tree-cell--padding-level-';
@@ -27,7 +28,7 @@ export class TreeGridFunctions {
         return fix.debugElement.query(By.css(TREE_HEADER_ROW_CSS_CLASS));
     }
 
-    public static getAllRows(fix) {
+    public static getAllRows(fix): DebugElement [] {
         return fix.debugElement.queryAll(By.css('igx-tree-grid-row'));
     }
 
@@ -298,7 +299,7 @@ export class TreeGridFunctions {
         const checkboxDiv = rowDOM.query(By.css(TREE_ROW_DIV_SELECTION_CHECKBOX_CSS_CLASS));
         const checkboxComponent = checkboxDiv.query(By.css('igx-checkbox')).componentInstance as IgxCheckboxComponent;
         expect(checkboxComponent.checked).toBe(expectedSelection, 'Incorrect checkbox selection state');
-        expect(checkboxComponent.nativeCheckbox.nativeElement.checked).toBe(expectedSelection, 'Incorrect native checkbox selection state');
+        expect(checkboxComponent.nativeInput.nativeElement.checked).toBe(expectedSelection, 'Incorrect native checkbox selection state');
 
         // Verify selection of row
         expect(rowComponent.selected).toBe(expectedSelection, 'Incorrect row selection state');
@@ -351,7 +352,7 @@ export class TreeGridFunctions {
         if (expectedCheckboxState === null) {
             expect(checkboxComponent.indeterminate).toBe(true);
             expect(checkboxComponent.checked).toBe(false, 'Incorrect checkbox selection state');
-            expect(checkboxComponent.nativeCheckbox.nativeElement.checked).toBe(false, 'Incorrect native checkbox selection state');
+            expect(checkboxComponent.nativeInput.nativeElement.checked).toBe(false, 'Incorrect native checkbox selection state');
 
             // Verify selection of row
             expect(rowComponent.selected).toBe(false, 'Incorrect row selection state');
@@ -360,9 +361,9 @@ export class TreeGridFunctions {
             // Verify selection of row through treeGrid
             const selectedRows = (treeGrid as IgxTreeGridComponent).selectedRows;
             expect(selectedRows.includes(rowComponent.key)).toBe(false);
-        }  else {
+        } else {
             expect(checkboxComponent.checked).toBe(expectedCheckboxState, 'Incorrect checkbox selection state');
-            expect(checkboxComponent.nativeCheckbox.nativeElement.checked).toBe(
+            expect(checkboxComponent.nativeInput.nativeElement.checked).toBe(
                 expectedCheckboxState, 'Incorrect native checkbox selection state');
 
             // Verify selection of row
@@ -387,11 +388,11 @@ export class TreeGridFunctions {
         if (expectedSelection === null) {
             expect(checkboxComponent.indeterminate).toBe(true);
             expect(checkboxComponent.checked).toBe(false, 'Incorrect checkbox selection state');
-            expect(checkboxComponent.nativeCheckbox.nativeElement.checked).toBe(false, 'Incorrect native checkbox selection state');
+            expect(checkboxComponent.nativeInput.nativeElement.checked).toBe(false, 'Incorrect native checkbox selection state');
         } else {
             expect(checkboxComponent.indeterminate).toBe(false);
             expect(checkboxComponent.checked).toBe(expectedSelection, 'Incorrect checkbox selection state');
-            expect(checkboxComponent.nativeCheckbox.nativeElement.checked).toBe(expectedSelection,
+            expect(checkboxComponent.nativeInput.nativeElement.checked).toBe(expectedSelection,
                 'Incorrect native checkbox selection state');
         }
     }
@@ -401,7 +402,7 @@ export class TreeGridFunctions {
     }
 
     public static verifyTreeGridCellSelected(treeGrid: IgxTreeGridComponent,
-                                             cell: IgxGridCellComponent | CellType, selected: boolean = true) {
+                                             cell: IgxGridCellComponent | CellType, selected = true) {
         expect(cell).toBeDefined();
         if (cell) {
             expect(TreeGridFunctions.verifyGridCellHasSelectedClass(cell)).toBe(selected);
@@ -433,7 +434,7 @@ export class TreeGridFunctions {
         }
     }
 
-    public static moveCellUpDown(fix, treeGrid: IgxTreeGridComponent, rowIndex: number, columnName: string, moveDown: boolean = true) {
+    public static moveCellUpDown(fix, treeGrid: IgxTreeGridComponent, rowIndex: number, columnName: string, moveDown = true) {
         const cell = treeGrid.gridAPI.get_cell_by_index(rowIndex, columnName);
         const newRowIndex = moveDown ? rowIndex + 1 : rowIndex - 1;
         const keyboardEventKey = moveDown ? 'ArrowDown' : 'ArrowUp';
@@ -449,7 +450,7 @@ export class TreeGridFunctions {
     }
 
     public static moveCellLeftRight(fix, treeGrid: IgxTreeGridComponent, rowIndex: number,
-        firstColumnName: string, nextColumnName: string, moveRight: boolean = true) {
+        firstColumnName: string, nextColumnName: string, moveRight = true) {
         const cell = treeGrid.gridAPI.get_cell_by_index(rowIndex, firstColumnName);
         const keyboardEventKey = moveRight ? 'ArrowRight' : 'ArrowLeft';
         const gridContent = GridFunctions.getGridContent(fix);
@@ -464,10 +465,9 @@ export class TreeGridFunctions {
 
 
     public static moveGridCellWithTab =
-        (fix, cell: IgxGridCellComponent | CellType) => new Promise<void>(async resolve => {
+        async (fix, cell: IgxGridCellComponent | CellType) => {
             UIInteractions.triggerKeyDownEvtUponElem('Tab', cell.nativeElement, true);
             await wait(DEBOUNCETIME);
             fix.detectChanges();
-            resolve();
-        });
+        };
 }

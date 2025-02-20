@@ -1,30 +1,15 @@
 import * as path from 'path';
 
-import { EmptyTree } from '@angular-devkit/schematics';
 import { SchematicTestRunner, UnitTestTree } from '@angular-devkit/schematics/testing';
+import { setupTestTree } from '../common/setup.spec';
 
 describe('Update to 11.1.0', () => {
     let appTree: UnitTestTree;
     const runner = new SchematicTestRunner('ig-migrate', path.join(__dirname, '../migration-collection.json'));
-    const configJson = {
-        defaultProject: 'testProj',
-        projects: {
-            testProj: {
-                sourceRoot: '/testSrc'
-            }
-        },
-        schematics: {
-            '@schematics/angular:component': {
-                prefix: 'appPrefix'
-            }
-        }
-    };
-
     const migrationName = 'migration-19';
 
     beforeEach(() => {
-        appTree = new UnitTestTree(new EmptyTree());
-        appTree.create('/angular.json', JSON.stringify(configJson));
+        appTree = setupTestTree();
     });
 
     it('should update fontSet to family', async () => {
@@ -34,8 +19,7 @@ describe('Update to 11.1.0', () => {
         );
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         expect(
             tree.readContent('/testSrc/appPrefix/component/icon.component.html')
@@ -49,8 +33,7 @@ describe('Update to 11.1.0', () => {
         );
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         expect(
             tree.readContent('/testSrc/appPrefix/component/icon.component.html')
@@ -58,7 +41,6 @@ describe('Update to 11.1.0', () => {
     });
 
     it('should migrate updated getter names', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/icon-test.component.ts',
             `import { Component, ViewChild } from '@angular/core';
@@ -87,8 +69,7 @@ export class IconTestComponent {
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent = `import { Component, ViewChild } from '@angular/core';
 import { IgxIconModule, IgxIconComponent } from 'igniteui-angular';
@@ -114,9 +95,6 @@ export class IconTestComponent {
     imports: [IgxIconModule]
 });
 `;
-        console.log(tree.readContent(
-            '/testSrc/appPrefix/component/icon-test.component.ts'
-        ));
 
         expect(
             tree.readContent(
@@ -126,11 +104,10 @@ export class IconTestComponent {
     });
 
     it('should migrate updated members names', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/icon-test.component.ts',
             `import { Component } from '@angular/core';
-            import { IgxIconService } from 'igniteui-angular';
+import { IgxIconService } from 'igniteui-angular';
 
 @Component({
     selector: 'app-icon-test',
@@ -152,11 +129,10 @@ export class IconTestComponent {
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent = `import { Component } from '@angular/core';
-        import { IgxIconService } from 'igniteui-angular';
+import { IgxIconService } from 'igniteui-angular';
 
 @Component({
     selector: 'app-icon-test',
@@ -208,8 +184,7 @@ export class IconTestComponent {
                 </igx-chip>
             </igx-chips-area>`
         );
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/chips.component.html'))
             .toEqual(`<igx-chips-area #chipsAreaTo class="chipAreaTo"
@@ -241,8 +216,7 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/tabs.component.html')
         ).toEqual(`<igx-tabs (tabItemSelected)="tabSelected()"></igx-tabs>`);
@@ -255,8 +229,7 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/tabs.component.html')
         ).toEqual(`<igx-tabs (tabItemDeselected)="tabDeselected()"></igx-tabs>`);
@@ -269,8 +242,7 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/list.component.html')
         ).toEqual(`<igx-list [allowLeftPanning]="true" (leftPan)="leftPanPerformed($event)">`);
@@ -283,8 +255,7 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/list.component.html')
         ).toEqual(`<igx-list [allowRightPanning]="true" (rightPan)="rightPanPerformed($event)">`);
@@ -297,8 +268,7 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/list.component.html')
         ).toEqual(`<igx-list (panStateChange)="panStateChange($event)"></igx-list>`);
@@ -311,8 +281,7 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/list.component.html')
         ).toEqual(`<igx-list (itemClicked)="onItemClicked($event)"></igx-list>`);
@@ -325,15 +294,13 @@ export class IconTestComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/navbar.component.html')
         ).toEqual(`<igx-navbar (action)="actionExc($event)" title="Sample App" actionButtonIcon="menu"></igx-navbar>`);
     });
 
     it('should update Excel exporter onExportEnded event name to exportEnded', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/excel-export.component.ts',
 `import { Component } from '@angular/core';
@@ -358,8 +325,7 @@ export class ExcelExportComponent {
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent =
 `import { Component } from '@angular/core';
@@ -391,7 +357,6 @@ export class ExcelExportComponent {
     });
 
     it('should update CSV exporter onExportEnded event name to exportEnded', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/csv-export.component.ts',
 `import { Component } from '@angular/core';
@@ -416,8 +381,7 @@ export class CsvExportComponent {
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent =
 `import { Component } from '@angular/core';
@@ -457,7 +421,7 @@ export class CsvExportComponent {
             </igx-buttongroup>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/buttongroup.component.html')).toEqual(
             `<igx-buttongroup
@@ -474,7 +438,7 @@ export class CsvExportComponent {
             `<igx-snackbar (onAction)="someHandler($event)"></igx-snackbar>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/snackbar.component.html')).toEqual(
             `<igx-snackbar (clicked)="someHandler($event)"></igx-snackbar>`
@@ -493,7 +457,7 @@ export class CsvExportComponent {
             </igx-toast>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/toast.component.html')).toEqual(
             `<igx-toast
@@ -519,8 +483,7 @@ export class CsvExportComponent {
         );
 
         const tree = await runner
-            .runSchematicAsync(migrationName, {}, appTree)
-            .toPromise();
+            .runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
         expect(
             tree.readContent('/testSrc/appPrefix/component/tooltip.component.html')
         ).toEqual(
@@ -544,7 +507,7 @@ export class CsvExportComponent {
 ></igx-calendar>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/calendar.component.html')).toEqual(
 `<igx-calendar
@@ -566,7 +529,7 @@ export class CsvExportComponent {
 ></igx-years-view>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/yearsview.component.html')).toEqual(
 `<igx-years-view
@@ -585,7 +548,7 @@ export class CsvExportComponent {
 ></igx-days-view>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/daysview.component.html')).toEqual(
 `<igx-days-view
@@ -604,7 +567,7 @@ export class CsvExportComponent {
 ></igx-months-view>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/monthsview.component.html')).toEqual(
 `<igx-months-view
@@ -622,7 +585,7 @@ export class CsvExportComponent {
 ></igx-month-picker>`
         );
 
-        const tree = await runner.runSchematicAsync(migrationName, {}, appTree).toPromise();
+        const tree = await runner.runSchematic(migrationName, { shouldInvokeLS: false }, appTree);
 
         expect(tree.readContent('/testSrc/appPrefix/component/monthpicker.component.html')).toEqual(
 `<igx-month-picker
@@ -632,7 +595,6 @@ export class CsvExportComponent {
     });
 
     it('should update Excel exporter onColumnExport and onRowExport event names to columnmExporting and rowExporting', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/excel-export.component.ts',
 `import { Component } from '@angular/core';
@@ -658,8 +620,7 @@ export class ExcelExportComponent {
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent =
 `import { Component } from '@angular/core';
@@ -692,7 +653,6 @@ export class ExcelExportComponent {
     });
 
     it('should update CSV exporter onColumnExport and onRowExport event names to columnmExporting and rowExporting', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/csv-export.component.ts',
 `import { Component } from '@angular/core';
@@ -718,8 +678,7 @@ export class CsvExportComponent {
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent =
 `import { Component } from '@angular/core';
@@ -751,7 +710,6 @@ export class CsvExportComponent {
     });
 
     it('should update GridPagingMode enum from lowerCase to TitleCase', async () => {
-        pending('set up tests for migrations through lang service');
         appTree.create(
             '/testSrc/appPrefix/component/paging-test.component.ts',
 `import { Component } from '@angular/core';
@@ -763,15 +721,14 @@ import { GridPagingMode } from "igniteui-angular";
     templateUrl: "./paging-test.component.html"
 })
 export class PagingComponent {
-    public pagingLocal: GridPagingMode = GridPagingMode.Local;
-    public pagingRemote: GridPagingMode = GridPagingMode.Remote;
+    public pagingLocal: GridPagingMode = GridPagingMode.local;
+    public pagingRemote: GridPagingMode = GridPagingMode.remote;
     constructor(){}
 }
 `);
 
         const tree = await runner
-            .runSchematicAsync('migration-19', {}, appTree)
-            .toPromise();
+            .runSchematic('migration-19', {}, appTree);
 
         const expectedContent =
 `import { Component } from '@angular/core';
@@ -783,8 +740,8 @@ import { GridPagingMode } from "igniteui-angular";
     templateUrl: "./paging-test.component.html"
 })
 export class PagingComponent {
-    public pagingLocal: GridPagingMode = GridPagingMode.local;
-    public pagingRemote: GridPagingMode = GridPagingMode.remote;
+    public pagingLocal: GridPagingMode = GridPagingMode.Local;
+    public pagingRemote: GridPagingMode = GridPagingMode.Remote;
     constructor(){}
 }
 `;
